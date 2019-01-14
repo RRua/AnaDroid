@@ -1,9 +1,10 @@
 #!/bin/bash
-source settings.sh
-TAG="[SETUP]"
+ANADROID_PATH=$(pwd)
+source $ANADROID_PATH/src/settings/settings.sh
+TAG="[DEVICE SETUP]"
 
 # GLOBAL
-APKS_DIR="apks/"
+APKS_DIR="$ANADROID_PATH/resources/apks/"
 # TREPN
 TREPN_PREFERENCES_DESTINATION_DIR="saved_preferences/"
 TREPN_PREFERENCES_DIR="trepnPreferences/"
