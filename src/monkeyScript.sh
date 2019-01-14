@@ -18,7 +18,7 @@ fi
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
 deviceDir=""
-prefix="" # "latest" or "" ; Remove if normal app
+prefix="latest" # "latest" or "" ; Remove if normal app
 deviceExternal=""
 logDir="logs"
 localDir="$HOME/GDResults"

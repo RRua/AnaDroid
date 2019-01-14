@@ -8,6 +8,17 @@ TAG="[ANADROID CONFIG]"
 #4 install gradle? (via sdkman or brew)
 #5 install coreutils (brew install coreutils findutils gnu-tar gnu-sed gawk gnutls gnu-indent gnu-getopt grep)
 
+
+setHomeDir(){
+	has_home_dir=$(echo $HOME)
+	if [ -z "$has_home_dir" ]; then
+		#needs to be set
+		home_dir=$(" eval echo ~$USER")
+		export HOME=$home_dir
+	fi
+}
+
+
 hasJava(){
 	tool_name="Java"
 	com="java -version"
@@ -25,8 +36,17 @@ hasJava(){
 			e_echo "Before using ANADROID, you should update your java to version above 7"
 		fi
 	else
-		e_echo "$TAG $tool_name doesn't exist"
-		exit -1
+		#install java 
+		e_echo "$TAG $tool_name doesn't exist. Downloading"
+		Mac=""
+		getSO Mac
+		if [ "$Mac" == "Mac" ]; then
+			echo "$TAG installing $tool_name on $Mac OS"
+			brew cask install java8
+		else
+			echo "$TAG installing $tool_name on $Mac OS"
+			sudo apt install openjdk-8-jdk
+		fi
 	fi
 }
 hasSdkman(){
@@ -48,7 +68,7 @@ hasSdkman(){
 hasAndroidSDK(){
 	tool_name="ANDROID SDK"
 	URL="https://developer.android.com/studio/#downloads"
-	URL_DOWNLOAD="https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
+	#URL_DOWNLOAD="https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
 	command_to_check=$( echo $ANDROID_HOME )
 	exists=$(echo $command_to_check | grep "ndroid")
 	#original_tool=$(echo $com | cut -f1 -d\ )
@@ -57,8 +77,17 @@ hasAndroidSDK(){
 		i_echo "$TAG $tool_name Exists"
 	else
 		e_echo "$TAG $tool_name doesn't exist. You can download it in:"
-		echo "$URL"
-		e_echo " You also must set the ANDROID_HOME environment variable"
+		Mac=""
+		getSO Mac
+		if [ "$Mac" == "Mac" ]; then
+			w_echo "https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
+
+		else
+			w_echo "https://dl.google.com/android/repository/	sdk-tools-linux-4333796.zip"
+	
+		fi
+		e_echo "You also must set the ANDROID_HOME environment variable"
+		w_echo "More info at $URL"
 		exit -1
 	fi
 }
@@ -84,11 +113,11 @@ hasCoreUtils(){
 }
 
 
-
+setHomeDir
 MACHINE=""
 getSO MACHINE
 i_echo "$TAG Running on $MACHINE OS"
-hasCoreUtils
+hasCoreUtils $MACHINE
 hasJava
 hasAndroidSDK
 hasSdkman
