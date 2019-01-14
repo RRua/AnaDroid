@@ -1,6 +1,7 @@
 #!/bin/bash
-source settings.sh
-source util.sh
+ANADROID_SRC_PATH=$1
+source $ANADROID_SRC_PATH/settings/settings.sh
+source $ANADROID_SRC_PATH/settings/util.sh
 
 instTests=($(adb shell pm list instrumentation | cut -f2 -d: | cut -f1 -d\ | cut -f1 -d/))
 for i in ${instTests[@]}; do

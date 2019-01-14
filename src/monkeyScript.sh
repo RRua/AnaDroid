@@ -1,5 +1,5 @@
 #!/bin/bash
-source settings/settings.sh
+source src/settings/settings.sh
 
 TAG="[AD]"
 
@@ -15,22 +15,25 @@ else
 	MV_COMMAND="mv"	
 fi
 
+ANADROID_PATH=$1
+ANADROID_SRC_PATH=$ANADROID_PATH/src/
+trace=$2 
+GREENSOURCE_URL=$3
+res_folder="resources"
+hideDir=".ana/"
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
 deviceDir=""
-prefix="latest" # "latest" or "" ; Remove if normal app
+prefix="" # "latest" or "" ; Remove if normal app
 deviceExternal=""
-logDir="logs"
+logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
 localDirOriginal="$HOME/GDResults"
-#trace="-MethodOriented"   #trace=$2  ##RR
 checkLogs="Off"
-trace=$1
 monkey="-Monkey"
 folderPrefix=""
-GD_ANALYZER="resources/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
-GD_INSTRUMENT="resources/ars/jInst.jar"
-GREENSOURCE_URL=$2
+GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
+GD_INSTRUMENT="$res_folder/jars/jInst.jar"
 trepnLib="TrepnLibrary-release.aar"
 trepnJar="TrepnLibrary-release.jar"
 profileHardware="YES" # YES or ""
@@ -44,7 +47,7 @@ number_monkey_events=500
 min_coverage=10
 totaUsedTests=0
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
-DIR=/Users/ruirua/tests/newApps/*
+DIR=/Users/ruirua/newApps/*
 # trap - INT
 # trap 'quit' INT
 
@@ -53,7 +56,7 @@ analyzeCSV(){
 	tags=$(cat $1 |  grep "stopped" | wc -l)
 	if [ $tags -lt "2" ] && [ "$folderPrefix" == "MonkeyTest" ] ; then
 		e_echo " $1 might contain an error "
-		echo "$1" >> logs/csvErrors.log
+		echo "$1" >> $logDir/csvErrors.log
 	fi
 }
 errorHandler(){
@@ -62,7 +65,7 @@ errorHandler(){
 		w_echo "killing running app..."
 		adb shell am force-stop $1
 		w_echo "uninstalling actual app $2"
-		./uninstall.sh $1
+		$ANADROID_SRC_PATH/others/uninstall.sh $1
 	fi
 }
 # trying to determine the application uuid
@@ -90,7 +93,7 @@ quit(){
 	w_echo "killing running app..."
 	adb shell am force-stop $1
 	w_echo "uninstalling actual app $1"
-	./uninstall.sh $1 $2
+	$ANADROID_SRC_PATH/others/uninstall.sh $1 $2
 	w_echo "removing actual app from processed Apps log"
 	sed "s#$3##g" $logDir/processedApps.log
 	w_echo "GOODBYE"
@@ -103,11 +106,11 @@ getBattery(){
 	w_echo " Actual battery level : $battery_level"
 	if [ "$battery_level" -le 20 ]; then
 		w_echo "battery level below 20%. Sleeping again"
-		sleep 600 # sleep 10 min to charge battery
+		sleep 300 # sleep 5 min to charge battery
 	fi
 }
 
-
+$MKDIR_COMMAND -p $logDir
 #### Monkey process
 (adb kill-server ) > /dev/null  2>&1
 DEVICE=$(adb devices -l  2>&1 | egrep "device .+ product:")
@@ -119,23 +122,20 @@ else
 		e_echo "$TAG Could not determine the device's external storage. Check and try again..."
 		exit 1
 	fi
-	( adb devices -l ) > device_info.txt 2>&1
-	device_model=$(   cat device_info.txt | grep -o "model.*" | cut -f2 -d: | cut -f1 -d\ )
-	device_serial=$(  cat device_info.txt | tail -n 2 | grep "model" | cut -f1 -d\ )
-	device_brand=$( cat device_info.txt | grep -o "device:.*" | cut -f2 -d: )
-	echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}" > device.json
-	#device=$( adb devices -l | grep -o "model.*" | cut -f2 -d: | cut -f1 -d\ )
+	dev=$( adb devices -l 2>&1 )
+	device_model=$(   echo  $dev  | grep -o "model.*" | cut -f2 -d: | cut -f1 -d\ )
+	device_serial=$(   echo  $dev | tail -n 2 | grep "model" | cut -f1 -d\ )
+	device_brand=$(  echo  $dev | grep -o "device:.*" | cut -f2 -d: )
+	echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}" > $res_folder/device.json
 	i_echo "$TAG 📲  Attached device ($device_model) recognized "
-	#TODO include mode to choose the conected device and echo the device name
 	deviceDir="$deviceExternal/trepn"  #GreenDroid
+
+	# TODO REMOVE ?
 	#put Trepn preferences on device
-	(adb push trepnPreferences/ $deviceDir/saved_preferences/) > /dev/null  2>&1 #new
-	#Start Trepn
-	#adb shell monkey -p com.quicinc.trepn -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
-	
+	(adb push $res_folder/TrepnPreferences/ $deviceDir/saved_preferences/) > /dev/null  2>&1 #new
+
 	adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService > /dev/null  2>&1
-	
-	(echo $deviceDir > deviceDir.txt) 
+	#TODO remove this
 	(adb shell mkdir $deviceDir) > /dev/null  2>&1
 	(adb shell mkdir $deviceDir/Traces) > /dev/null  2>&1
 	(adb shell mkdir $deviceDir/Measures) > /dev/null  2>&1
@@ -147,20 +147,18 @@ else
 	fi
 
 	w_echo "removing old instrumentations "
-	./forceUninstall.sh 
+	$ANADROID_SRC_PATH/others/forceUninstall.sh $ANADROID_SRC_PATH
 	#for each Android Proj in $DIR folder...
 	w_echo "$TAG searching for Android Projects in -> $DIR"
 	# getting all seeds from file
-	seeds20=$(head -$min_monkey_runs monkey_seeds.txt)
-	last30=$(tail  -$threshold_monkey_runs monkey_seeds.txt)
+	seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
+	last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 	for f in $DIR/
 		do
 		localDir=$localDirOriginal
-		
-
-		
-		#clean previous list of all methods and device results
+		# TODO Remove
 		rm -rf ./allMethods.txt
+		#TODO put in func
 		adb shell rm -rf "$deviceDir/allMethods.txt"
 		adb shell rm -rf "$deviceDir/TracedMethods.txt"
 		adb shell rm -rf "$deviceDir/Traces/*"
@@ -171,7 +169,6 @@ else
 		ID=${arr[*]: -1}
 		IFS=$(echo -en "\n\b")
 		now=$(date +"%d_%m_%y_%H_%M_%S")
-
 		# check if was already processed
 		suc=$(cat $logDir/success.log 2>/dev/null | sort -u | uniq | grep $ID )
 		if [ -n $suc  ] && [ "$checkLogs" != "Off" ]; then
@@ -186,12 +183,9 @@ else
 			continue
 		fi
 		echo $f >> $logDir/processedApps.log
-
-
-		if [ "$ID" != "success" ] && [ "$ID" != "failed" ] && [ "$ID" != "unknown" ]; then
-			
+		if [ "$ID" != "success" ] && [ "$ID" != "failed" ] && [ "$ID" != "unknown" ]; then			
 			projLocalDir=$localDir/$ID
-			#rm -rf $projLocalDir/all/*
+			#TODO replace by func
 			if [[ $trace == "-TestOriented" ]]; then
 				e_echo "	Test Oriented Profiling:      ✔"
 				folderPrefix="MonkeyTest"
@@ -205,8 +199,6 @@ else
 			else 
 				(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/trepnPreferences/Pref1.pref") > /dev/null 2>&1
 			fi	
-			#first, check if this is a gradle or a maven project
-			#GRADLE=$(find ${f}/latest -maxdepth 1 -name "build.gradle")
 			GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
 			POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
 			if [ -n "$POM" ]; then
@@ -216,7 +208,7 @@ else
 			elif [ -n "${GRADLE[0]}" ]; then
 				MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 				if [[ "${#MANIFESTS[@]}" > 0 ]]; then
-					MP=($(python manifestParser.py ${MANIFESTS[*]}))
+					MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
 					for R in ${MP[@]}; do
 						RESULT=($(echo "$R" | tr ':' '\n'))
 						TESTS_SRC=${RESULT[1]}
@@ -229,17 +221,13 @@ else
 						MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 						MANIF_T="-"
 						
-
-
 #create results support folder
 						#echo "$TAG Creating support folder..."
 						$MKDIR_COMMAND -p $projLocalDir
 						$MKDIR_COMMAND -p $projLocalDir/oldRuns
 						($MV_COMMAND -f $(find $projLocalDir ! -path $projLocalDir -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
 						$MKDIR_COMMAND -p $projLocalDir/all
-
 						FOLDER=${f}${prefix} #$f
-
 						ORIGINAL_GRADLE=($(find $FOLDER/ -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
 						APP_ID="unknown"
 						getAppUID ${GRADLE[0]} $MANIF_S APP_ID
@@ -247,47 +235,38 @@ else
 						APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"0.0\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
 						Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[]}"
 						#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
-
 #Instrumentation phase	
 						oldInstrumentation=$(cat $FOLDER/$tName/instrumentationType.txt 2>/dev/null | grep  ".*Oriented" )
 						allmethods=$(find $projLocalDir/all -maxdepth 1 -name "allMethods.txt")
 						if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 							w_echo "Different type of instrumentation. instrumenting again..."
 							rm -rf $FOLDER/$tName
-							mkdir -p $FOLDER/$tName
+							$MKDIR_COMMAND -p $FOLDER/$tName
 							echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
 							java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
-							#create results support folder
-							#rm -rf $projLocalDir/all/*
 							$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 							#Instrument all manifestFiles
-							(find $FOLDER/$tName -name "AndroidManifest.xml" | egrep -v "/build/" | xargs ./manifestInstr.py )
-
+							(find $FOLDER/$tName -name "AndroidManifest.xml" | egrep -v "/build/" | xargs $ANADROID_SRC_PATH/build/manifestInstr.py )
 						else 
 							e_echo "Same instrumentation of last time. Skipping instrumentation phase"
 						fi
-						
 						#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
 						xx=$(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )
 						##echo "xx -> $xx"
 						$MV_COMMAND -f $xx $projLocalDir/oldRuns/ >/dev/null 2>&1
-						echo "$FOLDER/$tName" > lastTranformedApp.txt
-
-						#copy the trace/measure lib
-						#folds=($(find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"))
+						echo "$FOLDER/$tName" > $logDir/lastTranformedApp.txt
 						for D in `find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
 						    if [ -d "${D}" ]; then  ##RR
 						    	$MKDIR_COMMAND -p ${D}/libs  ##RR
-						     	cp libsAdded/$treprefix$trepnLib ${D}/libs  ##RR
+						     	cp $res_folder/libsAdded/$treprefix$trepnLib ${D}/libs  ##RR
 						    fi  ##RR
 						done  ##RR
 ## BUILD PHASE						
 						GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
-						
 						#echo "gradle script invocation -> ./buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]}"
 						if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 							w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
-							./buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild
+							$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild
 							RET=$(echo $?)
 						else 
 							w_echo "[APP BUILDER] No changes since last run. Not building again"
@@ -307,17 +286,15 @@ else
 ## END BUILD PHASE							
 						localDir=$projLocalDir/$folderPrefix$now
 						#echo "$TAG Creating support folder..."
-						mkdir -p $localDir
+						#mkdir -p $localDir
 						mkdir -p $localDir/all
-						
 						##copy MethodMetric to support folder
 						#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 						cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
-						cp device.json $localDir
+						cp $res_folder/device.json $localDir
 						cp $FOLDER/$tName/appPermissions.json $localDir
-
 						#install on device
-						./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
+						$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
 						RET=$(echo $?)
 						if [[ "$RET" == "-1" ]]; then
 							echo "$ID" >> $logDir/errorInstall.log
@@ -326,20 +303,18 @@ else
 						echo "$ID" >> $logDir/success.log
 						total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
 						#now=$(date +"%d_%m_%y_%H_%M_%S")
-						
 						IGNORE_RUN=""
 						##########
 ########## RUN TESTS 1 phase ############
 						trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 						for i in $seeds20; do
 							w_echo "APP: $ID | SEED Number : $totaUsedTests"
-							./runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir		
+							$ANADROID_SRC_PATH/run/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir		
 							RET=$(echo $?)
 							if [[ $RET -ne 0 ]]; then
-								echo "retas $RET"
 								errorHandler $RET $PACKAGE
 								IGNORE_RUN="YES"
-								./trepnFix.sh $deviceDir
+								$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
 								totaUsedTests=0
 								break				
 							fi
@@ -356,7 +331,7 @@ else
 							if [ "$totaUsedTests" -eq 10 ]; then
 								getBattery
 							fi
-							./trepnFix.sh $deviceDir
+							$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
 						done
 
 ########## RUN TESTS  THRESHOLD ############
@@ -375,7 +350,7 @@ else
 								break
 							fi
 							w_echo "APP: $ID | SEED Number : $totaUsedTests"
-							./runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE	$localDir $deviceDir
+							$ANADROID_SRC_PATH/run/runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir
 							e_echo "Pulling results from device..."
 							adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 							adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
@@ -390,7 +365,7 @@ else
 							if [ "$totaUsedTests" -eq 30 ]; then
 								getBattery
 							fi
-							./trepnFix.sh $deviceDir
+							$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
 						done
 
 						trap - INT
@@ -401,22 +376,16 @@ else
 
 						#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
 
-						(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > device.json
-						./uninstall.sh $PACKAGE $TESTPACKAGE
+						(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > $res_folder/device.json
+						$ANADROID_SRC_PATH/others/uninstall.sh $PACKAGE $TESTPACKAGE
 						RET=$(echo $?)
 						if [[ "$RET" != "0" ]]; then
 							echo "$ID" >> $logDir/errorUninstall.log
 							#continue
 						fi
-						#Run greendoid!
-						#java -jar $GD_ANALYZER $ID $PACKAGE $TESTPACKAGE $FOLDER $FOLDER/tName $localDir
-						#(java -jar $GD_ANALYZER $trace $projLocalDir/ $projLocalDir/all/ $projLocalDir/*.csv) > $logDir/analyzer.log  ##RR
 						w_echo "Analyzing results .."
 						java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
-						#cat $logDir/analyzer.log
 						errorAnalyzer=$(cat $logDir/analyzer.log)
-						#TODO se der erro imprimir a vermelho e aconselhar usar o trepFix.sh
-						#break
 						w_echo "$TAG sleeping between profiling apps"
 						sleep $SLEEPTIME
 						w_echo "$TAG resuming Greendroid after nap"
@@ -424,7 +393,9 @@ else
 						getBattery
 					done
 				fi
-			else
+			else 
+				e_echo "Dropped support for SDK projects"
+				exit -1
 #SDK PROJ
 				MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/bin/|$tName"))
 				MP=($(python manifestParser.py ${MANIFESTS[*]}))

@@ -1,5 +1,8 @@
 #!/bin/bash
-source settings.sh
+
+#TODO replace
+ANADROID_PATH=$(pwd)
+source $ANADROID_PATH/src/settings/settings.sh
 
 #args
 monkey_seed=$1
@@ -13,6 +16,7 @@ mem=''
 nr_processes=''
 sdk_level=''
 api_level=''
+logDir="$ANADROID_PATH/.ana/logs"
 TIMEOUT=300 # 5 minutes
 
 machine=''
@@ -70,7 +74,7 @@ if [[ $trace == "-TestOriented" ]]; then
 	adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value "1" -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 fi 
 # adb shell -s <seed> -p <package-name> -v <number-of-events> ----pct-syskeys 0 --ignore-crashes --kill-process-after-error
-($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-crashes --ignore-security-exceptions --throttle 10 $monkey_nr_events) &> logs/monkey.log
+($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-crashes --ignore-security-exceptions --throttle 10 $monkey_nr_events) &> $logDir/monkey.log
 RET=$(echo $?)
 if [[ $trace == "-TestOriented" ]]; then
 	adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value "0" -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
@@ -86,7 +90,7 @@ w_echo "stopped tests. "
 #fi
 if [[ "$RET" != "0" ]]; then
 	e_echo "error while running -> error code : $RET"
-	echo "$localDir,$monkey_seed" >> logs/timeoutSeed.log
+	echo "$localDir,$monkey_seed" >> $logDir/timeoutSeed.log
 	w_echo "An Error Ocurred. killing process of monkey test"
 	adb shell ps | grep "com.android.commands.monkey" | awk '{print $2}' | xargs -I{} adb shell kill -9 {}
 	exit 1

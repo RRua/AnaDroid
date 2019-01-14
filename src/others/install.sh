@@ -1,5 +1,8 @@
 #!/bin/bash
-source settings.sh
+
+#TODO replace
+ANADROID_PATH=$(pwd)
+source $ANADROID_PATH/src/settings/settings.sh
 
 pathProject=$1
 pathTests=$2

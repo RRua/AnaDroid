@@ -60,9 +60,22 @@ hasSdkman(){
 		i_echo "$TAG $tool_name Exists"
 	else
 		w_echo "$TAG $tool_name doesn't exist. Installing..."
-		x=$(curl -s https://get.sdkman.io | bash)
-		source $SDKMAN_DIR/bin/sdkman-init.sh
-		i_echo "$TAG $tool_name Installed"
+		has_curl=$(curl -h 2>&1)
+		exists=$(echo $has_curl | grep "command not found")
+		#original_tool=$(echo $com | cut -f1 -d\ )
+		if [[ ! -n $exists ]]; then
+			#tool exists
+			Mac=""
+			getSO Mac
+			if [ "$Mac" != "Mac" ]; then
+				apt install curl
+			fi
+			x=$(curl -s https://get.sdkman.io | bash)
+			export SDKMAN_DIR=$HOME/.sdkman
+			source $SDKMAN_DIR/bin/sdkman-init.sh
+			i_echo "$TAG $tool_name Installed"
+
+		fi
 	fi
 }
 hasAndroidSDK(){
@@ -81,10 +94,15 @@ hasAndroidSDK(){
 		getSO Mac
 		if [ "$Mac" == "Mac" ]; then
 			w_echo "https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
-
 		else
-			w_echo "https://dl.google.com/android/repository/	sdk-tools-linux-4333796.zip"
-	
+			w_echo "https://dl.google.com/android/repository/sdk-tools-linux-*.zip"
+			mkdir -p $HOME/android-sdk
+			cd $HOME/android-sdk
+			export ANDROID_HOME=$HOME/android-sdk
+			cd $ANDROID_HOME; wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip ; unzip sdk-tools-linux-*.zip
+			$ANDROID_HOME/tools/bin/sdkmanager --update
+			$ANDROID_HOME/tools/bin/sdkmanager "platforms;android-25"
+ 			$ANDROID_HOME/tools/bin/sdkmanager "platform-tools"
 		fi
 		e_echo "You also must set the ANDROID_HOME environment variable"
 		w_echo "More info at $URL"

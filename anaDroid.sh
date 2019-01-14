@@ -4,9 +4,10 @@ TEST_ORIENTATION="-TestOriented"
 URL="http://greensource.di.uminho.pt/"
 PROFILER="Trepn"
 TEST_FRAMEWORK="Monkey"
-SRC_FOLDER="src/"
-source $SRC_FOLDER/settings/settings.sh
 
+ANADROID_PATH=$(pwd)
+SRC_FOLDER="$ANADROID_PATH/src/"
+source $SRC_FOLDER/settings/settings.sh
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -45,7 +46,7 @@ esac
 done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
-i_echo   "##############################################################################"
+i_echo   "\n##############################################################################"
 i_echo   "###                          ANADROID TOOL                      greenlab™  ###"
 i_echo   "##############################################################################"
 echo ""
@@ -62,7 +63,7 @@ fi
 
 if [[ "$TEST_FRAMEWORK" == "Monkey" ]]; then
 	#statements
-	./$SRC_FOLDER/monkeyScript.sh $TEST_ORIENTATION $URL
+	$SRC_FOLDER/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL
 fi
 
 

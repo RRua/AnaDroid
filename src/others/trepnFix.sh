@@ -1,5 +1,6 @@
 #!/bin/bash
-source settings.sh
+ANADROID_PATH=$(pwd)
+source $ANADROID_PATH/src/settings/settings.sh
 
 iTAG="[GD CLEANER]"
 deviceDir=$1

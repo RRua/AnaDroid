@@ -1,6 +1,9 @@
 #!/bin/bash
-source settings.sh
-source util.sh
+
+#TODO replace
+ANADROID_PATH=$(pwd)
+source $ANADROID_PATH/src/settings/settings.sh
+source $ANADROID_PATH/src/settings/util.sh
 
 machine=''
 getSO machine
@@ -12,7 +15,7 @@ else
 	Timeout_COMMAND="gtimeout"	
 fi
 TIMEOUT="420" #7 minutes (60*7)
-logDir="logs"
+logDir="$ANADROID_PATH/.ana/logs/"
 OLDIFS=$IFS
 IFS=$(echo -en "\n\b")
 ID=$1
@@ -279,19 +282,19 @@ for x in ${BUILDS[@]}; do
 				#echo "ja tem runner file $x xx$HAS_RUNNER xx $vv"
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$NEW_RUNNER\"#g" $x
-					(echo $NEW_RUNNER) > actualrunner.txt
+					#(echo $NEW_RUNNER) > actualrunner.txt
 				else
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$OLD_RUNNER\"#g" $x
-					(echo $OLD_RUNNER) > actualrunner.txt
+					#(echo $OLD_RUNNER) > actualrunner.txt
 				fi
 				
 			else
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -i.bak ""$ANDROID_LINE"i testInstrumentationRunner \"$NEW_RUNNER\"" $x
-					(echo $NEW_RUNNER) > actualrunner.txt
+					#(echo $NEW_RUNNER) > actualrunner.txt
 				else
 					$SED_COMMAND -i.bak ""$ANDROID_LINE"i testInstrumentationRunner \"$OLD_RUNNER\"" $x
-					(echo $OLD_RUNNER) > actualrunner.txt
+					#(echo $OLD_RUNNER) > actualrunner.txt
 				fi
 			fi
 		fi
@@ -366,7 +369,7 @@ fi
  chmod +x $FOLDER/gradlew
  echo  "$TAG Building and running tests....."
  x=$(pwd)
- cd $FOLDER; ./gradlew assemble$apkBuild &> $x/$logDir/buildStatus.log ; cd $x 
+ cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
 
 STATUS_NOK=$(grep "BUILD FAILED" $logDir/buildStatus.log)
 STATUS_OK=$(grep "BUILD SUCCESS" $logDir/buildStatus.log)
@@ -376,7 +379,7 @@ if [ -n "$STATUS_NOK" ]; then
 	minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
 	buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)
 	(export PATH=$ANDROID_HOME/tools/bin:$PATH)
-	(sdkmanager --list) > sdks.txt
+	sdkl=$(sdkmanager --list 2>&1) 
 	#echo "available _> $availableSdkTools"
 	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") ]]; do
 		((try--))
@@ -413,9 +416,9 @@ if [ -n "$STATUS_NOK" ]; then
 			#correct buildToolsVersion
 			if [[ -n "$oldBuild" ]] ; then
 				#echo " avaliables -> $availableSdkTools"
-				availableSdkTools=$(grep "build-tools/$newBuild" sdks.txt)
+				availableSdkTools=$(echo $sdkl | grep "build-tools/$newBuild")
 				# if don't have that build tools version		
-				availableSdkTools=$(grep "build-tools/$newBuild" sdks.txt)
+				availableSdkTools=$(echo $sdkl | grep "build-tools/$newBuild")
 				if [[ -z "$availableSdkTools" ]] ; then 
 					#download via sdkmanager 
 					e_echo "No suitable build-tools found. Downloading build tools $newBuild."
@@ -440,8 +443,7 @@ if [ -n "$STATUS_NOK" ]; then
 		chmod +x $FOLDER/gradlew
  		echo  "$TAG Building and running tests (AGAIN) ....."
  		x=$(pwd)
-		cd $FOLDER; ./gradlew assemble$apkBuild &> $x/$logDir/buildStatus.log ; cd $x 
-
+		cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
 
 		libsError=$(egrep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: [libs]" $logDir/buildStatus.log)
 		minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
