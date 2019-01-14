@@ -1,0 +1,166 @@
+  bash arg: -s
+  bash arg: 11
+  bash arg: -p
+  bash arg: uminho.di.greenlab.n2apptest
+  bash arg: -v
+  bash arg: --pct-syskeys
+  bash arg: 0
+  bash arg: --ignore-crashes
+  bash arg: --ignore-security-exceptions
+  bash arg: --throttle
+  bash arg: 10
+  bash arg: 500
+args: [-s, 11, -p, uminho.di.greenlab.n2apptest, -v, --pct-syskeys, 0, --ignore-crashes, --ignore-security-exceptions, --throttle, 10, 500]
+ arg: "-s"
+ arg: "11"
+ arg: "-p"
+ arg: "uminho.di.greenlab.n2apptest"
+ arg: "-v"
+ arg: "--pct-syskeys"
+ arg: "0"
+ arg: "--ignore-crashes"
+ arg: "--ignore-security-exceptions"
+ arg: "--throttle"
+ arg: "10"
+ arg: "500"
+data="11"
+data="uminho.di.greenlab.n2apptest"
+arg="--pct-syskeys" mCurArgData="null" mNextArg=6 argwas="--pct-syskeys" nextarg="0"
+data="0"
+arg="--ignore-crashes" mCurArgData="null" mNextArg=8 argwas="--ignore-crashes" nextarg="--ignore-security-exceptions"
+arg="--ignore-security-exceptions" mCurArgData="null" mNextArg=9 argwas="--ignore-security-exceptions" nextarg="--throttle"
+arg="--throttle" mCurArgData="null" mNextArg=10 argwas="--throttle" nextarg="10"
+data="10"
+:Monkey: seed=11 count=500
+:AllowPackage: uminho.di.greenlab.n2apptest
+:IncludeCategory: android.intent.category.LAUNCHER
+:IncludeCategory: android.intent.category.MONKEY
+// Event percentages:
+//   0: 15.306122%
+//   1: 10.204082%
+//   2: 2.0408163%
+//   3: 15.306122%
+//   4: -0.0%
+//   5: -0.0%
+//   6: 25.510204%
+//   7: 15.306122%
+//   8: -0.0%
+//   9: 2.0408163%
+//   10: 1.0204082%
+//   11: 13.265306%
+:Switch: #Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=uminho.di.greenlab.n2apptest/.MainActivity;end
+    // Allowing start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=uminho.di.greenlab.n2apptest/.MainActivity } in package uminho.di.greenlab.n2apptest
+    // Allowing start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=uminho.di.greenlab.n2apptest/.MainActivity } in package uminho.di.greenlab.n2apptest
+:Sending Touch (ACTION_DOWN): 0:(393.0,27.0)
+:Sending Touch (ACTION_UP): 0:(339.50925,57.825844)
+:Sending Touch (ACTION_DOWN): 0:(608.0,1146.0)
+:Sending Touch (ACTION_UP): 0:(584.7307,1146.5884)
+:Sending Touch (ACTION_DOWN): 0:(534.0,1709.0)
+:Sending Touch (ACTION_UP): 0:(539.3004,1717.013)
+:Sending Trackball (ACTION_MOVE): 0:(3.0,-1.0)
+:Sending Touch (ACTION_DOWN): 0:(156.0,349.0)
+:Sending Touch (ACTION_UP): 0:(231.33746,347.07013)
+:Sending Trackball (ACTION_MOVE): 0:(-4.0,-1.0)
+    // Rejecting start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.android.mms/.ui.MmsTabActivity } in package com.android.mms
+    // Rejecting start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.android.mms/.ui.MmsTabActivity } in package com.android.mms
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+:Sending Trackball (ACTION_MOVE): 0:(4.0,3.0)
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+    // activityResuming(com.instagram.android)
+    // Rejecting resume of package com.instagram.android
+:Sending Touch (ACTION_DOWN): 0:(1062.0,718.0)
+:Sending Touch (ACTION_UP): 0:(1046.5902,762.615)
+:Sending Touch (ACTION_DOWN): 0:(566.0,1740.0)
+:Sending Touch (ACTION_UP): 0:(504.58505,1855.3308)
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+:Sending Touch (ACTION_DOWN): 0:(246.0,1161.0)
+:Sending Touch (ACTION_UP): 0:(275.7144,1129.5608)
+:Sending Touch (ACTION_DOWN): 0:(118.0,1771.0)
+:Sending Touch (ACTION_UP): 0:(130.22514,1759.9696)
+:Sending Trackball (ACTION_MOVE): 0:(3.0,4.0)
+    //[calendar_time:2019-01-14 21:23:30.016  system_uptime:445109109]
+    // Sending event #100
+:Sending Trackball (ACTION_UP): 0:(0.0,0.0)
+:Sending Trackball (ACTION_MOVE): 0:(0.0,1.0)
+:Sending Touch (ACTION_DOWN): 0:(93.0,1840.0)
+:Sending Touch (ACTION_UP): 0:(104.178345,1822.6357)
+:Sending Trackball (ACTION_MOVE): 0:(1.0,0.0)
+:Sending Trackball (ACTION_MOVE): 0:(2.0,-3.0)
+:Sending Touch (ACTION_DOWN): 0:(331.0,197.0)
+:Sending Touch (ACTION_UP): 0:(348.95868,198.54211)
+:Sending Trackball (ACTION_MOVE): 0:(-1.0,-5.0)
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+:Sending Trackball (ACTION_MOVE): 0:(2.0,-2.0)
+:Sending Touch (ACTION_DOWN): 0:(258.0,598.0)
+:Sending Touch (ACTION_UP): 0:(265.91022,595.2438)
+:Sending Trackball (ACTION_MOVE): 0:(-2.0,2.0)
+:Sending Trackball (ACTION_MOVE): 0:(2.0,4.0)
+    //[calendar_time:2019-01-14 21:23:31.942  system_uptime:445111035]
+    // Sending event #200
+:Sending Trackball (ACTION_MOVE): 0:(-3.0,2.0)
+:Sending Trackball (ACTION_MOVE): 0:(1.0,-3.0)
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+:Sending Touch (ACTION_DOWN): 0:(519.0,4.0)
+:Sending Touch (ACTION_UP): 0:(564.1607,26.273762)
+:Sending Touch (ACTION_DOWN): 0:(705.0,1607.0)
+:Sending Touch (ACTION_UP): 0:(710.50543,1604.1621)
+:Sending Touch (ACTION_DOWN): 0:(477.0,1535.0)
+:Sending Touch (ACTION_UP): 0:(442.71323,1473.3096)
+:Sending Trackball (ACTION_MOVE): 0:(3.0,-5.0)
+:Sending Trackball (ACTION_MOVE): 0:(0.0,-1.0)
+:Sending Trackball (ACTION_UP): 0:(0.0,0.0)
+:Sending Touch (ACTION_DOWN): 0:(404.0,1412.0)
+:Sending Touch (ACTION_UP): 0:(399.30917,1418.5657)
+:Sending Touch (ACTION_DOWN): 0:(659.0,940.0)
+:Sending Touch (ACTION_UP): 0:(661.5964,940.00836)
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+:Sending Trackball (ACTION_MOVE): 0:(0.0,-3.0)
+    //[calendar_time:2019-01-14 21:23:33.566  system_uptime:445112659]
+    // Sending event #300
+:Sending Touch (ACTION_DOWN): 0:(704.0,1154.0)
+:Sending Touch (ACTION_UP): 0:(719.17194,1143.5115)
+:Sending Touch (ACTION_DOWN): 0:(651.0,869.0)
+:Sending Touch (ACTION_UP): 0:(644.69696,858.0551)
+:Sending Touch (ACTION_DOWN): 0:(220.0,1120.0)
+:Sending Touch (ACTION_UP): 0:(220.86586,1120.0612)
+:Sending Touch (ACTION_DOWN): 0:(369.0,831.0)
+:Sending Touch (ACTION_UP): 0:(351.0464,830.02423)
+:Sending Trackball (ACTION_MOVE): 0:(3.0,0.0)
+:Sending Trackball (ACTION_MOVE): 0:(3.0,-3.0)
+:Sending Touch (ACTION_DOWN): 0:(56.0,814.0)
+:Sending Touch (ACTION_UP): 0:(45.745823,807.7919)
+:Sending Trackball (ACTION_MOVE): 0:(1.0,0.0)
+:Sending Touch (ACTION_DOWN): 0:(605.0,1477.0)
+:Sending Touch (ACTION_UP): 0:(605.17303,1489.1682)
+    // Rejecting start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.quicinc.trepn/.userinterface.main.TrepnActivity } in package com.quicinc.trepn
+    // Rejecting start of Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.quicinc.trepn/.userinterface.main.TrepnActivity } in package com.quicinc.trepn
+:Sending Touch (ACTION_DOWN): 0:(326.0,1191.0)
+:Sending Touch (ACTION_UP): 0:(314.3889,1186.6389)
+:Sending Trackball (ACTION_MOVE): 0:(-3.0,3.0)
+:Sending Trackball (ACTION_MOVE): 0:(-1.0,-5.0)
+:Sending Touch (ACTION_DOWN): 0:(848.0,277.0)
+:Sending Touch (ACTION_UP): 0:(828.3282,363.38095)
+    //[calendar_time:2019-01-14 21:23:34.635  system_uptime:445113728]
+    // Sending event #400
+    //[calendar_time:2019-01-14 21:23:34.647  system_uptime:445113740]
+    // Sending event #400
+:Sending Touch (ACTION_DOWN): 0:(789.0,332.0)
+:Sending Touch (ACTION_UP): 0:(788.8473,307.40625)
+:Sending Trackball (ACTION_MOVE): 0:(3.0,3.0)
+:Sending Touch (ACTION_DOWN): 0:(73.0,1681.0)
+:Sending Touch (ACTION_UP): 0:(106.009674,1696.7937)
+:Sending Trackball (ACTION_MOVE): 0:(-3.0,1.0)
+:Sending Trackball (ACTION_MOVE): 0:(-5.0,4.0)
+    // Rejecting start of Intent { cmp=com.android.systemui/.recents.RecentsActivity } in package com.android.systemui
+:Sending Touch (ACTION_DOWN): 0:(136.0,1496.0)
+:Sending Touch (ACTION_UP): 0:(58.66454,1570.5142)
+:Sending Touch (ACTION_DOWN): 0:(347.0,832.0)
+:Sending Touch (ACTION_UP): 0:(345.3113,808.30383)
+:Sending Trackball (ACTION_MOVE): 0:(-4.0,2.0)
+    // Rejecting start of Intent { act=android.intent.action.MAIN pkg=com.android.deskclock cmp=com.android.deskclock/.DeskClockTabActivity } in package com.android.deskclock
+:Sending Trackball (ACTION_MOVE): 0:(3.0,2.0)
+Events injected: 500
+:Sending rotation degree=0, persist=false
+:Dropped: keys=0 pointers=0 trackballs=0 flips=0 rotations=0
+## Network stats: elapsed time=7631ms (0ms mobile, 0ms wifi, 7631ms not connected)
+// Monkey finished

@@ -47,7 +47,7 @@ number_monkey_events=500
 min_coverage=10
 totaUsedTests=0
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
-DIR=/Users/ruirua/newApps/*
+DIR=$(pwd)/demoProjects/
 # trap - INT
 # trap 'quit' INT
 

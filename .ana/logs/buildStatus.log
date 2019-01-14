@@ -1,0 +1,41 @@
+Configuration 'compile' in project ':app' is deprecated. Use 'implementation' instead.
+:app:preBuild UP-TO-DATE
+:app:preDebugBuild
+:app:compileDebugAidl
+:app:compileDebugRenderscript
+:app:checkDebugManifest
+:app:generateDebugBuildConfig
+:app:prepareLintJar
+:app:generateDebugResValues
+:app:generateDebugResources
+:app:mergeDebugResources
+:app:createDebugCompatibleScreenManifests
+:app:processDebugManifest
+/Users/ruirua/newApps/N2AppTest/_TRANSFORMED_/app/src/main/AndroidManifest.xml:13:579-654 Warning:
+	Element uses-permission#android.permission.READ_EXTERNAL_STORAGE at AndroidManifest.xml:13:579-654 duplicated with element declared at AndroidManifest.xml:13:77-152
+/Users/ruirua/newApps/N2AppTest/_TRANSFORMED_/app/src/main/AndroidManifest.xml:13:654-730 Warning:
+	Element uses-permission#android.permission.WRITE_EXTERNAL_STORAGE at AndroidManifest.xml:13:654-730 duplicated with element declared at AndroidManifest.xml:13:1-77
+:app:splitsDiscoveryTaskDebug
+:app:processDebugResources
+:app:generateDebugSources
+:app:javaPreCompileDebug
+:app:compileDebugJavaWithJavac
+:app:compileDebugNdk NO-SOURCE
+:app:compileDebugSources
+:app:mergeDebugShaders
+:app:compileDebugShaders
+:app:generateDebugAssets
+:app:mergeDebugAssets
+:app:transformClassesWithDexBuilderForDebug
+:app:transformDexArchiveWithExternalLibsDexMergerForDebug
+:app:transformDexArchiveWithDexMergerForDebug
+:app:mergeDebugJniLibFolders
+:app:transformNativeLibsWithMergeJniLibsForDebug
+:app:processDebugJavaRes NO-SOURCE
+:app:transformResourcesWithMergeJavaResForDebug
+:app:validateSigningDebug
+:app:packageDebug
+:app:assembleDebug
+
+BUILD SUCCESSFUL in 9s
+25 actionable tasks: 25 executed
