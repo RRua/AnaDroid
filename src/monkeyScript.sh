@@ -29,7 +29,7 @@ deviceExternal=""
 logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
 localDirOriginal="$HOME/GDResults"
-checkLogs="Off"
+checkLogs="On"
 monkey="-Monkey"
 folderPrefix=""
 GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
@@ -232,7 +232,8 @@ else
 						APP_ID="unknown"
 						getAppUID ${GRADLE[0]} $MANIF_S APP_ID
 						GREENSOURCE_APP_UID="$ID#$APP_ID"
-						APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"0.0\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
+						appVersion=$(cat ${GRADLE[0]} | grep "versionName" | head -1 | cut -f2 -d\")
+						APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
 						Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[]}"
 						#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
 #Instrumentation phase	
@@ -413,7 +414,7 @@ else
 					APP_ID="unknown"
 					getAppUID  $R $APP_ID
 					GREENSOURCE_APP_UID="$ID#$APP_ID"
-					APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\"}" #" \"app_language\": \"Java\"}"
+					APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\" , \"app_build_type\": \"$apkBuild\"}" #" \"app_language\": \"Java\"}"
 					Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"sdk\", \"project_apps\":[$APP_JSON]} , \"project_packages\":[]}"
 					#echo "$Proj_JSON" > $localDir/projectApplication.json
 #instrumentation phase
