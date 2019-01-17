@@ -96,12 +96,12 @@ installSdkman(){
 				sudo apt install curl
 				echo "installing curl"
 			fi
-			x=$(curl -s https://get.sdkman.io | bash)
-			SDKMAN_DIR=$HOME/.sdkman
-			export SDKMAN_DIR=$HOME/.sdkman
-			source $SDKMAN_DIR/bin/sdkman-init.sh
-			i_echo "$TAG $tool_name Installed"
-
+		fi
+		x=$(curl -s https://get.sdkman.io | bash)
+		SDKMAN_DIR=$HOME/.sdkman
+		export SDKMAN_DIR=$HOME/.sdkman
+		source $SDKMAN_DIR/bin/sdkman-init.sh
+		i_echo "$TAG $tool_name Installed"
 		fi
 	fi
 }
