@@ -149,7 +149,7 @@ installGradle(){
 		e_echo "$TAG $tool_name doesn't exist. Downloading gradle with sdkman"
 		export SDKMAN_DIR="$HOME/.sdkman"
 		[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-		sdkman install gradle
+		sdk install gradle
 	fi
 }
 
