@@ -18,7 +18,6 @@ setHomeDir(){
 	fi
 }
 
-
 installPython(){
 	tool_name="Python"
 	com="python --version"
@@ -43,8 +42,6 @@ installPython(){
 		fi
 	fi
 }
-
-
 
 installJava(){
 	tool_name="Java"
@@ -90,12 +87,14 @@ installSdkman(){
 		has_curl=$(curl -h 2>&1)
 		exists=$(echo $has_curl | grep "command not found")
 		#original_tool=$(echo $com | cut -f1 -d\ )
-		if [[ ! -n $exists ]]; then
-			#tool exists
+		if [ -n $exists ]; then
+			#curl doesnt exist
 			Mac=""
 			getSO Mac
 			if [ "$Mac" != "Mac" ]; then
-				apt install curl
+				echo "installing curl"
+				#apt install curl
+				echo "installing curl"
 			fi
 			x=$(curl -s https://get.sdkman.io | bash)
 			export SDKMAN_DIR=$HOME/.sdkman
