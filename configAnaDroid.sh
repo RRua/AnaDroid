@@ -97,6 +97,7 @@ installSdkman(){
 				echo "installing curl"
 			fi
 			x=$(curl -s https://get.sdkman.io | bash)
+			SDKMAN_DIR=$HOME/.sdkman
 			export SDKMAN_DIR=$HOME/.sdkman
 			source $SDKMAN_DIR/bin/sdkman-init.sh
 			i_echo "$TAG $tool_name Installed"
@@ -147,7 +148,7 @@ installGradle(){
 		i_echo "$TAG $tool_name Exists"
 	else
 		e_echo "$TAG $tool_name doesn't exist. Downloading gradle with sdkman"
-		#sdkman install gradle
+		sdkman install gradle
 	fi
 }
 
