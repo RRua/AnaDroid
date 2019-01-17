@@ -132,7 +132,7 @@ installAndroidSDK(){
 		fi
 		e_echo "You also must set the ANDROID_HOME environment variable"
 		w_echo "More info at $URL"
-		exit -1
+		#exit -1
 	fi
 }
 installGradle(){
