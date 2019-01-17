@@ -87,13 +87,13 @@ installSdkman(){
 		has_curl=$(curl -h 2>&1)
 		exists=$(echo $has_curl | grep "command not found")
 		#original_tool=$(echo $com | cut -f1 -d\ )
-		if [ -n $exists ]; then
+		if [ -n "$exists" ]; then
 			#curl doesnt exist
 			Mac=""
 			getSO Mac
 			if [ "$Mac" != "Mac" ]; then
 				echo "installing curl"
-				#apt install curl
+				sudo apt install curl
 				echo "installing curl"
 			fi
 			x=$(curl -s https://get.sdkman.io | bash)
@@ -121,7 +121,7 @@ installAndroidSDK(){
 		if [ "$Mac" == "Mac" ]; then
 			w_echo "https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
 		else
-			w_echo "https://dl.google.com/android/repository/sdk-tools-linux-*.zip"
+			#w_echo "https://dl.google.com/android/repository/sdk-tools-linux-*.zip"
 			mkdir -p $HOME/android-sdk
 			cd $HOME/android-sdk
 			export ANDROID_HOME=$HOME/android-sdk
@@ -129,9 +129,11 @@ installAndroidSDK(){
 			$ANDROID_HOME/tools/bin/sdkmanager --update
 			$ANDROID_HOME/tools/bin/sdkmanager "platforms;android-25"
  			$ANDROID_HOME/tools/bin/sdkmanager "platform-tools"
+ 			e_echo "You also must set the ANDROID_HOME environment variable"
+			w_echo "More info at $URL"
+			
 		fi
-		e_echo "You also must set the ANDROID_HOME environment variable"
-		w_echo "More info at $URL"
+		
 		#exit -1
 	fi
 }
