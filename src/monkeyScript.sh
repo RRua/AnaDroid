@@ -33,7 +33,7 @@ deviceExternal=""
 logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
 localDirOriginal="$HOME/GDResults"
-checkLogs="On"
+checkLogs="Off"
 monkey="-Monkey"
 folderPrefix=""
 GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
@@ -41,7 +41,7 @@ GD_INSTRUMENT="$res_folder/jars/jInst.jar"
 trepnLib="TrepnLibrary-release.aar"
 trepnJar="TrepnLibrary-release.jar"
 profileHardware="YES" # YES or something else
-logStatus="on"
+logStatus="off"
 SLEEPTIME=60 # 1 minutes
 
 # TODO put in monkey config file
@@ -88,12 +88,12 @@ getAppUID(){
 	GRADLE_FILE=$1
 	MANIFEST_FILE=$2
 	APPID=$(grep -o "applicationId\s\".*\"" $1 | awk '{ print $2 }'| sed 's/\"//g')
-	if [[ -n $APPID ]]; then
+	if [[ -n "$APPID" ]]; then
 		eval "$3='$APPID'"
 	else
 		#package from manifest
 		APPID=$(grep  -o "package=\".*\"" $2 | sed 's/package=//g'| sed 's/\"//g' )
-		if [[ -n $APPID ]]; then
+		if [[ -n "$APPID" ]]; then
 			eval "$3='$APPID'"
 		fi		
 	fi
@@ -158,16 +158,17 @@ cleanDeviceTrash() {
 }
 
 checkIfAppAlreadyProcessed(){
-	local suc=$(cat $logDir/success.log 2>/dev/null | sort -u | uniq | grep $ID )
+	x=$1
+	suc=$(cat $logDir/success.log 2>&1 | sort -u | uniq | grep $x )
 	if [ -n $suc  ] && [ "$checkLogs" != "Off" ]; then
 		## it was already processed
-		w_echo "Aplicattion $ID was already successfuly processed. Skipping.."
+		w_echo "Aplicattion $x was already successfuly processed. Skipping.."
 		continue
 	fi
-	local procs=$(cat $logDir/processedApps.log 2>/dev/null | sort -u | uniq | grep $ID )
-	if [ -n $procs  ] && [ "$checkLogs" != "Off" ]; then
+	procs=$(cat $logDir/processedApps.log 2>&1 | sort -u | uniq | grep $x )
+	if [ -n "$procs"  ] && [ "$checkLogs" != "Off" ]; then
 		## it was already processed
-		w_echo "Application $ID already processed (But failed). Skipping... (if you want to turn off this verification, set the \"checkLogs\" flag to Off)"
+		w_echo "Application $x already processed (But failed). Skipping... (if you want to turn off this verification, set the \"checkLogs\" flag to Off)"
 		continue
 	fi
 	echo $f >> $logDir/processedApps.log
@@ -193,6 +194,16 @@ checkIfIdIsReservedWord(){
 	if [ "$ID" == "success" ] || [ "$ID" == "failed" ] || [ "$ID" == "unknown" ]; then	
 		continue
 	fi
+}
+
+getFirstAppVersion(){
+	gradle_files=$(find ${f}/${prefix} -maxdepth 1 -name "build.gradle" )
+	for i in $words; do
+		appVersion=$(cat ${i} | grep "versionName" | head -1 | cut -f2 -d\")
+		if [[ -n "$appVersion" ]]; then
+			break
+		fi
+	done
 }
 
 checkBuildingTool(){
@@ -305,7 +316,6 @@ runMonkeyTests(){
 	fi
 }
 
-
 buildAppWithGradle(){
 	## BUILD PHASE						
 	GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
@@ -339,6 +349,7 @@ instrumentGradleApp(){
 		rm -rf $FOLDER/$tName
 		$MKDIR_COMMAND -p $FOLDER/$tName
 		echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
+		echo "$TAG Instrumenting project"
 		java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
 		$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		#Instrument all manifestFiles
@@ -360,8 +371,10 @@ instrumentGradleApp(){
 }
 
 setupLocalResultsFolder(){
+	echo "$TAG setting up local results folder"
 	#create results support folder
 	#echo "$TAG Creating support folder..."
+	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
 	$MKDIR_COMMAND -p $projLocalDir
 	$MKDIR_COMMAND -p $projLocalDir/oldRuns
 	($MV_COMMAND -f $(find $projLocalDir ! -path $projLocalDir -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
@@ -371,7 +384,10 @@ setupLocalResultsFolder(){
 	APP_ID="unknown"
 	getAppUID ${GRADLE[0]} $MANIF_S APP_ID
 	GREENSOURCE_APP_UID="$ID#$APP_ID"
-	appVersion=$(cat ${GRADLE[0]} | grep "versionName" | head -1 | cut -f2 -d\")
+	getFirstAppVersion 
+	if [[ -z "$appVersion" ]]; then
+			appVersion="0.0"
+	fi
 	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
 	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[]}"
 	#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
@@ -404,7 +420,7 @@ w_echo "$TAG searching for Android Projects in -> $DIR"
 seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
 last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
-for f in $DIR/
+for f in $DIR/*
 	do
 	localDir=$localDirOriginal
 	cleanDeviceTrash
@@ -413,7 +429,7 @@ for f in $DIR/
 	IFS=$(echo -en "\n\b")
 	now=$(date +"%d_%m_%y_%H_%M_%S")
 	# check if app was already processed #TODO
-	checkIfAppAlreadyProcessed
+	checkIfAppAlreadyProcessed $ID
 	checkIfIdIsReservedWord	
 	projLocalDir=$localDir/$ID
 	BUILD_TYPE=$(checkBuildingTool)
@@ -423,6 +439,7 @@ for f in $DIR/
 		continue
 ### Gradle proj			
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
+
 		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))

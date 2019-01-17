@@ -19,7 +19,34 @@ setHomeDir(){
 }
 
 
-hasJava(){
+installPython(){
+	tool_name="Python"
+	com="python --version"
+	command_to_check=$( $com 2>&1)
+	exists=$(echo $command_to_check | grep "command not found")
+	#original_tool=$(echo $com | cut -f1 -d\ )
+	if [[ ! -n $exists ]]; then
+		#tool exists
+		i_echo "$TAG $tool_name Exists"
+		version=$(echo $command_to_check | cut -f2 -d\" | cut -f2 -d.)
+	else
+		#install java 
+		e_echo "$TAG $tool_name doesn't exist. Downloading"
+		Mac=""
+		getSO Mac
+		if [ "$Mac" == "Mac" ]; then
+			echo "$TAG installing $tool_name on $Mac OS"
+			brew install python
+		else
+			echo "$TAG installing $tool_name on $Mac OS"
+			sudo apt install python
+		fi
+	fi
+}
+
+
+
+installJava(){
 	tool_name="Java"
 	com="java -version"
 	command_to_check=$( $com 2>&1)
@@ -49,7 +76,7 @@ hasJava(){
 		fi
 	fi
 }
-hasSdkman(){
+installSdkman(){
 	tool_name="Sdkman"
 	com="sdk -help"
 	command_to_check=$($com 2>&1)
@@ -78,7 +105,7 @@ hasSdkman(){
 		fi
 	fi
 }
-hasAndroidSDK(){
+installAndroidSDK(){
 	tool_name="ANDROID SDK"
 	URL="https://developer.android.com/studio/#downloads"
 	#URL_DOWNLOAD="https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
@@ -109,7 +136,7 @@ hasAndroidSDK(){
 		exit -1
 	fi
 }
-hasGradle(){
+installGradle(){
 	tool_name="Gradle"
 	command_to_check=$( gradle -version 2>&1 )
 	exists=$(echo $command_to_check | grep "command not found")
@@ -123,7 +150,7 @@ hasGradle(){
 	fi
 }
 
-hasCoreUtils(){
+installCoreUtils(){
 	Machine=$1
 	if [ "$Machine" == "Mac" ]; then
 		brew install coreutils 	
@@ -135,8 +162,9 @@ setHomeDir
 MACHINE=""
 getSO MACHINE
 i_echo "$TAG Running on $MACHINE OS"
-hasCoreUtils $MACHINE
-hasJava
-hasAndroidSDK
-hasSdkman
-hasGradle
+installCoreUtils $MACHINE
+installJava
+installPython
+installAndroidSDK
+installSdkman
+installGradle

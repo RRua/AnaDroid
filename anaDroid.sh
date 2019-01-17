@@ -10,11 +10,12 @@ SUPPORTED_PROFILERS=( "trepn" )
 SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 #ANADROID DEFAULT CONFIG
 TEST_ORIENTATION="testoriented"
-URL="http://greensource.di.uminho.pt/"
+#URL="http://greensource.di.uminho.pt/"
+URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
-TARGET_DIR="$(pwd)/demoProjects/*"
+TARGET_DIR="$(pwd)/demoProjects/"
 
 containsElement () {
   local e match="$1"
@@ -100,11 +101,16 @@ processAndValidateArguments(){
         shift # past argument
         shift # past value
         ;;
-        ;;
         -d|--dir)
             # TODO 
-            TARGET_DIR=$2
-
+            exists=$(ls $2 2>&1 | grep "No such file or directory" )
+            if [ -z "$exists" ]; then
+                # File exists
+                TARGET_DIR=$2
+            else
+                e_echo "The specified target directory ($2) doesn't exist"
+                exit -1
+            fi
         shift # past argument
         shift # past value
         ;;

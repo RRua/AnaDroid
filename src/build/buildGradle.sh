@@ -367,7 +367,7 @@ fi
 
 ## The 'RR' way:
  chmod +x $FOLDER/gradlew
- echo  "$TAG Building and running tests....."
+ #echo  "$TAG Building ....."
  x=$(pwd)
  cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
 
@@ -441,7 +441,7 @@ if [ -n "$STATUS_NOK" ]; then
 		#gradle --no-daemon -b $GRADLE clean build assembleAndroidTest &> $logDir/buildStatus.log
 		#gradle -b $GRADLE clean build assembleAndroidTest &> $logDir/buildStatus.log
 		chmod +x $FOLDER/gradlew
- 		echo  "$TAG Building and running tests (AGAIN) ....."
+ 		echo  "$TAG Building (AGAIN) ....."
  		x=$(pwd)
 		cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
 
