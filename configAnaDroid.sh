@@ -102,7 +102,6 @@ installSdkman(){
 		export SDKMAN_DIR=$HOME/.sdkman
 		source $SDKMAN_DIR/bin/sdkman-init.sh
 		i_echo "$TAG $tool_name Installed"
-		fi
 	fi
 }
 installAndroidSDK(){
