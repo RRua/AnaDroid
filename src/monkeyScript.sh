@@ -232,6 +232,8 @@ prepareAndInstallApp(){
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
+	echo "ta a dormire?"
+	sleep 30
 	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
@@ -456,7 +458,8 @@ for f in $DIR/*
 				MANIF_T="-"
 				setupLocalResultsFolder
 				instrumentGradleApp
-				buildAppWithGradle	
+				buildAppWithGradle
+				totaUsedTests=0	
 				prepareAndInstallApp
 				runMonkeyTests
 				uninstallApp
@@ -467,9 +470,9 @@ for f in $DIR/*
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
 				w_echo "$TAG resuming Greendroid after nap"
-				totaUsedTests=0
 				getBattery
 				printf_new "#" "$(echo -e "\ncols"|tput -S)"
+				totaUsedTests=0
 			done
 		fi
 	else 

@@ -15,7 +15,7 @@ install:
 	$(SRC_DIR)/setup/setupDevice.sh
 
 deviceConfig: 
-	$(SRC_DIR)/src/setup/setupDevice.sh
+	$(SRC_DIR)/setup/setupDevice.sh
 
 AnaDroidconfig:
 	$(SRC_DIR)/setup/configAnaDroid.sh
@@ -26,4 +26,4 @@ clear: $(LOG_DIR)/*
 	rm -rf $(LOG_DIR)/*
 
 uninstall:
-	echo "nada"
+	echo "Delete the AnaDroid folder"

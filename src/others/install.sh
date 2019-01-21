@@ -36,16 +36,16 @@ fi
 OK="0"
 
 
-if [ "${#appAPK[@]}" != 1 ] || [ "${#testAPK[@]}" != 1 ]; then
+if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 
-	if [ "${#appAPK[@]}" > 1 ] && [ "${#testAPK[@]}" == 1 ]; then
+	if [ "${#appAPK[@]}" -ge 1 ] && [ "${#testAPK[@]}" == "1" ]; then
 		pAux=$(echo "${testAPK[0]}" | $SED_COMMAND -r "s#\/[a-zA-Z0-9-]+-$apkBuild.+.apk#/#g")
 		appAPK=($(find $pAux -name "*-$apkBuild*.apk"))
 		if [ "${#appAPK[@]}" == 1 ]; then
 			OK="1"
 		fi
 
-	elif [ "${#appAPK[@]}" == 1 ] && [ "${#testAPK[@]}" > 1 ]; then
+	elif [ "${#appAPK[@]}" == "1" ] && [ "${#testAPK[@]}" == "1" ]; then
 		pAux=$(echo "${appAPK[0]}" | $SED_COMMAND -r "s#\/[a-zA-Z0-9-]+-$apkBuild.+.apk#/#g")
 		ppAux=$(dirname $pAux)
 		echo "folder is -> $ppAux"
@@ -68,10 +68,10 @@ if [[ $monkey == "-Monkey" ]]; then
 fi
 
 if [[ "$OK" == "2" ]]; then
-	if [ "${#appAPK[@]}" == 1 ]; then
+	if [ "${#appAPK[@]}" ==  "1" ]; then
 		#w_echo "$TAG Ready to install generated Apps -> Finded : ${#x[@]} App .apk's, ${#testAPK[@]} Test .apk's"
 		w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
-		(adb install -r ${appAPK[0]})  >/dev/null 2>&1
+		(adb install -r ${appAPK[0]})  > /dev/null 2>&1
 	else
 		e_echo "Error while installing. No APK's found"
 		exit -1
