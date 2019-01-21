@@ -1,6 +1,6 @@
 
 
-SRC_DIR=$(ANADROID_PATH)/src
+SRC_DIR=./src
 RES_DIR=$(HOME)/GDResults/
 TEST_DIR=$(HOME)/tests/actual/
 LOG_DIR=$ANADROID_PATH/.ana/
@@ -16,7 +16,7 @@ install:
 
 deviceConfig: 
 	$(SRC_DIR)/src/setup/setupDevice.sh
-	
+
 AnaDroidconfig:
 	$(SRC_DIR)/setup/configAnaDroid.sh
 
