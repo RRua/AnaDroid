@@ -232,8 +232,6 @@ prepareAndInstallApp(){
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
-	echo "ta a dormire?"
-	sleep 30
 	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
