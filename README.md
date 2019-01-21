@@ -54,7 +54,7 @@ make install
 In order to AnaDroid can be automatically used in further sessions, you must add at least the following instructions (if not present)in your .bashrc or .bash_profile file:
 ```
 export ANADROID_PATH=<Absolute-path-to-AnaDroid-folder>
-export PATH=$PATH:ANADROID_PATH
+export PATH=$PATH:$ANADROID_PATH
 export ANDROID_HOME=$HOME/android-sdk/ 
 export PATH=$ANDROID_HOME/platform-tools:$PATH
 export PATH=$ANDROID_HOME/tools:$PATH
