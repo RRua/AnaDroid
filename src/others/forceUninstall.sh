@@ -1,5 +1,6 @@
 #!/bin/bash
-ANADROID_SRC_PATH=$1
+
+ANADROID_SRC_PATH="$ANADROID_PATH/src/"
 source $ANADROID_SRC_PATH/settings/settings.sh
 source $ANADROID_SRC_PATH/settings/util.sh
 

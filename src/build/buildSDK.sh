@@ -1,6 +1,5 @@
 #!/bin/bash
-source settings.sh
-
+source $SRC_FOLDER/settings/settings.sh
 
 OLDIFS=$IFS
 IFS=$(echo -en "\n\b")

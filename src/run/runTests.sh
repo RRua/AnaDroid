@@ -1,5 +1,5 @@
 #!/bin/bash
-source settings.sh
+source $ANADROID_PATH/src/settings/settings.sh
 
 pack=$1
 testPack=$2

@@ -120,6 +120,15 @@ installAndroidSDK(){
 		getSO Mac
 		if [ "$Mac" == "Mac" ]; then
 			w_echo "https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
+			mkdir -p $HOME/android-sdk
+			cd $HOME/android-sdk
+			export ANDROID_HOME=$HOME/android-sdk
+			cd $ANDROID_HOME; wget https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip ; unzip sdk-tools-linux-*.zip
+			$ANDROID_HOME/tools/bin/sdkmanager --update
+			$ANDROID_HOME/tools/bin/sdkmanager "platforms;android-25"
+ 			$ANDROID_HOME/tools/bin/sdkmanager "platform-tools"
+ 			e_echo "You also must set the ANDROID_HOME environment variable"
+			w_echo "More info at $URL"
 		else
 			#w_echo "https://dl.google.com/android/repository/sdk-tools-linux-*.zip"
 			mkdir -p $HOME/android-sdk

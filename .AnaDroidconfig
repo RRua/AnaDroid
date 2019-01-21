@@ -1,6 +1,12 @@
 #ANADROID CONFIG
 
-GREENSOURCE_URL=""
+GREENSOURCE_URL="http://greensource.di.uminho.pt/"
 RESULTS_DIR="GDResults"
 HIDDEN_DIR=".ana"
-SLEEP_TIME_BETWEEN_RUNS=""
+SLEEP_TIME_BETWEEN_RUNS="60"
+
+## MONKEY CONFIG
+min_monkey_runs=1 #20
+threshold_monkey_runs=3 #50
+number_monkey_events=500
+min_coverage=10

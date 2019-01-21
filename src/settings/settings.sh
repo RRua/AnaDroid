@@ -16,6 +16,12 @@ function b_echo {
 	echo -e "$blue_$1$rc_"
 }
 
+printf_new() {
+     str=$1
+     num=$2
+     local v=$(printf "%-${num}s" "$str")
+     i_echo "${v// /#}"
+}
 
 function getAndroidState(){
 	used_cpu=$(adb shell dumpsys cpuinfo | grep  "Load" | cut -f2 -d\ )

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #TODO replace
-ANADROID_PATH=$(pwd)
+#ANADROID_PATH=$(pwd)
 source $ANADROID_PATH/src/settings/settings.sh
 
 #args
@@ -18,7 +18,7 @@ sdk_level=''
 api_level=''
 logDir="$ANADROID_PATH/.ana/logs"
 TIMEOUT=300 # 5 minutes
-
+totaUsedTests=0
 machine=''
 getSO machine
 if [ "$machine" == "Mac" ]; then
@@ -108,14 +108,15 @@ sleep 1
 getAndroidState cpu mem nr_processes sdk_level api_level
 
 adb shell ps | grep "com.android.commands.monkey" | awk '{print $2}' | xargs -I{} adb shell kill -9 {}
-
+adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable false
 e_echo "state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level "
 echo "{\"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > $localDir/end_state$monkey_seed.json
+
 #adb shell "echo -1 > $deviceDir/GDflag"
 #grantPermissions $package
 
 #### AFTER EXPORTING, RUN AGAIN  ( TRACING METHODS)
-a#db shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
+#adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
 #w_echo "[Tracing] Running monkey tests..."
 #w_echo "monkey command -> $TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --kill-process-after-error  $monkey_nr_events"
 #sleep 2

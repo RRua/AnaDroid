@@ -1,5 +1,5 @@
 #!/bin/bash
-source src/settings/settings.sh
+source $ANADROID_PATH/src/settings/settings.sh
 
 TAG="[AD]"
 
@@ -23,8 +23,8 @@ apkBuild=$4
 DIR=$5
 # global
 ANADROID_SRC_PATH=$ANADROID_PATH/src/
-res_folder="resources"
-hideDir=".ana/"
+res_folder="$ANADROID_PATH/resources"
+hideDir="$ANADROID_PATH/.ana/"
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
 deviceDir=""
@@ -49,7 +49,6 @@ min_monkey_runs=1 #20
 threshold_monkey_runs=3 #50
 number_monkey_events=500
 min_coverage=10
-totaUsedTests=0
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 
 # trap - INT
@@ -470,6 +469,7 @@ for f in $DIR/*
 				w_echo "$TAG resuming Greendroid after nap"
 				totaUsedTests=0
 				getBattery
+				printf_new "#" "$(echo -e "\ncols"|tput -S)"
 			done
 		fi
 	else 

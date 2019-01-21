@@ -1,6 +1,6 @@
 #!/bin/bash
 # invocation : ./anaDroid 
-ANADROID_PATH=$(pwd)
+#ANADROID_PATH=$(pwd)
 SRC_FOLDER="$ANADROID_PATH/src/"
 source $SRC_FOLDER/settings/settings.sh
 
@@ -15,7 +15,7 @@ URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
-TARGET_DIR="$(pwd)/demoProjects/"
+TARGET_DIR="$ANADROID_PATH/demoProjects/"
 
 containsElement () {
   local e match="$1"
@@ -131,13 +131,7 @@ processAndValidateArguments(){
     fi
 }
 
-# TODO put this in settings.sh or util.sh
-printf_new() {
-     str=$1
-     num=$2
-     local v=$(printf "%-${num}s" "$str")
-     i_echo "${v// /#}"
-}
+
 printAnaDroidHeader(){
     columns_left=0
     columns=$(echo -e "\ncols"|tput -S)
@@ -154,6 +148,15 @@ printAnaDroidHeader(){
     fi
     v="$v$(printf "%-3s" "#")"
     i_echo "${v// /#}"
+}
+
+checkIfSetUp(){
+    #device_set=$(cat .UserConfig | grep "DEVICE_SETTED*"| grep "YES")
+    system_set=$(cat .UserConfig | grep "SYSTEM_SETTED*"| grep "YES")
+    if [ -z "$system_set" ] ; then
+        #system not set
+        echo "s"
+    fi
 }
 
 printf_new "#" "$(echo -e "\ncols"|tput -S)"
@@ -175,7 +178,7 @@ echo APP_BUILD_TYPE    = "${APP_BUILD_TYPE}"
 
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
-	$SRC_FOLDER/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
+    $SRC_FOLDER/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     e_echo "Currently Not available. We are working on that. Sorry"
 fi
