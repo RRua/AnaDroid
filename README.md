@@ -1,5 +1,5 @@
 # AnaDroid
-<<<<<<< HEAD
+
 This tool was developed to be used by Android developers, as well as gather and centralize its results in an open-access repository named [GreenSource](http://greenlab.di.uminho.pt/greensource/). 
 
 The AnaDroid offers a generic way of integrating the ability to measure the energy  and resources usage of Android applications. This tool can be used during the development process to test and monitor the execution of Android applications. It is the evolution of the [GreenDroid](https://github.com/greensoftwarelab/GreenDroid) framework. 
@@ -53,14 +53,13 @@ make install
 
 In order to AnaDroid can be automatically used in further sessions, you must add at least the following instructions (if not present)in your .bashrc or .bash_profile file:
 ```
-export ANADROID_PATH=
+export ANADROID_PATH=<Absolute-path-to-AnaDroid-folder>
 export PATH=$PATH:ANADROID_PATH
 export ANDROID_HOME=$HOME/android-sdk/ 
 export PATH=$ANDROID_HOME/platform-tools:$PATH
 export PATH=$ANDROID_HOME/tools:$PATH
 export PATH=$ANDROID_HOME/tools/bin:$PATH
 ```
-
 
 ## USAGE:
 
@@ -73,19 +72,3 @@ $ anaDroid  [-o|--orientation orientation]
             [-s|--silent sil] 
             [-d|--dir project_dir ]
 ```
-
-=======
-
-### INSTALLATION
-git clone xxxx
-make install
-add the following to your .bash_profile/.bashrc:
-export xxx
-export ddd
-export ferfre
-eferf
-
-
-### RUN
-anadroid [-d|--dir] [-s|--silent] [-u|--url]
->>>>>>> 02957b7c8731d3eab2843c2fbb1b95a25560c52b
