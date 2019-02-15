@@ -34,6 +34,12 @@ fi
 rm -rf $localDir/*.csv
 w_echo "$TAG using runner with $runner"
 
+
+#set brightness to lowest possible 
+adb shell settings put system screen_brightness_mode 0 
+adb shell settings put system screen_brightness 0 #  0 <= b <=255
+
+
 w_echo "$TAG Running the tests (Measuring)"
 adb shell "echo 1 > $deviceDir/GDflag"
 ($Timeout_COMMAND -s 9 $TIMEOUT adb shell am instrument -w $testPack/$runner) &> runStatus.log
@@ -66,6 +72,12 @@ fi
 adb shell am force-stop $pack
 adb shell am force-stop $testPack
 adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME > /dev/null 2>&1
+
+
+#set brightness to lowest possible 
+adb shell settings put system screen_brightness_mode 0 
+adb shell settings put system screen_brightness 0 #  0 <= b <=255
+
 
 w_echo "$TAG Running the tests (Tracing)"
 adb shell "echo -1 > $deviceDir/GDflag"

@@ -49,6 +49,13 @@ grantPermissions(){
 }
 
 
+#set brightness to lowest possible 
+adb shell settings put system screen_brightness_mode 0 
+adb shell settings put system screen_brightness 0 #  0 <= b <=255
+
+
+
+
 grantPermissions $package
 adb shell "echo 0 > $deviceDir/GDflag"
 i_echo "actual seed -> $monkey_seed"
