@@ -30,6 +30,11 @@ function getAndroidState(){
 	nr_procceses=$(($nprocesses -5))
 	sdk_level=$(adb shell getprop ro.build.version.release)
 	api_level=$(adb shell getprop ro.build.version.sdk )
+	battery_level=$(adb shell dumpsys battery | grep "level:" | cut -f2 -d\: | sed "s/ //g")
+	battery_temperature=$(adb shell dumpsys battery | grep "temperature:" | cut -f2 -d\: | sed "s/ //g")
+	battery_voltage=$(adb shell dumpsys battery | grep "voltage:" | cut -f2 -d\: | sed "s/ //g")
+	
+
 	eval "$1='$used_cpu'"
 	eval "$2='$free_mem'"
 	eval "$3='$nr_procceses'"

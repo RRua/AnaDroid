@@ -1,8 +1,11 @@
 #!/bin/bash
-source settings.sh
+source $ANADROID_PATH/src/settings/settings.sh
 
-analyzerJar="jars/Analyzer.jar"
+res_folder="$ANADROID_PATH/resources"
+GD_ANALYZER="$res_folder/jars/Analyzer.jar"
 trace="-TestOriented"
+GREENSOURCE_URL="http://localhost:8000/"
+#GREENSOURCE_URL="http://greensource.di.uminho.pt/"
 machine=''
 getSO machine
 if [ "$machine" == "Mac" ]; then
@@ -14,7 +17,7 @@ else
 fi
 
 OLDIFS=$IFS
-DIR="/Users/ruirua/Documents/Tese/resultados/GDResults/relevant40/*"
+DIR="$ANADROID_PATH/GDResults/*"
 
 for f in $DIR/
     do
@@ -22,5 +25,6 @@ for f in $DIR/
     rm -rf $f/AppResults.csv
     #files=$(find $f -not \( -path $f/oldRuns -prune \) -name "Green*.csv")
     #$GD_ANALYZER $trace $projLocalDir/ $monkey
-    java -Xmx5g -jar $analyzerJar $trace $f "-Monkey"  ##RR  ##RR
+    #java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL             
+    java -Xmx5g -jar $GD_ANALYZER $trace $f "-Monkey" $GREENSOURCE_URL      ##RR  ##RR
 done

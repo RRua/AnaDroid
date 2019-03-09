@@ -382,12 +382,12 @@ setupLocalResultsFolder(){
 	ORIGINAL_GRADLE=($(find $FOLDER/ -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
 	APP_ID="unknown"
 	getAppUID ${GRADLE[0]} $MANIF_S APP_ID
-	GREENSOURCE_APP_UID="$ID#$APP_ID"
+	GREENSOURCE_APP_UID="$ID--$APP_ID"
 	getFirstAppVersion 
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
-	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
+	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
 	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[]}"
 	#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
 }
@@ -491,7 +491,7 @@ for f in $DIR/*
 				rm -rf $SOURCE/$tName
 			APP_ID="unknown"
 			getAppUID  $R $APP_ID
-			GREENSOURCE_APP_UID="$ID#$APP_ID"
+			GREENSOURCE_APP_UID="$ID--$APP_ID"
 			APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\" , \"app_build_type\": \"$apkBuild\"}" #" \"app_language\": \"Java\"}"
 			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"sdk\", \"project_apps\":[$APP_JSON]} , \"project_packages\":[]}"
 			#echo "$Proj_JSON" > $localDir/projectApplication.json
@@ -617,7 +617,7 @@ for f in $DIR/*
 				fi
 
 
-				APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\"}" #" \"app_language\": \"Java\"}"
+				APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"1\"}" #" \"app_language\": \"Java\"}"
 				Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", project_apps:[$APP_JSON]} , project_packages=[]}"
 				echo "$Proj_JSON" > $localDir/projectApplication.json
 				./uninstall.sh $PACKAGE $TESTPACKAGE

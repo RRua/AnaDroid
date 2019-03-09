@@ -1,5 +1,5 @@
 #!/bin/bash
-ANADROID_PATH=$(pwd)
+#ANADROID_PATH=$(pwd)
 source $ANADROID_PATH/src/settings/settings.sh
 TAG="[DEVICE SETUP]"
 
@@ -7,7 +7,7 @@ TAG="[DEVICE SETUP]"
 APKS_DIR="$ANADROID_PATH/resources/apks/"
 # TREPN
 TREPN_PREFERENCES_DESTINATION_DIR="saved_preferences/"
-TREPN_PREFERENCES_DIR="trepnPreferences/"
+TREPN_PREFERENCES_DIR="$ANADROID_PATH/resources/TrepnPreferences/trepnPreferences/"
 TREPN_DIR="trepn/"
 
 # STEPS
@@ -41,7 +41,7 @@ getDeviceExternalStorage(){
 setupTrepnOnDevice(){
 	FULL_TREPN_DIR=$1/$TREPN_DIR
 	(adb shell mkdir -p $FULL_TREPN_DIR/$TREPN_PREFERENCES_DESTINATION_DIR)
-	(adb push trepnPreferences/ $FULL_TREPN_DIR/$TREPN_PREFERENCES_DESTINATION_DIR) > /dev/null  2>&1 
+	(adb push $TREPN_PREFERENCES_DIR $FULL_TREPN_DIR/$TREPN_PREFERENCES_DESTINATION_DIR) > /dev/null  2>&1 
 	w_echo "$TAG Pushed Trepn Preferences"
 	(adb shell mkdir $FULL_TREPN_DIR) > /dev/null  2>&1
 	(adb shell mkdir $FULL_TREPN_DIR/Traces) > /dev/null  2>&1
