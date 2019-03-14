@@ -63,12 +63,12 @@ now=$(date +"%d/%m/%y-%H:%M:%S")
 w_echo "starting the profiler"
 (adb shell am startservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
 sleep 5
-(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/trepnPreferences/All.pref") >/dev/null 2>&1
+(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/trepnPreferences/All.pref")  >/dev/null 2>&1
 sleep 2
 (adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 sleep 2
 w_echo "starting profiling phase"
-(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile") >/dev/null 2>&1
+(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
 sleep 3
 #w_echo "clicking home button.."
 #adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME > /dev/null 2>&1
