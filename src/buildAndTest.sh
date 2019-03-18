@@ -1,5 +1,7 @@
 #!/bin/bash
-source settings.sh
+
+SRC_FOLDER="$ANADROID_PATH/src/"
+source $SRC_FOLDER/settings/settings.sh
 
 TAG="[GD]"
 
@@ -16,13 +18,22 @@ else
 fi
 
 ####################### Method or Test Oriented
-TestOriented="ON"   # ON - test oriented | !ON Method Oriented
+#TestOriented="ON"   # ON - test oriented | !ON Method Oriented
 #######################
-if [ $TestOriented == "ON" ]; then 
-	trace="-TraceMethods"
-else
-	trace="wtv"
-fi
+
+# args
+ANADROID_PATH=$1
+trace=$2 
+GREENSOURCE_URL=$3
+apkBuild=$4
+DIR=$5
+
+
+ANADROID_SRC_PATH=$ANADROID_PATH/src/
+res_folder="$ANADROID_PATH/resources"
+hideDir="$ANADROID_PATH/.ana/"
+GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
+GD_INSTRUMENT="$res_folder/jars/jInst.jar"
 
 monkey="-Not"
 folderPrefix=""
@@ -35,8 +46,6 @@ logDir="logs"
 localDir="$HOME/GDResults"
 #trace="-MethodOriented"     ##RR
 trace="-TestOriented"     ##RR
-GD_ANALYZER="jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
-GD_INSTRUMENT="jars/jInst.jar"
 treprefix=""
 trepnLib="TrepnLibrary-release.aar"
 trepnJar="TrepnLibrary-release.jar"
@@ -47,8 +56,22 @@ SLEEPTIME=10
 DIR=$HOME/tests/actual/*
 #DIR=/Users/ruirua/repos/greenlab-work/work/ruirua/proj/*
 
-echo ""
-i_echo "### GRENDROID PROFILING TOOL ###     "
+
+setup(){
+	if [ "$trace" == "testoriented" ]; then
+		trace="-TestOriented"
+	else
+		trace="-MethodOriented"
+	fi
+}
+
+
+setup
+
+
+
+#echo ""
+#i_echo "### GRENDROID PROFILING TOOL ###     "
 
 
 adb kill-server

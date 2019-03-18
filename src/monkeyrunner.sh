@@ -245,7 +245,7 @@ prepareAndInstallApp(){
 	##########
 }
 
-runMonkeyTests(){
+runMonkeyRunnerTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
@@ -320,7 +320,7 @@ buildAppWithGradle(){
 	GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
-		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "monkey"
+		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "monkeyrunner"
 		RET=$(echo $?)
 	else 
 		w_echo "[APP BUILDER] No changes since last run. Not building again"

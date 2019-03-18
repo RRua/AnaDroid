@@ -20,6 +20,7 @@ ID=$1
 FOLDER=$2
 GRADLE=$3
 apkBuild=$4
+framework=$5
 TAG="[APP BUILDER]"
 
 #list of available build tools versions
@@ -57,7 +58,7 @@ TEST_TRANSITIVE=""
 ANDROID_TEST_TRANSITIVE=""
 DEBUG_TRANSITIVE=""
 
-if [[ $GRADLE_BUILD_VERSION -gt 3 ]]; then
+if [[ $GRADLE_BUILD_VERSION -ge 3 ]]; then
 	#statements
 	TRANSITIVE="implementation"
 	TEST_TRANSITIVE="testImplementation"
@@ -68,6 +69,7 @@ else
 	TEST_TRANSITIVE="testCompile"
 	ANDROID_TEST_TRANSITIVE="AndroidTestCompile"
 	DEBUG_TRANSITIVE="debugCompile"
+	#e_echo "menos 3 $GRADLE_BUILD_VERSION"
 fi
 
 
@@ -280,19 +282,23 @@ for x in ${BUILDS[@]}; do
 				#echo "ja tem runner file $x xx$HAS_RUNNER xx $vv"
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$NEW_RUNNER\"#g" $x
-					#(echo $NEW_RUNNER) > actualrunner.txt
+					#e_echo "$csv -> actual runner : $NEW_RUNNER"
+					(echo $NEW_RUNNER) > actualrunner.txt
 				else
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$OLD_RUNNER\"#g" $x
-					#(echo $OLD_RUNNER) > actualrunner.txt
+					(echo $OLD_RUNNER) > actualrunner.txt
+					#e_echo "$csv -> actual runner : $OLD_RUNNER"
 				fi
 				
 			else
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -i.bak ""$ANDROID_LINE"i testInstrumentationRunner \"$NEW_RUNNER\"" $x
-					#(echo $NEW_RUNNER) > actualrunner.txt
+					#e_echo "$csv -> actual runner : $NEW_RUNNER"
+					(echo $NEW_RUNNER) > actualrunner.txt
 				else
 					$SED_COMMAND -i.bak ""$ANDROID_LINE"i testInstrumentationRunner \"$OLD_RUNNER\"" $x
-					#(echo $OLD_RUNNER) > actualrunner.txt
+					(echo $OLD_RUNNER) > actualrunner.txt
+					#e_echo "$csv -> actual runner : $OLD_RUNNER"
 				fi
 			fi
 		fi
@@ -367,8 +373,12 @@ fi
  chmod +x $FOLDER/gradlew
  #echo  "$TAG Building ....."
  x=$(pwd)
- cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
-
+if [[ "$framework" == "junit" ]]; then
+ 	cd $FOLDER; ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd $x 
+else
+ 	cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
+fi
+ 
 STATUS_NOK=$(grep "BUILD FAILED" $logDir/buildStatus.log)
 STATUS_OK=$(grep "BUILD SUCCESS" $logDir/buildStatus.log)
 if [ -n "$STATUS_NOK" ]; then
@@ -441,8 +451,12 @@ if [ -n "$STATUS_NOK" ]; then
 		chmod +x $FOLDER/gradlew
  		echo  "$TAG Building (AGAIN) ....."
  		x=$(pwd)
-		cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
-
+		if [[ "$framework" == "junit" ]]; then
+		 	cd $FOLDER; ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd $x 
+		 	#cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
+		else
+		 	cd $FOLDER; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd $x 
+		fi
 		libsError=$(egrep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: [libs]" $logDir/buildStatus.log)
 		minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
 		buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)

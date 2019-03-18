@@ -5,7 +5,7 @@ SRC_FOLDER="$ANADROID_PATH/src/"
 source $SRC_FOLDER/settings/settings.sh
 
 #ANADROID FINAL CONFIG
-SUPPORTED_TESTING_FRAMEWORKS=( "monkey" "junit" )
+SUPPORTED_TESTING_FRAMEWORKS=( "monkey" "junit" "monkeyrunner" )
 SUPPORTED_PROFILERS=( "trepn" )
 SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 #ANADROID DEFAULT CONFIG
@@ -16,12 +16,23 @@ PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
 TARGET_DIR="$ANADROID_PATH/demoProjects/"
+MonkeyRunnerList=()
 
 containsElement () {
   local e match="$1"
   shift
   for e; do [[ "$e" == "$match" ]] && return 0; done
   return -1
+}
+
+containsTestingFramework (){
+    for (( i = 0; i < ${#SUPPORTED_TESTING_FRAMEWORKS[@]} ; i++ )); do
+            #echo "${SUPPORTED_TESTING_FRAMEWORKS[$i]} == $1"
+            if [ "${SUPPORTED_TESTING_FRAMEWORKS[$i]}" == "$1" ] ; then
+                return $i
+            fi
+        done
+    return -1
 }
 
 processAndValidateArguments(){
@@ -39,7 +50,7 @@ processAndValidateArguments(){
         lower2=$( echo "$2" | awk '{print tolower($0)}' )
         containsElement "${lower2}" "${SUPPORTED_MONITORING_TYPES[@]}"
         RET=$?
-        if [ $RET -ge 0 ]; then
+        if [ $RET -le 250 ]; then
             TEST_ORIENTATION="${SUPPORTED_MONITORING_TYPES[$RET]}"
             echo TEST_ORIENTATION     = "${TEST_ORIENTATION}"
         else
@@ -50,7 +61,7 @@ processAndValidateArguments(){
         ;;
         -f|--framework)
         lower2=$( echo "$2" | awk '{print tolower($0)}' )
-        containsElement "${lower2}" "${SUPPORTED_TESTING_FRAMEWORKS[@]}"
+        containsTestingFramework "${lower2}" 
         RET=$?
         if [ $RET -ge 0 ]; then
             TEST_FRAMEWORK="${SUPPORTED_TESTING_FRAMEWORKS[$RET]}"
@@ -111,6 +122,19 @@ processAndValidateArguments(){
                 e_echo "The specified target directory ($2) doesn't exist"
                 exit -1
             fi
+        shift # past argument
+        shift # past value
+        ;;
+        -m|--monkeyfile)
+        lower2=$( echo "$2" | grep "-")
+        #echo "$lower2"
+        while [  -z "$lower2" ]  && [ "$2" != ""  ]; do
+            MonkeyRunnerList+=("$2")
+            shift # past argument
+            #shift # past value
+            lower2=$( echo "$2" | grep "-")
+
+        done
         shift # past argument
         shift # past value
         ;;
@@ -176,11 +200,20 @@ echo PROFILER    = "${PROFILER}"
 echo APP_BUILD_TYPE    = "${APP_BUILD_TYPE}"
 #echo DEFAULT         = "${DEFAULT}"
 
+echo "${MonkeyRunnerList[@]}"
+
+
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
     $SRC_FOLDER/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
+    #e_echo "Currently Not available. We are working on that. Sorry"
+    $SRC_FOLDER/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
+elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
     e_echo "Currently Not available. We are working on that. Sorry"
+    #echo "ss"
+else 
+    echo "nada"
 fi
 
 

@@ -34,7 +34,6 @@ function getAndroidState(){
 	battery_temperature=$(adb shell dumpsys battery | grep "temperature:" | cut -f2 -d\: | sed "s/ //g")
 	battery_voltage=$(adb shell dumpsys battery | grep "voltage:" | cut -f2 -d\: | sed "s/ //g")
 	
-
 	eval "$1='$used_cpu'"
 	eval "$2='$free_mem'"
 	eval "$3='$nr_procceses'"

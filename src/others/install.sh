@@ -29,8 +29,8 @@ if [ "$projtype" == "SDK" ]; then
 	appAPK=($(find $pathProject -name "*-$apkBuild*.apk" | grep -v $pathTests))
 	testAPK=($(find $pathTests -name "*-$apkBuild.apk"))
 elif [ "$projtype" == "GRADLE" ]; then
-	appAPK=($(find $pathProject -name "*-$apkBuild*.apk"))
-	testAPK=($(find $pathProject -name "*$apkBuild-androidTest*.*.apk"))
+	appAPK=($(find $pathProject -name "*-$apkBuild.apk"))
+	testAPK=($(find $pathProject -name "*$apkBuild-androidTest*.apk"))
 fi
 
 OK="0"
@@ -87,8 +87,10 @@ elif [[ "$OK" != "1" ]]; then
 else 
 	w_echo "$TAG Ready to install generated Apps -> Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
 	w_echo "$TAG installing App .apk's"
-	(adb install -r ${appAPK[0]}) >/dev/null 2>&1
+	#echo "${appAPK[0]}"
+	(adb install -r ${appAPK[0]}) # >/dev/null 2>&1
 	w_echo "$TAG installing Test .apk's"
-	(adb install -r ${testAPK[0]}) >/dev/null 2>&1
+	#echo "${testAPK[0]}"
+	(adb install -r ${testAPK[0]}) #>/dev/null 2>&1
 fi
 exit 0

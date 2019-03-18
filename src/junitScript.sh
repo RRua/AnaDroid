@@ -34,7 +34,7 @@ logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
 localDirOriginal="$HOME/GDResults"
 checkLogs="Off"
-monkey="-Monkey"
+monkey="-junit"
 folderPrefix=""
 GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
 GD_INSTRUMENT="$res_folder/jars/jInst.jar"
@@ -176,10 +176,10 @@ checkIfAppAlreadyProcessed(){
 checkConfig(){
 	if [[ $trace == "-TestOriented" ]]; then
 		e_echo "	Test Oriented Profiling:      ✔"
-		folderPrefix="MonkeyTest"
+		folderPrefix="JUnitTest"
 	else 
 		e_echo "	Method Oriented profiling:    ✔"
-		folderPrefix="MonkeyMethod"
+		folderPrefix="JUnitMethod"
 	fi 
 	if [[ $profileHardware == "YES" ]]; then
 		w_echo "	Profiling hardware:           ✔"
@@ -232,6 +232,8 @@ prepareAndInstallApp(){
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
+	#./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir  #COMMENT, EVENTUALLY...
+	#e_echo "$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName \"X\" \"GRADLE\" $PACKAGE $projLocalDir $monkey $apkBuild	"
 	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
@@ -245,74 +247,25 @@ prepareAndInstallApp(){
 	##########
 }
 
-runMonkeyTests(){
-	########## RUN TESTS 1 phase ############
-	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
-	for i in $seeds20; do
-		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir		
+runJUnitTests(){
+	#run tests
+	#e_echo "$ANADROID_SRC_PATH/run/runTests.sh $PACKAGE $TESTPACKAGE $deviceDir $projLocalDir $folderPrefix $FOLDER/$tName"
+	$ANADROID_SRC_PATH/run/runTests.sh $PACKAGE $TESTPACKAGE $deviceDir $localDir $folderPrefix $FOLDER/$tName
+	RET=$(echo $?)
+	if [[ "$RET" != "0" ]]; then
+		echo "$ID" >> $logDir/errorRun.log
+		e_echo "[GD ERROR] There was an Error while running tests. Retrying... "
+		#RETRY 
+		sleep 2
+		$ANADROID_SRC_PATH/run/runTests.sh $PACKAGE $TESTPACKAGE $deviceDir $localDir $folderPrefix $FOLDER/$tName # "-gradle" $FOLDER/$tName
 		RET=$(echo $?)
-		if [[ $RET -ne 0 ]]; then
-			errorHandler $RET $PACKAGE
-			IGNORE_RUN="YES"
-			$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-			totaUsedTests=0
-			break				
+		if [[ "$RET" != "0" ]]; then
+			echo "$ID" >> $logDir/errorRun.log
+			e_echo "[GD ERROR] FATAL ERROR RUNNING TESTS. IGNORING APP "
+			continue
 		fi
-		e_echo "Pulling results from device..."
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-		analyzeCSV $localDir/GreendroidResultTrace$i.csv
-		totaUsedTests=$(($totaUsedTests + 1))
-		adb shell am force-stop $PACKAGE						
-		echo "methods invoked : $(cat $localDir/TracedMethods$i.txt | wc -l)"
-		echo "total dif. methods invoked : $(cat $localDir/TracedMethods$i.txt | sort -u | uniq | wc -l )"
-		if [ "$totaUsedTests" -eq 10 ]; then
-			getBattery
-		fi
-		$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-	done
-
-	########## RUN TESTS  THRESHOLD ############
-	if [[ "$IGNORE_RUN" != "" ]]; then
-		continue
 	fi
-	##check if have enough coverage
-	nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-	actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-	e_echo "actual coverage -> 0$actual_coverage"
-	
-	for j in $last30; do
-		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
-		if [ "$coverage_exceded" -gt 0 ]; then
-			echo "$ID|$totaUsedTests" >> $logDir/above$min_coverage.log
-			break
-		fi
-		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir
-		e_echo "Pulling results from device..."
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-		nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-		actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-		acu=$(echo "${actual_coverage} * 100" | bc -l)
-		w_echo "actual coverage -> $acu %"
-		totaUsedTests=$(($totaUsedTests + 1))
-		adb shell am force-stop $PACKAGE
-		if [ "$totaUsedTests" -eq 30 ]; then
-			getBattery
-		fi
-		$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-	done
 
-	trap - INT
-	if [ "$coverage_exceded" -eq 0 ]; then
-		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
-	fi
 }
 
 buildAppWithGradle(){
@@ -320,7 +273,7 @@ buildAppWithGradle(){
 	GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
-		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "monkey"
+		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "junit"
 		RET=$(echo $?)
 	else 
 		w_echo "[APP BUILDER] No changes since last run. Not building again"
@@ -408,7 +361,7 @@ $MKDIR_COMMAND -p $logDir
 pingDevice
 getDeviceSpecs "$res_folder/device.json"
 checkConfig
-adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService > /dev/null  2>&1
+#adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService > /dev/null  2>&1
 if [[ -n "$logStatus" ]]; then # if should log build status of apps
 	($MKDIR_COMMAND $logDir/debugBuild ) > /dev/null  2>&1 #new
 fi
@@ -459,7 +412,8 @@ for f in $DIR/*
 				buildAppWithGradle
 				totaUsedTests=0	
 				prepareAndInstallApp
-				runMonkeyTests
+				#runMonkeyTests
+				runJUnitTests
 				uninstallApp
 				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
 				(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > $res_folder/device.json
@@ -467,7 +421,7 @@ for f in $DIR/*
 				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
-				w_echo "$TAG resuming Greendroid after nap"
+				w_echo "$TAG resuming AnaDroid after nap"
 				getBattery
 				printf_new "#" "$(echo -e "\ncols"|tput -S)"
 				totaUsedTests=0
@@ -577,7 +531,7 @@ for f in $DIR/*
 					if [ "$totaUsedTests" -eq 30 ]; then
 						getBattery
 					fi
-					./trepnFix.sh $deviceDir
+					$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
 				done
 
 ########## RUN TESTS  THRESHOLD ############
@@ -609,7 +563,7 @@ for f in $DIR/*
 					if [ "$totaUsedTests" -eq 30 ]; then
 						getBattery
 					fi
-					./trepnFix.sh $deviceDir
+					$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
 				done
 				trap - INT
 				if [ "$coverage_exceded" -eq 0 ]; then
