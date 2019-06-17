@@ -12,30 +12,54 @@ In the end of the execution,  it uninstalls the AUT (App Under Test) and present
 
 ## Extracted Metrics:
 The AnaDroid framework is able to extract all of the following metrics. The dynamic metrics (+) can be extracted at different levels: Application, Test, Class or Method level.
+
 (-) Android APIs (APIs used from the Android SDK)
+
 (-) JAVA APIs (APIs used from the Java SDK)
+
 (-) External APIs (Other APIs(from the project sources or other project dependencies))
+
 (+) Wifi State (If  Wifi was used)
+
 (+) Mobile Data State (If mobile data was used)
-+ Screen State (If screen was turned on)
-+ Battery Status (Percentage of battery)
-+ Battery Temperature (degrees)
-+ Wifi RSSI Level (Level of RSSI)
-+ Bluetooth State (If Bluetooth was used)
-+ GPU Frequency (GPU frequency)
-+ CPU Load Frequency (CPU load frequency (per core))
-+ GPS State (if GPU was used)
-+ Elapsed Time 
-+ Total Energy (Total energy consumed)
-+ Battery Charging (f Battery was charging)
-+ Memory (main memory consumed)
-+ Total Coverage (total method coverage)
-+ Nr of running processes (Number of other processes running simultaneously)
-- LoC (lines of code)
-- CC (cyclomatic complexity)
-- Nr Args (number of arguments)
-- Nr of declared vars (number of declared variables)
-- Nr of classes (number of classes)
+
+(+) Screen State (If screen was turned on)
+
+(+) Battery Status (Percentage of battery)
+
+(+) Battery Temperature (degrees)
+
+(+) Wifi RSSI Level (Level of RSSI)
+
+(+) Bluetooth State (If Bluetooth was used)
+
+(+) GPU Frequency (GPU frequency)
+
+(+) CPU Load Frequency (CPU load frequency (per core))
+
+(+) GPS State (if GPU was used)
+
+(+) Elapsed Time 
+
+(+) Total Energy (Total energy consumed)
+
+(+) Battery Charging (If Battery was charging)
+
+(+) Memory (main memory consumed)
+
+(+) Total Coverage (total method coverage)
+
+(+) Nr of running processes (Number of other processes running simultaneously)
+
+(-) LoC (lines of code)
+
+(-) CC (cyclomatic complexity)
+
+(-) Nr Args (number of arguments)
+
+(-) Nr of declared vars (number of declared variables)
+
+(-) Nr of classes (number of classes)
 
 
 
