@@ -12,11 +12,11 @@ In the end of the execution,  it uninstalls the AUT (App Under Test) and present
 
 ## Extracted Metrics:
 The AnaDroid framework is able to extract all of the following metrics. The dynamic metrics (+) can be extracted at different levels: Application, Test, Class or Method level.
-- Android APIs (APIs used from the Android SDK)
-- JAVA APIs (APIs used from the Java SDK)
-- External APIs (Other APIs(from the project sources or other project dependencies))
-+ Wifi State (If  Wifi was used)
-+ Mobile Data State (If mobile data was used)
+(-) Android APIs (APIs used from the Android SDK)
+(-) JAVA APIs (APIs used from the Java SDK)
+(-) External APIs (Other APIs(from the project sources or other project dependencies))
+(+) Wifi State (If  Wifi was used)
+(+) Mobile Data State (If mobile data was used)
 + Screen State (If screen was turned on)
 + Battery Status (Percentage of battery)
 + Battery Temperature (degrees)
