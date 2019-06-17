@@ -29,6 +29,10 @@ The AnaDroid framework is able to extract all of the following metrics. The dyna
 
 (+) Battery Temperature (degrees)
 
+(+) Battery Charging (If Battery was charging)
+
+(+) Battery Voltage
+
 (+) Wifi RSSI Level (Level of RSSI)
 
 (+) Bluetooth State (If Bluetooth was used)
@@ -42,8 +46,6 @@ The AnaDroid framework is able to extract all of the following metrics. The dyna
 (+) Elapsed Time 
 
 (+) Total Energy (Total energy consumed)
-
-(+) Battery Charging (If Battery was charging)
 
 (+) Memory (main memory consumed)
 
