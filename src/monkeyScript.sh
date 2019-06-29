@@ -232,7 +232,8 @@ prepareAndInstallApp(){
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
-	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
+	w_echo "[APP INSTALLER] Installing the apps on the device"
+	apk=$($ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	) 
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -349,6 +350,7 @@ instrumentGradleApp(){
 		$MKDIR_COMMAND -p $FOLDER/$tName
 		echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
 		echo "$TAG Instrumenting project"
+		e_echo "command -> java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR"
 		java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
 		$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		#Instrument all manifestFiles
@@ -387,8 +389,8 @@ setupLocalResultsFolder(){
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
-	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
-	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[]}"
+	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
+	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[] , \"project_location\": \"$f\"}"
 	#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
 }
 
@@ -492,8 +494,8 @@ for f in $DIR/*
 			APP_ID="unknown"
 			getAppUID  $R $APP_ID
 			GREENSOURCE_APP_UID="$ID--$APP_ID"
-			APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\" , \"app_build_type\": \"$apkBuild\"}" #" \"app_language\": \"Java\"}"
-			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"sdk\", \"project_apps\":[$APP_JSON]} , \"project_packages\":[]}"
+			APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
+			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[] , \"project_location\": \"$f\"}"
 			#echo "$Proj_JSON" > $localDir/projectApplication.json
 #instrumentation phase
 				if [[ "$SOURCE" != "$TESTS" ]]; then
@@ -529,7 +531,8 @@ for f in $DIR/*
 					continue
 				fi				
 				#install on device
-				./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild
+				w_echo "[APP INSTALLER] Installing the apps on the device"
+				apk=$(./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild) 
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorInstall.log

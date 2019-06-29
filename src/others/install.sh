@@ -9,6 +9,7 @@ package=$4
 resDir=$5
 monkey=$6
 apkBuild=$7
+installedAPK=""
 machine=''
 getSO machine
 if [ "$machine" == "Mac" ]; then
@@ -21,9 +22,9 @@ if [ "$apkBuild" == "" ]; then
 fi
 
 TAG="[APP INSTALLER]"
-echo ""
+#echo ""
 
-i_echo "$TAG Installing the apps on the device"
+#i_echo "$TAG Installing the apps on the device"
 #find the apk files
 if [ "$projtype" == "SDK" ]; then
 	appAPK=($(find $pathProject -name "*-$apkBuild*.apk" | grep -v $pathTests))
@@ -70,26 +71,30 @@ fi
 if [[ "$OK" == "2" ]]; then
 	if [ "${#appAPK[@]}" ==  "1" ]; then
 		#w_echo "$TAG Ready to install generated Apps -> Finded : ${#x[@]} App .apk's, ${#testAPK[@]} Test .apk's"
-		w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
+		#w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
 		(adb install -r ${appAPK[0]})  > /dev/null 2>&1
+		installedAPK=${appAPK[0]}
+		echo "${appAPK[0]}"
 	else
-		e_echo "Error while installing. No APK's found"
+		#e_echo "Error while installing. No APK's found"
 		exit -1
 	fi
 elif [[ "$OK" != "1" ]]; then
 	if [[ "${#appAPK[@]}" == 0 ]]; then
 		exit -1
 	fi
-	e_echo "$TAG Error: Unexpected number of .apk files found."
-	e_echo "$TAG Expected: 1 App .apk, 1 Test .apk |  Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
-	w_echo "[ERROR] Aborting..."
+	#e_echo "$TAG Error: Unexpected number of .apk files found."
+	#e_echo "$TAG Expected: 1 App .apk, 1 Test .apk |  Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
+	#w_echo "[ERROR] Aborting..."
 	exit 1
 else 
-	w_echo "$TAG Ready to install generated Apps -> Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
-	w_echo "$TAG installing App .apk's"
+	#w_echo "$TAG Ready to install generated Apps -> Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
+	#w_echo "$TAG installing App .apk's"
 	#echo "${appAPK[0]}"
 	(adb install -r ${appAPK[0]}) # >/dev/null 2>&1
-	w_echo "$TAG installing Test .apk's"
+	installedAPK=${appAPK[0]}
+	echo "${appAPK[0]}"
+	#w_echo "$TAG installing Test .apk's"
 	#echo "${testAPK[0]}"
 	(adb install -r ${testAPK[0]}) #>/dev/null 2>&1
 fi

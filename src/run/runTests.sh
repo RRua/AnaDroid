@@ -51,6 +51,10 @@ grantPermissions(){
 	w_echo "Granting permissions on $1"
 	(adb shell pm grant $pack android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
 	(adb shell pm grant $pack android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
+	(adb shell pm grant "$pack.test" android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
+	(adb shell pm grant "$pack.test" android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
+	
+
 	
 }
 

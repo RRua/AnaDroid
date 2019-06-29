@@ -21,6 +21,7 @@ trace=$2
 GREENSOURCE_URL=$3
 apkBuild=$4
 DIR=$5
+Monkey_Script=$6
 # global
 ANADROID_SRC_PATH=$ANADROID_PATH/src/
 res_folder="$ANADROID_PATH/resources"
@@ -232,7 +233,10 @@ prepareAndInstallApp(){
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
-	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
+	installedAPK=""
+	w_echo "[APP INSTALLER] Installing the apps on the device"
+	apk=$($ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild installedAPK)
+	
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -250,7 +254,7 @@ runMonkeyRunnerTests(){
 	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir		
+		$ANADROID_SRC_PATH/run/runMonkeyRunnerTests.sh $Monkey_Script $APK $PACKAGE
 		RET=$(echo $?)
 		if [[ $RET -ne 0 ]]; then
 			errorHandler $RET $PACKAGE
@@ -291,7 +295,7 @@ runMonkeyRunnerTests(){
 			break
 		fi
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir
+		$ANADROID_SRC_PATH/run/runMonkeyRunnerTests.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir
 		e_echo "Pulling results from device..."
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
@@ -387,8 +391,8 @@ setupLocalResultsFolder(){
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
-	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
-	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[]}"
+	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
+	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[] , \"project_location\": \"$f\"}"
 	#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
 }
 
@@ -459,7 +463,7 @@ for f in $DIR/*
 				buildAppWithGradle
 				totaUsedTests=0	
 				prepareAndInstallApp
-				runMonkeyTests
+				runMonkeyRunnerTests
 				uninstallApp
 				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
 				(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > $res_folder/device.json
@@ -492,8 +496,9 @@ for f in $DIR/*
 			APP_ID="unknown"
 			getAppUID  $R $APP_ID
 			GREENSOURCE_APP_UID="$ID--$APP_ID"
-			APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\" , \"app_build_type\": \"$apkBuild\"}" #" \"app_language\": \"Java\"}"
-			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"sdk\", \"project_apps\":[$APP_JSON]} , \"project_packages\":[]}"
+			APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
+			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[] , \"project_location\": \"$f\"}"
+	
 			#echo "$Proj_JSON" > $localDir/projectApplication.json
 #instrumentation phase
 				if [[ "$SOURCE" != "$TESTS" ]]; then
@@ -529,7 +534,8 @@ for f in $DIR/*
 					continue
 				fi				
 				#install on device
-				./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild
+				w_echo "[APP INSTALLER] Installing the apps on the device"
+				apk=$($ANADROID_SRC_PATH/others/install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild)
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorInstall.log
@@ -560,7 +566,7 @@ for f in $DIR/*
 				trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 				for i in $seeds20; do
 					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir		
+					./runMonkeyRunnerTests.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir $Monkey_Script	
 					RET=$(echo $?)
 					if [[ $RET -ne 0 ]]; then
 						errorHandler $RET $PACKAGE
@@ -595,7 +601,7 @@ for f in $DIR/*
 						break
 					fi
 					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE	$localDir $deviceDir
+					./runMonkeyRunnerTests.sh $j $number_monkey_events $trace $PACKAGE	$localDir $deviceDir $Monkey_Script
 					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 					#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
 					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
