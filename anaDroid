@@ -11,7 +11,8 @@ SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 #ANADROID DEFAULT CONFIG
 TEST_ORIENTATION="testoriented"
 #URL="http://greensource.di.uminho.pt/"
-URL="NONE"
+URL="http://localhost:8000/"
+#URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
@@ -135,7 +136,7 @@ processAndValidateArguments(){
             lower2=$( echo "$2" | grep "-")
 
         done
-        shift # past argument
+        #shift # past argument
         shift # past value
         ;;
         --default)
@@ -210,7 +211,7 @@ elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"
     $SRC_FOLDER/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
-    e_echo "Currently Not available. We are working on that. Sorry"
+    $SRC_FOLDER/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR ${MonkeyRunnerList[@]}
     #echo "ss"
 else 
     echo "nada"
