@@ -58,6 +58,7 @@ if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 	else
 		#Either there's no apk files found for the app and/or tests, 
 		#or there are 2 or more apks for both app and tests
+		e_echo "Fatal error"
 		OK="0"
 	fi
 else
@@ -72,8 +73,9 @@ if [[ "$OK" == "2" ]]; then
 	if [ "${#appAPK[@]}" ==  "1" ]; then
 		#w_echo "$TAG Ready to install generated Apps -> Finded : ${#x[@]} App .apk's, ${#testAPK[@]} Test .apk's"
 		#w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
-		(adb install -r ${appAPK[0]})  > /dev/null 2>&1
+		(adb install -g -r ${appAPK[0]})  > /dev/null 2>&1
 		installedAPK=${appAPK[0]}
+		echo "$installedAPK" > $ANADROID_PATH/lastInstalledAPK.txt
 		echo "${appAPK[0]}"
 	else
 		#e_echo "Error while installing. No APK's found"
@@ -91,11 +93,12 @@ else
 	#w_echo "$TAG Ready to install generated Apps -> Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
 	#w_echo "$TAG installing App .apk's"
 	#echo "${appAPK[0]}"
-	(adb install -r ${appAPK[0]}) # >/dev/null 2>&1
+	(adb install -g -r ${appAPK[0]}) # >/dev/null 2>&1
 	installedAPK=${appAPK[0]}
+	echo "$installedAPK" > $ANADROID_PATH/lastInstalledAPK.txt
 	echo "${appAPK[0]}"
 	#w_echo "$TAG installing Test .apk's"
 	#echo "${testAPK[0]}"
-	(adb install -r ${testAPK[0]}) #>/dev/null 2>&1
+	(adb install -g -r ${testAPK[0]})   #>/dev/null 2>&1
 fi
 exit 0

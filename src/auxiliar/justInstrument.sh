@@ -30,8 +30,8 @@ monkey="-Monkey"
 folderPrefix=""
 GD_ANALYZER="jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
 GD_INSTRUMENT="jars/jInst.jar"
-trepnLib="TrepnLibrary-release.aar"
-trepnJar="TrepnLibrary-release.jar"
+trepnLib="TrepnLib-release.aar"
+trepnJar="TrepnLib-release.jar"
 profileHardware="YES" # YES or ""
 flagStatus="on"
 SLEEPTIME=120 # 2 minutes
@@ -80,7 +80,6 @@ for f in $DIR/ ; do
 		fi 
 		GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
 		POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
-	
 		$MKDIR_COMMAND -p $f/$tName/
 		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
