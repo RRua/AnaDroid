@@ -1,3 +1,4 @@
+#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 from androguard.misc import AnalyzeAPK, AnalyzeDex
 from androguard.core.analysis.analysis import ExternalMethod
 import matplotlib.pyplot as plt
@@ -21,8 +22,7 @@ knownRetTypes  = {
 	"I"	: "int",
 	"J"	: "long",
 	"F"	:"float",
-	"D"	: "double",
-
+	"D"	: "double"
 }
 
 # Note: If you create the CFG from many classes at the same time, the drawing
@@ -43,7 +43,7 @@ def inferType(st):
 
 
 def parseMethod( full):
-	return full.replace("^L",'' ).replace("/",".").replace(";","").replace("_","")
+	return re.sub(r'^L','',full ).replace("/",".").replace(";","").replace("_","")
 
 def rreplace(mystr, reverse_removal, reverse_replacement):
 	return mystr[::-1].replace(reverse_removal, reverse_replacement, 1)[::-1]
@@ -72,17 +72,17 @@ def parseDescriptors(descriptor):
 
 
 
-def descriptorToJSON(jsonObj, descriptor):
+def methodDescriptorToJSON(jsonObj, descriptor):
 	st = ""
 	defaultsep=" "
-	jsonObj['return'] = inferType(descriptor.split(")")[1])
-	jsonObj['args'] = []
+	jsonObj['method_return'] = inferType(descriptor.split(")")[1])
+	jsonObj['method_args'] = []
 	real = re.search(r"\(.*\)", descriptor)
 	if real is not None:
 		for s in real.group(0).split(" "):
 			rs= s.replace("(","").replace(")","")
 			if len(rs)>0:
-				jsonObj['args'].append( inferType(rs))
+				jsonObj['method_args'].append( inferType(rs))
 	return jsonObj
 
 def parseArgs(descriptor):
@@ -99,7 +99,7 @@ def parseArgs(descriptor):
 
 
 
-def methodStringToJSON(method_string):
+def methodAPIStringToJSON(method_string):
 	jsonObj = {}
 	z =  re.search(r'->.*\)([A-Za-z]|\/)+', method_string)
 	if z is not None:
@@ -121,36 +121,50 @@ def methodStringToJSON(method_string):
 
 def eval(path, pack ):
 	fa, d, dx = AnalyzeAPK(path)
-	CFG = nx.DiGraph()
 	graph = {}
 	pack_redefined = pack.replace(".","/")
 	pack_redefined = trolhaSep(pack_redefined, "/")
 	for c in dx.find_classes(name=(".*"+ pack_redefined+  ".*")):
-		for m  in dx.find_methods():
-			orig_method = m.get_method()
+		classe = {}
+		classe['class_name'] = parseMethod(c.name)
+		#print("classname ->" + c.name)
+		classe['class_superclass'] = parseMethod(c.extends)
+		classe['class_implemented_ifaces'] = list(map(parseMethod, c.implements)) # parseMethod(c.implements)
+		classe['class_fields'] =[]
+		#print(c)
+		for field in c.get_fields():
+			classe['class_fields'].append(inferType(field.get_field().get_descriptor()))
+			#print("field->"+field.get_field().get_class_name())
+		classe['class_methods'] = {}
+		for m  in c.get_methods():
+			#print(m.get_method())
+			orig_method = m.get_method() # class encodedmethod
 			if re.match(".*"+ trolhaSep(pack_redefined, "/")  +".*", m.get_method().get_class_name()):
 				m_id = {}
-				m_id['name'] = ( parseMethod(orig_method.get_class_name() + orig_method.get_name()))
-				descriptorToJSON(m_id, orig_method.get_descriptor() )
-				m_id['apis'] = []
-				#print(m_id)
+				m_id['method_name'] = ( parseMethod(orig_method.get_class_name()) +"->"+ parseMethod(orig_method.get_name()))
+				methodDescriptorToJSON(m_id, orig_method.get_descriptor() )
+				m_id['method_modifiers'] = orig_method.get_access_flags_string()
+				m_id['method_apis'] = []
+				m_id['method_class']= parseMethod(c.name)
+				try:
+					m_id['method_length'] = orig_method.get_length()
+					m_id['method_nr_instructions'] = len(list(orig_method.get_instructions()))
+				except Exception as e:
+					m_id['method_length'] = -1
+					m_id['method_nr_instructions'] = -1 #len(list(orig_method.get_instructions()))
 				if len(m.get_xref_to()) >0:
-					graph[m_id['name']] = m_id
-				#print("\n | \n v \n")
+					classe['class_methods'][m_id['method_name']] = m_id
 				for other_class, callee, offset in m.get_xref_to():
-					#print(callee.get_class_name() + "." + callee.get_name())
-					#print( callee)
-					z = methodStringToJSON(str(callee))
-					m_id['apis'].append(z)
-						#graph[m_id['name']].append()
-						#print(calle_id)
-	new_dic = list(graph.values())
+					m_id['method_apis'].append(methodAPIStringToJSON(str(callee)))
+				classe['class_methods'][m_id['method_name']] = m_id
+		graph[classe['class_name']] = classe
 	with open( pack+".json", 'w') as outfile:  
-		json.dump(new_dic, outfile)
+		json.dump(graph, outfile, indent=3)
 	
 
 if __name__== "__main__":
-	if len(sys.argv) > 1:
+	if len(sys.argv) > 2:
+		#print("apk analyzer called with " + sys.argv[1] + "  " +sys.argv[2] )
 		eval(sys.argv[1], sys.argv[2])
 	else:
 		print ("2 args required ( <apk-path> <package-name>  )")

@@ -48,31 +48,40 @@ grantPermissions(){
 
 }
 
+initProfiler(){
+	w_echo "starting the profiler"
+	adb shell monkey -p com.quicinc.trepn -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+	sleep 1
+	(adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+	sleep 2
+	(adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME) > /dev/null 2>&1
+	sleep 3
+	#e_echo "vou carregar o ficheiro pref $deviceDir/saved_preferences/trepnPreferences/All.pref" > /dev/null 2>&1
+	(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/All.pref") >/dev/null 2>&1
+	sleep 2
+}
+
 
 #set brightness to lowest possible 
-adb shell settings put system screen_brightness_mode 0 
-adb shell settings put system screen_brightness 150 #  0 <= b <=255
+#adb shell settings put system screen_brightness_mode 0 
+#adb shell settings put system screen_brightness 150 #  0 <= b <=255
 
 
-
-
-grantPermissions $package
+#grantPermissions $package
+w_echo "setting immersive mode"
+adb shell settings put global policy_control immersive.full=$package
 adb shell "echo 0 > $deviceDir/GDflag"
 i_echo "actual seed -> $monkey_seed"
 now=$(date +"%d/%m/%y-%H:%M:%S")
-w_echo "starting the profiler"
-(adb shell am startservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-sleep 5
-(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/trepnPreferences/All.pref")  >/dev/null 2>&1
-sleep 2
+initProfiler
 (adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
-sleep 2
+sleep 1
 w_echo "starting profiling phase"
 (adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
 sleep 3
 #w_echo "clicking home button.."
 #adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME > /dev/null 2>&1
-adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
+#adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
 getAndroidState cpu mem nr_processes sdk_level api_level
 timestamp=$(date +%s )
 e_echo "state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level"
@@ -113,11 +122,12 @@ sleep 1
 (adb shell am broadcast -a com.quicinc.trepn.stop_profiling) >/dev/null 2>&1
 sleep 6
 (adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_db_input_file "myfile" -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) >/dev/null 2>&1
+#(adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) #>/dev/null 2>&1
 sleep 1
 getAndroidState cpu mem nr_processes sdk_level api_level
 
 adb shell ps | grep "com.android.commands.monkey" | awk '{print $2}' | xargs -I{} adb shell kill -9 {}
-adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable false
+#adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable false
 e_echo "state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level "
 echo "{\"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > $localDir/end_state$monkey_seed.json
 
@@ -143,6 +153,4 @@ adb shell pm clear $package >/dev/null 2>&1
 echo "stopping running app"
 adb shell am force-stop $package 
 exit 0
-
-
 

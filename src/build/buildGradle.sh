@@ -81,7 +81,7 @@ fi
 
 
 #GREENDROID=$FOLDER/libs/greenDroidTracker.jar
-GREENDROID=$FOLDER/libs/TrepnLibrary-release.aar  ##RR
+GREENDROID=$FOLDER/libs/TrepnLib-release.aar  ##RR
 
 #Change the main build file
 #$SED_COMMAND -ri.bak "s#classpath ([\"]|[\'])com.android.tools.build:gradle:(.+)([\"]|[\'])#classpath 'com.android.tools.build:gradle:$GRADLE_PLUGIN'#g" $GRADLE
@@ -322,7 +322,7 @@ for x in ${BUILDS[@]}; do
 				((DEPEND_LINE++))
 				$SED_COMMAND -i.bak ""$DEPEND_LINE"i dependencies {" $x
 				((DEPEND_LINE++))
-				$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLibrary-release', ext:'aar')" $x
+				$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLib-release', ext:'aar')" $x
 				((DEPEND_LINE++))
 				###
 				# For when we decide to use the new runner, this will be needed
@@ -330,8 +330,7 @@ for x in ${BUILDS[@]}; do
 				# ((DEPEND_LINE++))
   				# #// Set this dependency to use JUnit 4 rules
   				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test:rules:$RUNNER_RULES'" $x
-  				# ((DEPEND_LINE++))
-  				# #// Set this dependency to build and run Espresso tests
+  				# ((DEPEND_LINE  				# #// Set this dependency to build and run Espresso tests
   				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test.espresso:$RUNNER_ESPRESSO'" $x
   				# ((DEPEND_LINE++))
   				# #// Set this dependency to build and run UI Automator tests
@@ -341,13 +340,13 @@ for x in ${BUILDS[@]}; do
 				$SED_COMMAND -i.bak ""$DEPEND_LINE"i }" $x
 			else
 				((DEPEND_LINE++))
-				$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLibrary-release', ext:'aar')" $x
+				$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLib-release', ext:'aar')" $x
 			fi
 		else
 			DEPEND_LINE=$(wc -l $x | cut -f1 -d\ )
 			echo "" >> $x
 			((DEPEND_LINE++))
-			$SED_COMMAND  -i -e "\$a\ dependencies\ {$TRANSITIVE\ (name:'TrepnLibrary-release',\ ext:'aar')}" $x
+			$SED_COMMAND  -i -e "\$a\ dependencies\ {$TRANSITIVE\ (name:'TrepnLib-release',\ ext:'aar')}" $x
 			((DEPEND_LINE++))
 		fi
 	fi

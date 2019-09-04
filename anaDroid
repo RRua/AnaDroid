@@ -11,8 +11,11 @@ SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 #ANADROID DEFAULT CONFIG
 TEST_ORIENTATION="testoriented"
 #URL="http://greensource.di.uminho.pt/"
-URL="http://localhost:8000/"
-#URL="NONE"
+
+
+##### DEFAULTS #####
+#URL="http://localhost:8000/"
+URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
@@ -206,12 +209,12 @@ echo "${MonkeyRunnerList[@]}"
 
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
-    $SRC_FOLDER/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
+    $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"
-    $SRC_FOLDER/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
+    $SRC_FOLDER/workflow/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
-    $SRC_FOLDER/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR ${MonkeyRunnerList[@]}
+    $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR ${MonkeyRunnerList[@]}
     #echo "ss"
 else 
     echo "nada"
