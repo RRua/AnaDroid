@@ -21,7 +21,16 @@ trace=$2
 GREENSOURCE_URL=$3
 apkBuild=$4
 DIR=$5
-Monkey_Script=$6
+MonkeyRunnerScriptsList=()
+
+argc=$#
+argv=("$@")
+for (( j=5; j<argc; j++ )); do
+    echo "${argv[j]}"
+    MonkeyRunnerScriptsList+=("${argv[j]}")
+done
+
+
 # global
 ANADROID_SRC_PATH=$ANADROID_PATH/src/
 res_folder="$ANADROID_PATH/resources"
@@ -37,10 +46,11 @@ localDirOriginal="$HOME/GDResults"
 checkLogs="Off"
 monkey="-Monkey"
 folderPrefix=""
-GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
+GD_ANALYZER="$res_folder/jars/AnaDroidAnalyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
 GD_INSTRUMENT="$res_folder/jars/jInst.jar"
 trepnLib="TrepnLib-release.aar"
 trepnJar="TrepnLib-release.jar"
+temp_folder="$ANADROID_PATH/temp"
 profileHardware="YES" # YES or something else
 logStatus="off"
 SLEEPTIME=60 # 1 minutes
@@ -107,8 +117,8 @@ quit(){
 	w_echo "uninstalling actual app $1"
 	$ANADROID_SRC_PATH/others/uninstall.sh $1 $2
 	w_echo "removing actual app from processed Apps log"
-	sed "s#$3##g" $logDir/processedApps.log
-	w_echo "GOODBYE"
+	#sed "s#$3##g" $logDir/processedApps.log
+	#w_echo "GOODBYE"
 	(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
 	exit -1
 }
@@ -139,21 +149,13 @@ pingDevice(){
 			e_echo "$TAG Could not determine the device's external storage. Check and try again..."
 			exit 1
 		fi
+		deviceDir="$deviceExternal/trepn/"
 	fi
 }
 
-getDeviceSpecs(){
-	devJson=$1
-	local device_model=$(   echo  $DEVICE  | grep -o "model.*" | cut -f2 -d: | cut -f1 -d\ )
-	local device_serial=$(   echo  $DEVICE | tail -n 2 | grep "model" | cut -f1 -d\ )
-	local device_brand=$(  echo  $DEVICE | grep -o "device:.*" | cut -f2 -d: )
-	echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}" > "$devJson"
-	i_echo "$TAG 📲  Attached device ($device_model) recognized "
-	deviceDir="$deviceExternal/trepn"
-}
+
 
 cleanDeviceTrash() {
-
 	adb shell rm -rf "$deviceDir/allMethods.txt" "$deviceDir/TracedMethods.txt" "$deviceDir/Traces/*" "$deviceDir/Measures/*" "$deviceDir/TracedTests/*"
 }
 
@@ -177,10 +179,10 @@ checkIfAppAlreadyProcessed(){
 checkConfig(){
 	if [[ $trace == "-TestOriented" ]]; then
 		e_echo "	Test Oriented Profiling:      ✔"
-		folderPrefix="MonkeyTest"
+		folderPrefix="MonkeyRunnerTest"
 	else 
 		e_echo "	Method Oriented profiling:    ✔"
-		folderPrefix="MonkeyMethod"
+		folderPrefix="MonkeyRunnerMethod"
 	fi 
 	if [[ $profileHardware == "YES" ]]; then
 		w_echo "	Profiling hardware:           ✔"
@@ -206,26 +208,10 @@ getFirstAppVersion(){
 	done
 }
 
-checkBuildingTool(){
-	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
-	POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
-	if [ -n "$POM" ]; then
-		POM=${POM// /\\ }
-		#e_echo "Maven projects are not considered yet..."
-		echo "Maven"
-		continue
-	elif [ -n "${GRADLE[0]}" ]; then
-		#statements
-		echo "Gradle"
-	else 
-		echo "Eclipse"
-	fi
-}
+
 
 prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
-	#echo "$TAG Creating support folder..."
-	#mkdir -p $localDir
 	$MKDIR_COMMAND -p $localDir/all
 	##copy MethodMetric to support folder
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
@@ -233,10 +219,9 @@ prepareAndInstallApp(){
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
-	installedAPK=""
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	apk=$($ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild installedAPK)
-	
+	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild installedAPK
+	APK=$(cat lastInstalledAPK.txt)
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -252,9 +237,11 @@ prepareAndInstallApp(){
 runMonkeyRunnerTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
-	for i in $seeds20; do
-		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyRunnerTests.sh $Monkey_Script $APK $PACKAGE
+	for (( i = 0; i < ${#MonkeyRunnerScriptsList[@]}; i++ )); do
+	#for i in ${MonkeyRunnerScriptsList[@]}; do
+		w_echo "APP: $ID |  Script : $i"
+		e_echo "$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh $i  $APK $PACKAGE $localDir $deviceDir"
+		$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh $i ${MonkeyRunnerScriptsList[$i]} $APK $PACKAGE $localDir $deviceDir $trace
 		RET=$(echo $?)
 		if [[ $RET -ne 0 ]]; then
 			errorHandler $RET $PACKAGE
@@ -268,6 +255,7 @@ runMonkeyRunnerTests(){
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
 		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
 		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+		echo "${MonkeyRunnerScriptsList[$i]}" >> $localDir/TracedTests.txt 
 		analyzeCSV $localDir/GreendroidResultTrace$i.csv
 		totaUsedTests=$(($totaUsedTests + 1))
 		adb shell am force-stop $PACKAGE						
@@ -284,38 +272,39 @@ runMonkeyRunnerTests(){
 		continue
 	fi
 	##check if have enough coverage
-	nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-	actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-	e_echo "actual coverage -> 0$actual_coverage"
-	for j in $last30; do
-		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
-		if [ "$coverage_exceded" -gt 0 ]; then
-			echo "$ID|$totaUsedTests" >> $logDir/above$min_coverage.log
-			break
-		fi
-		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyRunnerTests.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir
-		e_echo "Pulling results from device..."
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-		nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-		actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-		acu=$(echo "${actual_coverage} * 100" | bc -l)
-		w_echo "actual coverage -> $acu %"
-		totaUsedTests=$(($totaUsedTests + 1))
-		adb shell am force-stop $PACKAGE
-		if [ "$totaUsedTests" -eq 30 ]; then
-			getBattery
-		fi
-		$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-	done
+	#nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
+	#actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
+	#e_echo "actual coverage -> 0$actual_coverage"
+	#for j in $last30; do
+	#	coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
+	#	if [ "$coverage_exceded" -gt 0 ]; then
+	#		echo "$ID|$totaUsedTests" >> $logDir/above$min_coverage.log
+	#		break
+	#	fi
+	#	w_echo "APP: $ID | SEED Number : $totaUsedTests"
+	#	e_echo "$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir"
+	##	exit -1
+	#	e_echo "Pulling results from device..."
+	#	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
+	#	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
+	#	mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
+	#	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+	#	nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
+	#	actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
+	#	acu=$(echo "${actual_coverage} * 100" | bc -l)
+	#	w_echo "actual coverage -> $acu %"
+	#	totaUsedTests=$(($totaUsedTests + 1))
+	#	adb shell am force-stop $PACKAGE
+	#	if [ "$totaUsedTests" -eq 30 ]; then
+	#		getBattery
+	#	fi
+	#	$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+	#done
 
 	trap - INT
-	if [ "$coverage_exceded" -eq 0 ]; then
-		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
-	fi
+	#if [ "$coverage_exceded" -eq 0 ]; then
+	#	echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
+	#fi
 }
 
 buildAppWithGradle(){
@@ -396,6 +385,7 @@ setupLocalResultsFolder(){
 }
 
 uninstallApp(){
+	cp $temp_folder/* $localDir
 	$ANADROID_SRC_PATH/others/uninstall.sh $PACKAGE $TESTPACKAGE
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
@@ -410,6 +400,7 @@ analyzeAPK(){
 	apkFile=$(cat $ANADROID_PATH/lastInstalledAPK.txt)
 	w_echo "\nANALYZING APK!!!!\n!!!!!"
 	$ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
+	rm "lastInstalledAPK.txt"
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
 }
 
@@ -418,7 +409,8 @@ $MKDIR_COMMAND -p $logDir
 #### Monkey process
 (adb kill-server ) > /dev/null  2>&1
 pingDevice
-getDeviceSpecs "$res_folder/device.json"
+getDeviceState "$temp_folder/deviceState.json"
+getDeviceSpecs "$temp_folder/device.json"
 checkConfig
 adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService > /dev/null  2>&1
 if [[ -n "$logStatus" ]]; then # if should log build status of apps
@@ -428,8 +420,9 @@ w_echo "removing old instrumentations "
 $ANADROID_SRC_PATH/others/forceUninstall.sh $ANADROID_SRC_PATH
 w_echo "$TAG searching for Android Projects in -> $DIR"
 # getting all seeds from file
-seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
-last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
+nr_tests=
+#seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
+#last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
 for f in $DIR/*
 	do
@@ -545,7 +538,7 @@ for f in $DIR/*
 				fi				
 				#install on device
 				w_echo "[APP INSTALLER] Installing the apps on the device"
-				apk=$($ANADROID_SRC_PATH/others/install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild)
+				APK=$($ANADROID_SRC_PATH/others/install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild)
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorInstall.log
@@ -576,7 +569,9 @@ for f in $DIR/*
 				trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 				for i in $seeds20; do
 					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyRunnerTests.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir $Monkey_Script	
+					e_echo "./runMonkeyRunnerTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir $Monkey_Script	"
+					exit -1
+					./runMonkeyRunnerTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir $Monkey_Script	
 					RET=$(echo $?)
 					if [[ $RET -ne 0 ]]; then
 						errorHandler $RET $PACKAGE
@@ -611,7 +606,9 @@ for f in $DIR/*
 						break
 					fi
 					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyRunnerTests.sh $j $number_monkey_events $trace $PACKAGE	$localDir $deviceDir $Monkey_Script
+					e_echo "$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir"
+					exit -1
+					runMonkeyRunnerTests
 					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 					#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
 					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir

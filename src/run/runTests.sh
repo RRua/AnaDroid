@@ -59,17 +59,7 @@ grantPermissions(){
 }
 
 
-initSimiasque(){
-	adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
-	#e_echo "state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level "
-	#echo "{\"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > $localDir/end_state$monkey_seed.json
-	sleep 1
-}
 
-stopSimiasque(){
-	adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable false
-	adb shell am force-stop org.thisisafactory.simiasque
-}
 
 
 runTests(){
@@ -94,15 +84,14 @@ runTests(){
 					RET=$(echo $?)
 					if [[ "$RET" != 0 ]]; then
 						$ANADROID_SRC_PATH/others/forceUninstall.sh 
-						e_echo "bou abandonar"
-						state="end"
+						
 						exit -1
 					fi
 				fi
 			done
 		else
 			e_echo "$TAG Wrong number of instrumentations: Found ${#allInstrumentations[@]}, Expected 1."
-			e_echo "bou abandonar2"
+			#e_echo "bou abandonar2"
 			state="end"
 			exit -1
 		fi
@@ -156,10 +145,13 @@ pullResults(){
 }
 
 stateToJSON(){
-	getAndroidState cpu mem nr_processes sdk_level api_level
-	timestamp=$(date +%s )
-	e_echo "$state device state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level"
-	echo "{\"test_results_unix_timestamp\": \"$timestamp\", \"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > "$localDir/${state}_state${execs}.json"
+	State=$1
+	#e_echo "$localDir/${State}_state.json"
+	getDeviceResourcesState "$localDir/${State}_state.json"
+	#getAndroidState cpu mem nr_processes sdk_level api_level
+	#timestamp=$(date +%s )
+	#e_echo "$state device state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level"
+	#echo "{\"test_results_unix_timestamp\": \"$timestamp\", \"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > "$localDir/${state}_state${execs}.json"
 
 }
 
@@ -167,7 +159,7 @@ if [ $nRuns -eq 2 ]; then
 	#run in measure and trace mode separately
 	GDflag="-1"
 	w_echo "$TAG Running the tests (Tracing mode)"
-	initSimiasque
+	#initSimiasque
 	runTests
 	stopAndcleanTrash
 	GDflag="1"
@@ -176,16 +168,16 @@ else
 	# run only once, in normal mode
 	GDflag="0"
 	w_echo "$TAG Running the tests (Measuring mode)"
-	initSimiasque
+	#initSimiasque
 fi
 (adb shell am stopservice com.quicinc.trepn/.TrepnService) # remove
-state="begin"
-stateToJSON
+
+stateToJSON "begin"
 grantPermissions
 runTests 
-stateToJSON
+stateToJSON "end"
 stopAndcleanTrash
-stopSimiasque
+#stopSimiasque
 pullResults
 
 # In case the missing instrumentation error occured, let's remove all apps with instrumentations now!

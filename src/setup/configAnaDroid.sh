@@ -165,9 +165,12 @@ installGradle(){
 installCoreUtils(){
 	Machine=$1
 	if [ "$Machine" == "Mac" ]; then
-		brew install coreutils 	
+		brew install coreutils 
+		brew install gnu-gsed	
 	fi
 }
+
+
 
 
 setHomeDir
