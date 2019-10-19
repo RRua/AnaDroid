@@ -82,20 +82,11 @@ fi
 #e_echo "monkeyrunner $script_name "\"$apk\"" "\"$package\"""
 (monkeyrunner $script_name "$apk"  "$package" )
 
-RET=$(echo $?)
 if [[ $trace == "-TestOriented" ]]; then
 	adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value "0" -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
 fi
 w_echo "stopped tests. "
 
-
-if [[ "$RET" != "0" ]]; then
-	e_echo "error while running -> error code : $RET"
-	echo "$localDir,$script_index" >> $logDir/timeoutSeed.log
-	w_echo "An Error Ocurred. killing process of monkey test"
-	adb shell ps | grep "com.android.commands.monkey" | awk '{print $2}' | xargs -I{} adb shell kill -9 {}
-	exit 1
-fi
 
 echo "stopping running app"
 sleep 1
