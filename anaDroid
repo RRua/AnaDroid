@@ -14,8 +14,8 @@ TEST_ORIENTATION="testoriented"
 
 
 ##### DEFAULTS #####
-#URL="http://localhost:8000/"
-URL="NONE"
+URL="http://localhost:8000/"
+#URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
@@ -126,6 +126,19 @@ processAndValidateArguments(){
                 e_echo "The specified target directory ($2) doesn't exist"
                 exit -1
             fi
+        shift # past argument
+        shift # past value
+        ;;
+         -h|--help)
+            #
+            echo "$ anaDroid  [-o|--orientation orientation]"
+            echo   "    [-p|--profiler prof]" 
+            echo   "    [-f|--framework frame]"
+            echo   "    [-b|--build bd]"
+            echo   "    [-u|--url url ]"
+            echo   "    [-s|--silent sil]" 
+            echo   "    [-d|--dir project_dir ]"
+            exit 0
         shift # past argument
         shift # past value
         ;;
