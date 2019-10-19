@@ -7,7 +7,7 @@ pathTests=$2
 projtype=$3
 package=$4
 resDir=$5
-monkey=$6
+testingFramework=$6
 apkBuild=$7
 installedAPK=""
 machine=''
@@ -65,7 +65,7 @@ else
 	OK="1"
 fi
 
-if [[ $monkey == "-Monkey" ]]; then
+if [[ $testingFramework == "-Monkey" ]]; then
 	OK="2"
 fi
 
@@ -93,12 +93,15 @@ else
 	#w_echo "$TAG Ready to install generated Apps -> Finded : ${#appAPK[@]} App .apk's, ${#testAPK[@]} Test .apk's"
 	#w_echo "$TAG installing App .apk's"
 	#echo "${appAPK[0]}"
+	echo "$TAG installing main apk ${appAPK[0]}"
 	(adb install -g -r ${appAPK[0]}) # >/dev/null 2>&1
 	installedAPK=${appAPK[0]}
 	echo "$installedAPK" > $ANADROID_PATH/lastInstalledAPK.txt
-	echo "${appAPK[0]}"
 	#w_echo "$TAG installing Test .apk's"
-	#echo "${testAPK[0]}"
-	(adb install -g -r ${testAPK[0]})   #>/dev/null 2>&1
+	if [[ "$testingFramework" == "-junit" ]]; then
+		echo "$TAG installing test apk ${testAPK[0]}"
+		(adb install -g -r ${testAPK[0]})   #>/dev/null 2>&1
+	fi
+	
 fi
 exit 0
