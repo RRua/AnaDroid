@@ -63,11 +63,6 @@ installTrepn(){
 installSimiasque(){
 	w_echo "$TAG installing Simiasque Apk on the Connected Android Device ..." 
 	install_res=$(adb install -r $1 )
-	#check_res=$(echo $install_res | grep "Success")
-	#if [[ -n "$check_res" ]]; then
-		# error occured
-	#	e_echo "An error occured while installing Simiasque APK. You must enable the \"Install via USB\" option in the Programmer Options of the Android device"
-	#fi
 }
 
 i_echo "\n$TAG Setting up AnaDroid framework"
@@ -76,12 +71,12 @@ getDeviceExternalStorage device_external_storage
 trepnapk=""
 getTrepnAPK trepnapk
 #echo "$trepnapk"
-simiasqueAPK=""
-getSimiasqueAPK simiasqueAPK
+#simiasqueAPK=""
+#getSimiasqueAPK simiasqueAPK
 #echo "$simiasqueAPK"
 installTrepn $trepnapk
 setupTrepnOnDevice $device_external_storage
-installSimiasque $simiasqueAPK
+#installSimiasque $simiasqueAPK
 
 
 

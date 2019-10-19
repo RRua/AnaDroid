@@ -24,6 +24,7 @@ DIR=$5
 # global
 ANADROID_SRC_PATH=$ANADROID_PATH/src/
 res_folder="$ANADROID_PATH/resources"
+temp_folder="$ANADROID_PATH/temp"
 hideDir="$ANADROID_PATH/.ana/"
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
@@ -36,7 +37,7 @@ localDirOriginal="$HOME/GDResults"
 checkLogs="Off"
 monkey="-Monkey"
 folderPrefix=""
-GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
+GD_ANALYZER="$res_folder/jars/AnaDroidAnalyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
 GD_INSTRUMENT="$res_folder/jars/jInst.jar"
 trepnLib="TrepnLib-release.aar"
 trepnJar="TrepnLib-release.jar"
@@ -138,21 +139,12 @@ pingDevice(){
 			e_echo "$TAG Could not determine the device's external storage. Check and try again..."
 			exit 1
 		fi
+		deviceDir="$deviceExternal/trepn/"
 	fi
 }
 
-getDeviceSpecs(){
-	devJson=$1
-	local device_model=$(   echo  $DEVICE  | grep -o "model.*" | cut -f2 -d: | cut -f1 -d\ )
-	local device_serial=$(   echo  $DEVICE | tail -n 2 | grep "model" | cut -f1 -d\ )
-	local device_brand=$(  echo  $DEVICE | grep -o "device:.*" | cut -f2 -d: )
-	echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}" > "$devJson"
-	i_echo "$TAG 📲  Attached device ($device_model) recognized "
-	deviceDir="$deviceExternal/trepn"
-}
 
 cleanDeviceTrash() {
-
 	adb shell rm -rf "$deviceDir/allMethods.txt" "$deviceDir/TracedMethods.txt" "$deviceDir/Traces/*" "$deviceDir/Measures/*" "$deviceDir/TracedTests/*"
 }
 
@@ -205,31 +197,18 @@ getFirstAppVersion(){
 	done
 }
 
-checkBuildingTool(){
-	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
-	POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
-	if [ -n "$POM" ]; then
-		POM=${POM// /\\ }
-		#e_echo "Maven projects are not considered yet..."
-		echo "Maven"
-		continue
-	elif [ -n "${GRADLE[0]}" ]; then
-		#statements
-		echo "Gradle"
-	else 
-		echo "Eclipse"
-	fi
-}
+
 
 prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
+	$MKDIR_COMMAND -p $localDir
+	cp $temp_folder/* $localDir
 	#echo "$TAG Creating support folder..."
 	#mkdir -p $localDir
-	$MKDIR_COMMAND -p $localDir/all
+	#$MKDIR_COMMAND -p $localDir/all
 	##copy MethodMetric to support folder
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
-	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
@@ -344,17 +323,17 @@ buildAppWithGradle(){
 
 instrumentGradleApp(){
 	oldInstrumentation=$(cat $FOLDER/$tName/instrumentationType.txt 2>/dev/null | grep  ".*Oriented" )
-	allmethods=$(find $projLocalDir/all -maxdepth 1 -name "allMethods.txt")
+	allmethods=$(find $projLocalDir/all -maxdepth 1 -name "allMethods.json")
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "Different type of instrumentation. instrumenting again..."
-		rm -rf $FOLDER/$tName
+		rm -rf $zFOLDER/$tName
 		$MKDIR_COMMAND -p $FOLDER/$tName
 		echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
 		echo "$TAG Instrumenting project"
-		e_echo "command -> java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR"
+		#e_echo "command -> java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR"
 		java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
-		$MV_COMMAND ./allMethods.json $projLocalDir/all/allMethods.json
+		cp ./allMethods.json $projLocalDir/all/allMethods.json
 		#Instrument all manifestFiles
 		(find $FOLDER/$tName -name "AndroidManifest.xml" | egrep -v "/build/" | xargs $ANADROID_SRC_PATH/build/manifestInstr.py )
 	else 
@@ -421,7 +400,8 @@ $MKDIR_COMMAND -p $logDir
 #### Monkey process
 (adb kill-server ) > /dev/null  2>&1
 pingDevice
-getDeviceSpecs "$res_folder/device.json"
+getDeviceState "$temp_folder/deviceState.json"
+getDeviceSpecs "$temp_folder/device.json"
 checkConfig
 adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService > /dev/null  2>&1
 if [[ -n "$logStatus" ]]; then # if should log build status of apps
@@ -453,7 +433,6 @@ for f in $DIR/*
 		continue
 ### Gradle proj			
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
-
 		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
@@ -476,9 +455,7 @@ for f in $DIR/*
 				prepareAndInstallApp
 				runMonkeyTests
 				uninstallApp
-				analyzeAPK
-				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
-				(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > $res_folder/device.json
+				analyzeAPK	
 				w_echo "Analyzing results .."
 				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
 				w_echo "$TAG sleeping between profiling apps"
@@ -537,7 +514,6 @@ for f in $DIR/*
 						$MKDIR_COMMAND -p $projLocalDir/oldRuns
 						mv  $(ls $projLocalDir | grep -v "oldRuns") $projLocalDir/oldRuns/
 						$MKDIR_COMMAND -p $projLocalDir/all
-						cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
 						echo "$ID" >> $logDir/success.log
 					elif [[ -n "$logStatus" ]]; then
 						cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
@@ -560,13 +536,13 @@ for f in $DIR/*
 				$MKDIR_COMMAND -p $projLocalDir/oldRuns
 				$MV_COMMAND -f $(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
 				$MKDIR_COMMAND -p $projLocalDir/all
-				cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
+				
 				
 				##copy MethodMetric to support folder
 				#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 				cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 				echo "$ID" >> $logDir/success.log
-				total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u | wc -l | sed 's/ //g')
+				total_methods=$( cat $projLocalDir/all/allMethods.json | sort -u | wc -l | sed 's/ //g')
 				now=$(date +"%d_%m_%y_%H_%M_%S")
 				localDir=$localDir/$folderPrefix$now
 				#echo "$TAG Creating support folder..."

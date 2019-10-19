@@ -34,19 +34,7 @@ else
 	TIMEOUT_COMMAND="timeout"
 fi
 
-grantPermissions(){
-	w_echo "Granting permissions on $1"
-	(adb shell pm grant $1 android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
-	(adb shell pm grant $1 android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
-	
-	#adb shell pm grant $1 android.permission.INTERNET
-	#adb shell pm grant $1 android.permission.ACCESS_FINE_LOCATION
-	#adb shell pm grant $1 android.permission.ACCESS_WIFI_STATE
-	#adb shell pm grant $1 android.permission.READ_PHONE_STATE
-	#adb shell pm grant $1 android.permission.ACCESS_NETWORK_STATE
-	#adb shell pm grant $1 android.permission.RECEIVE_BOOT_COMPLETED
 
-}
 
 initProfiler(){
 	w_echo "starting the profiler"
@@ -56,9 +44,9 @@ initProfiler(){
 	sleep 2
 	(adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME) > /dev/null 2>&1
 	sleep 3
-	#e_echo "vou carregar o ficheiro pref $deviceDir/saved_preferences/trepnPreferences/All.pref" > /dev/null 2>&1
-	(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/All.pref") >/dev/null 2>&1
-	sleep 2
+	e_echo "nao fiz load do dfichero de prefs !! " > /dev/null 2>&1
+	#(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/All.pref") >/dev/null 2>&1
+	sleep 3
 }
 
 
@@ -82,10 +70,7 @@ sleep 3
 #w_echo "clicking home button.."
 #adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME > /dev/null 2>&1
 #adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
-getAndroidState cpu mem nr_processes sdk_level api_level
-timestamp=$(date +%s )
-e_echo "state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level"
-echo "{\"test_results_unix_timestamp\": \"$timestamp\", \"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > $localDir/begin_state$monkey_seed.json
+getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 w_echo "[Measuring]$now Running monkey tests..."
 
 if [[ $trace == "-TestOriented" ]]; then
@@ -124,13 +109,10 @@ sleep 6
 (adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_db_input_file "myfile" -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) >/dev/null 2>&1
 #(adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) #>/dev/null 2>&1
 sleep 1
-getAndroidState cpu mem nr_processes sdk_level api_level
+getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 
 adb shell ps | grep "com.android.commands.monkey" | awk '{print $2}' | xargs -I{} adb shell kill -9 {}
 #adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable false
-e_echo "state: CPU: $cpu % , MEM: $mem,proc running : $nr_processes sdk level: $sdk_level API:$api_level "
-echo "{\"device_state_mem\": \"$mem\", \"device_state_cpu_free\": \"$cpu\",\"device_state_nr_processes_running\": \"$nr_processes\",\"device_state_api_level\": \"$api_level\",\"device_state_android_version\": \"$sdk_level\" }" > $localDir/end_state$monkey_seed.json
-
 #adb shell "echo -1 > $deviceDir/GDflag"
 #grantPermissions $package
 

@@ -36,14 +36,14 @@ localDirOriginal="$HOME/GDResults"
 checkLogs="Off"
 monkey="-junit"
 folderPrefix=""
-GD_ANALYZER="$res_folder/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
+GD_ANALYZER="$res_folder/jars/AnaDroidAnalyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
 GD_INSTRUMENT="$res_folder/jars/jInst.jar"
 trepnLib="TrepnLib-release.aar"
-trepnJar="TrepnLib-release.jar"
+#trepnJar="TrepnLib-release.jar"
 profileHardware="YES" # YES or something else
 logStatus="off"
 SLEEPTIME=60 # 1 minutes
-
+temp_folder="$ANADROID_PATH/temp"
 # TODO put in monkey config file
 min_monkey_runs=1 #20
 threshold_monkey_runs=3 #50
@@ -121,6 +121,8 @@ getBattery(){
 	fi
 }
 
+
+
 pingDevice(){
 	DEVICE=$(adb devices -l  2>&1 | tail -2)
 	local x=$(echo $DEVICE | egrep -o "device .+ product:" )
@@ -155,6 +157,24 @@ cleanDeviceTrash() {
 
 	adb shell rm -rf "$deviceDir/allMethods.txt" "$deviceDir/TracedMethods.txt" "$deviceDir/Traces/*" "$deviceDir/Measures/*" "$deviceDir/TracedTests/*"
 }
+
+
+analyzeAPK(){
+	#PACKAGE=${RESULT[2]}
+	# apk file
+	apkFile=$(cat $ANADROID_PATH/lastInstalledAPK.txt)
+	w_echo "\nANALYZING APK!!!!\n!!!!!"
+	$ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
+	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
+}
+
+setupTrepnDirs(){
+	adb shell mkdir -p $deviceDir/Measures
+	adb shell mkdir -p $deviceDir/TracedTests
+	adb shell mkdir -p $deviceDir/Traces
+
+}
+
 
 checkIfAppAlreadyProcessed(){
 	x=$1
@@ -205,21 +225,6 @@ getFirstAppVersion(){
 	done
 }
 
-checkBuildingTool(){
-	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
-	POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
-	if [ -n "$POM" ]; then
-		POM=${POM// /\\ }
-		#e_echo "Maven projects are not considered yet..."
-		echo "Maven"
-		continue
-	elif [ -n "${GRADLE[0]}" ]; then
-		#statements
-		echo "Gradle"
-	else 
-		echo "Eclipse"
-	fi
-}
 
 prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
@@ -317,7 +322,7 @@ instrumentGradleApp(){
 	for D in `find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
 	    if [ -d "${D}" ]; then  ##RR
 	    	$MKDIR_COMMAND -p ${D}/libs  ##RR
-	     	cp $res_folder/libsAdded/$treprefix$trepnLib ${D}/libs  ##RR
+	     	cp $res_folder/libsAdded/$trepnLib ${D}/libs  ##RR
 	    fi  ##RR
 	done  ##RR
 }
@@ -346,6 +351,7 @@ setupLocalResultsFolder(){
 }
 
 uninstallApp(){
+	cp $temp_folder/* $localDir
 	$ANADROID_SRC_PATH/others/uninstall.sh $PACKAGE $TESTPACKAGE
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
@@ -359,8 +365,10 @@ $MKDIR_COMMAND -p $logDir
 #### Monkey process
 (adb kill-server ) > /dev/null  2>&1
 pingDevice
-getDeviceSpecs "$res_folder/device.json"
+getDeviceState "$temp_folder/deviceState.json"
+getDeviceSpecs "$temp_folder/device.json"
 checkConfig
+setupTrepnDirs
 #adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService > /dev/null  2>&1
 if [[ -n "$logStatus" ]]; then # if should log build status of apps
 	($MKDIR_COMMAND $logDir/debugBuild ) > /dev/null  2>&1 #new
@@ -415,6 +423,7 @@ for f in $DIR/*
 				#runMonkeyTests
 				runJUnitTests
 				uninstallApp
+				analyzeAPK
 				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
 				(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > $res_folder/device.json
 				w_echo "Analyzing results .."

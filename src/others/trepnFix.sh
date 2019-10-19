@@ -3,9 +3,10 @@
 source $ANADROID_PATH/src/settings/settings.sh
 
 iTAG="[GD CLEANER]"
-#deviceDir=$1
+deviceDir=$1
 
-deviceDir=$(cat deviceDir.txt) # TODO improve later (receive as parameter from other script??)
+
+#deviceDir=$(cat deviceDir.txt) # TODO improve later (receive as parameter from other script??)
 
 w_echo "Stopping Trepn Profiler"
 #shutdown trepn
