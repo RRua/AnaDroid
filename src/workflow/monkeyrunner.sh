@@ -38,7 +38,7 @@ hideDir="$ANADROID_PATH/.ana/"
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
 deviceDir=""
-prefix="" # "latest" or "" ; Remove if normal app
+prefix="/latest" # "latest" or "" ; Remove if normal app
 deviceExternal=""
 logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
@@ -220,13 +220,13 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild installedAPK
-	APK=$(cat lastInstalledAPK.txt)
+	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild $logDir
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
-		continue
+		exit -1
 	fi
+	APK=$(cat $logDir/lastInstalledAPK.txt)
 	echo "$ID" >> $logDir/success.log
 	total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
@@ -538,7 +538,7 @@ for f in $DIR/*
 				fi				
 				#install on device
 				w_echo "[APP INSTALLER] Installing the apps on the device"
-				APK=$($ANADROID_SRC_PATH/others/install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild)
+				$ANADROID_SRC_PATH/others/install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild $logDir
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorInstall.log

@@ -1,6 +1,8 @@
 #!/bin/bash
 source $ANADROID_PATH/src/settings/settings.sh
 
+
+logDir="$ANADROID_PATH/.ana/logs/"
 pack=$1
 testPack=$2
 deviceDir=$3
@@ -30,7 +32,7 @@ TIMEOUT="600" #15 minutes (60*10)
 TAG="[APP RUNNER]"
 execs=0
 
-actualrunner=$(grep "JUnitRunner" actualrunner.txt)
+actualrunner=$(grep "JUnitRunner" $logDir/actualrunner.txt)
 if [ -n "$actualrunner" ]; then
 	runner="android.support.test.runner.AndroidJUnitRunner"
 	#e_echo "actual runner -> $runner"

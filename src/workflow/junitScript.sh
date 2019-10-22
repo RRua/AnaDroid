@@ -162,7 +162,7 @@ cleanDeviceTrash() {
 analyzeAPK(){
 	#PACKAGE=${RESULT[2]}
 	# apk file
-	apkFile=$(cat $ANADROID_PATH/lastInstalledAPK.txt)
+	apkFile=$(cat $logDir/lastInstalledAPK.txt)
 	w_echo "\nANALYZING APK!!!!\n!!!!!"
 	$ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
@@ -239,7 +239,7 @@ prepareAndInstallApp(){
 	#install on device
 	#./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir  #COMMENT, EVENTUALLY...
 	#e_echo "$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName \"X\" \"GRADLE\" $PACKAGE $projLocalDir $monkey $apkBuild	"
-	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	
+	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild $logDir
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -492,7 +492,7 @@ for f in $DIR/*
 					continue
 				fi				
 				#install on device
-				./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild
+				./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild $logDir
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorInstall.log

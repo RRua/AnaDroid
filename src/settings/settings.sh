@@ -181,7 +181,7 @@ getDeviceState(){
 	#local device_keyboard=$(adb shell dumpsys  input_method | grep "mCurMethodId" | cut -f2 -d= )
 	local operator=$(adb shell getprop gsm.sim.operator.alpha)
 	local operator_country=$(adb shell getprop gsm.operator.iso-country)
-	local conn_type=$(adb shel getprop gsm.network.type )
+	local conn_type=$(adb shell getprop gsm.network.type )
 	local kernel_version=$(adb shell cat /proc/version)
 	local device_id=$(adb shell getprop ro.serialno )
 	echo "
