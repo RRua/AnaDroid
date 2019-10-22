@@ -13,6 +13,8 @@ In the end of the execution,  it uninstalls the AUT (App Under Test) and present
 ## Extracted Metrics:
 The AnaDroid framework is able to extract all of the following metrics. The dynamic metrics (+) can be extracted at different levels: Application, Test, Class or Method level.
 
+(+) Current active keyboard
+
 (-) Android APIs (APIs used from the Android SDK)
 
 (-) JAVA APIs (APIs used from the Java SDK)
@@ -53,15 +55,18 @@ The AnaDroid framework is able to extract all of the following metrics. The dyna
 
 (+) Nr of running processes (Number of other processes running simultaneously)
 
-(-) LoC (lines of code)
+(-) Method length 
 
-(-) CC (cyclomatic complexity)
+(-) Nr of method instructions
 
-(-) Nr Args (number of arguments)
+(-) Method locals
 
-(-) Nr of declared vars (number of declared variables)
+(-) Class variables
+
+(-) Nr Args (number of arguments of methods)
 
 (-) Nr of classes (number of classes)
+
 
 
 
@@ -97,7 +102,6 @@ The required tools are the following (if necessary):
 - [Gradle](https://gradle.org/).
 
 This command will also setup your device (if connected to your machine) so it can be prepared to monitor the execution of Android applications. It will create a support directory in the device (virtual) external storage and install (via USB) some auxiliary applications:
-- [Simiasque](https://github.com/Orange-OpenSource/simiasque);
 - [Trepn Profiler](https://play.google.com/store/apps/details?id=com.quicinc.trepn).
 
 ```
