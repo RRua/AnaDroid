@@ -41,6 +41,8 @@ installPython(){
 			sudo apt install python
 		fi
 	fi
+	w_echo "$TAG installing Androguard using pip"
+	pip install androguard
 }
 
 installJava(){
