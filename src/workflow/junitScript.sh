@@ -105,6 +105,7 @@ quit(){
 	adb shell am force-stop $1
 	w_echo "uninstalling actual app $1"
 	$ANADROID_SRC_PATH/others/uninstall.sh $1 $2
+	rm ./allMethods.json >/dev/null 2>&1
 	w_echo "removing actual app from processed Apps log"
 	sed "s#$3##g" $logDir/processedApps.log
 	w_echo "GOODBYE"
@@ -359,6 +360,19 @@ uninstallApp(){
 		#continue
 	fi				
 }
+inferPrefix(){
+	# needed because extracted apps from muse are in a folder name latest inside $ID folder
+	local searching_dir=$1
+	local have_prefix=$(find $searching_dir -type d -maxdepth 1 | grep $default_prefix )
+	if [[ -n "$have_prefix" ]]; then
+		prefix=$default_prefix
+		#e_echo " has prefix"
+	else
+		prefix=""
+		#e_echo " no prefix"
+	fi
+
+}
 
 setup
 $MKDIR_COMMAND -p $logDir
@@ -382,6 +396,12 @@ last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
 for f in $DIR/*
 	do
+	if [[ -f $f ]]; then 
+		#if not a directory (i.e Android Project folder), ignore 
+		w_echo "$TAG $f is not a folder and will be ignored"
+		continue
+	fi
+	inferPrefix $f
 	localDir=$localDirOriginal
 	cleanDeviceTrash
 	IFS='/' read -ra arr <<< "$f"

@@ -109,6 +109,7 @@ quit(){
 	$ANADROID_SRC_PATH/others/uninstall.sh $1 $2
 	w_echo "removing actual app from processed Apps log"
 	sed "s#$3##g" $logDir/processedApps.log
+	rm ./allMethods.json >/dev/null 2>&1
 	w_echo "GOODBYE"
 	(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
 	exit -1
@@ -302,7 +303,7 @@ buildAppWithGradle(){
 	GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
-		e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
+		#e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
 		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "monkey"
 		RET=$(echo $?)
 	else 
@@ -390,7 +391,7 @@ uninstallApp(){
 analyzeAPK(){
 	#PACKAGE=${RESULT[2]}
 	# apk file
-	apkFile=$(cat $ANADROID_PATH/lastInstalledAPK.txt)
+	apkFile=$(cat $logDir/lastInstalledAPK.txt)
 	w_echo "\nANALYZING APK!!!!\n!!!!!"
 	$ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
@@ -402,14 +403,13 @@ inferPrefix(){
 	local have_prefix=$(find $searching_dir -type d -maxdepth 1 | grep $default_prefix )
 	if [[ -n "$have_prefix" ]]; then
 		prefix=$default_prefix
-		e_echo " has prefix"
+		#e_echo " has prefix"
 	else
 		prefix=""
-		e_echo " no prefix"
+		#e_echo " no prefix"
 	fi
 
 }
-
 
 setup
 $MKDIR_COMMAND -p $logDir

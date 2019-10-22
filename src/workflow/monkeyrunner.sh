@@ -53,7 +53,7 @@ trepnJar="TrepnLib-release.jar"
 temp_folder="$ANADROID_PATH/temp"
 profileHardware="YES" # YES or something else
 logStatus="off"
-SLEEPTIME=60 # 1 minutes
+SLEEPTIME=10 # 10 secs 
 
 # TODO put in monkey config file
 min_monkey_runs=1 #20
@@ -118,7 +118,8 @@ quit(){
 	$ANADROID_SRC_PATH/others/uninstall.sh $1 $2
 	w_echo "removing actual app from processed Apps log"
 	#sed "s#$3##g" $logDir/processedApps.log
-	#w_echo "GOODBYE"
+	w_echo "GOODBYE"
+	rm ./allMethods.json >/dev/null 2>&1
 	(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
 	exit -1
 }
@@ -397,11 +398,23 @@ uninstallApp(){
 analyzeAPK(){
 	#PACKAGE=${RESULT[2]}
 	# apk file
-	apkFile=$(cat $ANADROID_PATH/lastInstalledAPK.txt)
+	apkFile=$(cat $logDir/lastInstalledAPK.txt)
 	w_echo "\nANALYZING APK!!!!\n!!!!!"
 	$ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
-	rm "lastInstalledAPK.txt"
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
+}
+inferPrefix(){
+	# needed because extracted apps from muse are in a folder name latest inside $ID folder
+	local searching_dir=$1
+	local have_prefix=$(find $searching_dir -type d -maxdepth 1 | grep $default_prefix )
+	if [[ -n "$have_prefix" ]]; then
+		prefix=$default_prefix
+		#e_echo " has prefix"
+	else
+		prefix=""
+		#e_echo " no prefix"
+	fi
+
 }
 
 setup
@@ -420,12 +433,18 @@ w_echo "removing old instrumentations "
 $ANADROID_SRC_PATH/others/forceUninstall.sh $ANADROID_SRC_PATH
 w_echo "$TAG searching for Android Projects in -> $DIR"
 # getting all seeds from file
-nr_tests=
+
 #seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
 #last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
 for f in $DIR/*
 	do
+	if [[ -f $f ]]; then 
+		#if not a directory (i.e Android Project folder), ignore 
+		w_echo "$TAG $f is not a folder and will be ignored"
+		continue
+	fi
+	inferPrefix $f
 	localDir=$localDirOriginal
 	cleanDeviceTrash
 	IFS='/' read -ra arr <<< "$f"

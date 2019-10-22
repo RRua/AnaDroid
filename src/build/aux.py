@@ -21,6 +21,11 @@ def getMatchGradleVersion(value):
 	elif val_without_dots[0]=='0':
 		# if version is something like 0.1.3
 		print ("2.1")
+		return
+	elif value=="+":
+		# if version is something like 0.1.3
+		print("5.1.1")
+		return
 	val = int(val_without_dots)
 	if check(val, 100, 113 ):
 		print("2.3")

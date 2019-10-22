@@ -172,7 +172,12 @@ installCoreUtils(){
 
 
 
-
+#export ANADROID_PATH=<Absolute-path-to-AnaDroid-folder>
+#export PATH=$PATH:$ANADROID_PATH
+#export ANDROID_HOME=$HOME/android-sdk/ 
+export PATH=$ANDROID_HOME/platform-tools:$PATH
+export PATH=$ANDROID_HOME/tools:$PATH
+export PATH=$ANDROID_HOME/tools/bin:$PATH
 setHomeDir
 MACHINE=""
 getSO MACHINE
