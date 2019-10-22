@@ -10,11 +10,11 @@ SUPPORTED_PROFILERS=( "trepn" )
 SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 #ANADROID DEFAULT CONFIG
 TEST_ORIENTATION="testoriented"
-#URL="http://greensource.di.uminho.pt/"
+URL="http://greensource.di.uminho.pt/"
 
 
 ##### DEFAULTS #####
-URL="http://localhost:8000/"
+#URL="http://localhost:8000/"
 #URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"

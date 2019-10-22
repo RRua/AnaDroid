@@ -9,6 +9,7 @@ package=$4
 resDir=$5
 testingFramework=$6
 apkBuild=$7
+logDir=$8
 installedAPK=""
 machine=''
 getSO machine
@@ -58,7 +59,7 @@ if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 	else
 		#Either there's no apk files found for the app and/or tests, 
 		#or there are 2 or more apks for both app and tests
-		e_echo "Fatal error"
+		#e_echo "Fatal error"
 		OK="0"
 	fi
 else
@@ -75,7 +76,7 @@ if [[ "$OK" == "2" ]]; then
 		#w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
 		(adb install -g -r ${appAPK[0]})  > /dev/null 2>&1
 		installedAPK=${appAPK[0]}
-		echo "$installedAPK" > $ANADROID_PATH/lastInstalledAPK.txt
+		echo "$installedAPK" > $logDir/lastInstalledAPK.txt
 		echo "${appAPK[0]}"
 	else
 		#e_echo "Error while installing. No APK's found"
@@ -96,7 +97,7 @@ else
 	echo "$TAG installing main apk ${appAPK[0]}"
 	(adb install -g -r ${appAPK[0]}) # >/dev/null 2>&1
 	installedAPK=${appAPK[0]}
-	echo "$installedAPK" > $ANADROID_PATH/lastInstalledAPK.txt
+	echo "$installedAPK" > $logDir/lastInstalledAPK.txt
 	#w_echo "$TAG installing Test .apk's"
 	if [[ "$testingFramework" == "-junit" ]]; then
 		echo "$TAG installing test apk ${testAPK[0]}"

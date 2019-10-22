@@ -29,7 +29,8 @@ hideDir="$ANADROID_PATH/.ana/"
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
 deviceDir=""
-prefix="" # "latest" or "" ; Remove if normal app
+default_prefix="/latest"
+prefix=""
 deviceExternal=""
 logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
@@ -212,7 +213,7 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	apk=$($ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild	) 
+	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild $logDir
 	RET=$(echo $?)
 	if [[ "$RET" == "-1" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -301,6 +302,7 @@ buildAppWithGradle(){
 	GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
+		e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
 		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "monkey"
 		RET=$(echo $?)
 	else 
@@ -394,6 +396,20 @@ analyzeAPK(){
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
 }
 
+inferPrefix(){
+	# needed because extracted apps from muse are in a folder name latest inside $ID folder
+	local searching_dir=$1
+	local have_prefix=$(find $searching_dir -type d -maxdepth 1 | grep $default_prefix )
+	if [[ -n "$have_prefix" ]]; then
+		prefix=$default_prefix
+		e_echo " has prefix"
+	else
+		prefix=""
+		e_echo " no prefix"
+	fi
+
+}
+
 
 setup
 $MKDIR_COMMAND -p $logDir
@@ -416,6 +432,13 @@ last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
 for f in $DIR/*
 	do
+	if [[ -f $f ]]; then 
+		#if not a directory (i.e Android Project folder), ignore 
+		w_echo "$TAG $f is not a folder and will be ignored"
+		continue
+	fi
+
+	inferPrefix $f
 	localDir=$localDirOriginal
 	cleanDeviceTrash
 	IFS='/' read -ra arr <<< "$f"
@@ -522,7 +545,7 @@ for f in $DIR/*
 				fi				
 				#install on device
 				w_echo "[APP INSTALLER] Installing the apps on the device"
-				apk=$(./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild) 
+				apk=$(./install.sh $SOURCE/$tName $SOURCE/$tName/tests "SDK" $PACKAGE $localDir $monkey $apkBuild $logDir) 
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorInstall.log

@@ -12,6 +12,9 @@ else
 	SED_COMMAND="sed" #linux
 	Timeout_COMMAND="gtimeout"	
 fi
+
+
+
 TIMEOUT="420" #7 minutes (60*7)
 logDir="$ANADROID_PATH/.ana/logs/"
 OLDIFS=$IFS
@@ -23,42 +26,48 @@ apkBuild=$4
 framework=$5
 TAG="[APP BUILDER]"
 
-#list of available build tools versions
-GRADLE_VERSION=$(gradle --version | grep "Gradle" | cut -f2 -d\ ) # "3.4.1"
-GRADLE_BUILD_VERSION=$(echo "$GRADLE_VERSION" | cut -f1 -d\. )
+
+
+function inferGradlePluginVersion(){
+	local main_gradle_file=$1
+	local gradle_plugin_version=$(grep "classpath" $main_gradle_file | awk '{print $2}' | tr -d \''"\' | rev | cut -f 1 -d: | rev)
+	if [ -z $gradle_plugin_version ]; then
+		e_echo "unable to find gradle plugin version. Assuming"
+		GRADLE_PLUGIN_VERSION="2.3"
+	else
+		GRADLE_PLUGIN_VERSION=$gradle_plugin_version
+	fi
+	w_echo "$TAG using version $GRADLE_PLUGIN_VERSION of Gradle plugin "
+}
+
+
+
+
+#GRADLE_VERSION=$(gradle --version | grep "Gradle" | cut -f2 -d\ ) # "3.4.1"
+#GRADLE_BUILD_VERSION=$(echo "$GRADLE_VERSION" | cut -f1 -d\. )
 #GRADLE_VERSION=3.3 # RR
 
-GRADLE_BUILD_VERSION="3"
-GRADLE_PLUGIN="2.3.3" #TODO - Find a better way to determine this value (see https://developer.android.com/studio/releases/gradle-plugin.html#updating-gradle)
-
-#BUILD_VERSIONS=($(ls $HOME/android-sdk-linux/build-tools/)) #MC
-#TARGET_VERSIONS=($(ls $HOME/android-sdk-linux/platforms/))  #MC
-#BUILD_VERSIONS=($(ls $HOME/Android/Sdk/build-tools/))
-#TARGET_VERSIONS=($(ls $HOME/Android/Sdk/platforms/))
+i_echo "$TAG Building GRADLE PROJECT -> $ID "
+GRADLE_PLUGIN_VERSION=""  #(see https://developer.android.com/studio/releases/gradle-plugin.html#updating-gradle)
+inferGradlePluginVersion $GRADLE
+GRADLE_BUILD_VERSION=$(python $ANADROID_PATH/src/build/aux.py getMatchGradleVersion $GRADLE_PLUGIN_VERSION )  #"2.3.3" #TODO - Find a better way to determine this valu
 BUILD_VERSIONS=($(ls $ANDROID_HOME/build-tools/))
 TARGET_VERSIONS=($(ls $ANDROID_HOME/platforms/))
-
-
-i_echo "$TAG GRADLE PROJECT -> $ID "
-NEW_RUNNER_JAR=libs/android-junit-report-1.5.8.jar # unused
 OLD_RUNNER="android.test.InstrumentationTestRunner" # "android.support.test.runner.AndroidJUnitRunner" # 
 NEW_RUNNER="android.support.test.runner.AndroidJUnitRunner"
-RUNNER_VERSION="0.5"      # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/runner
-RUNNER_RULES="0.5"        # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/rules
-RUNNER_ESPRESSO="2.2.2"   # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/espresso/espresso-cores
-RUNNER_AUTOMATOR="2.1.2"  # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/uiautomator/uiautomator-v18
-
-
+#RUNNER_VERSION="0.5"      # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/runner
+#RUNNER_RULES="0.5"        # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/rules
+#RUNNER_ESPRESSO="2.2.2"   # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/espresso/espresso-cores
+#RUNNER_AUTOMATOR="2.1.2"  # ${ANDROID_HOME}/extras/android/m2repository/com/android/support/test/uiautomator/uiautomator-v18
 #LINT
-#LINT_ISSUES="\n check\ \'Recycle\',\ \'Wakelock\',\'DrawAllocation',\'ObsoleteLayoutParam\',\'ViewHolder\'\ "
-
+LINT_ISSUES="\n check\ \'Recycle\',\ \'Wakelock\',\'DrawAllocation',\'ObsoleteLayoutParam\',\'ViewHolder\'\ "
 #DEPENDENCIES STRINGS
 TRANSITIVE=""
 TEST_TRANSITIVE=""
 ANDROID_TEST_TRANSITIVE=""
 DEBUG_TRANSITIVE=""
-
-if [[ $GRADLE_BUILD_VERSION -ge 3 ]]; then
+#catecho "match GRADLE BUILD VERSION - $GRADLE_BUILD_VERSION"
+if [[ $(echo "$GRADLE_BUILD_VERSION" | head -c 1) -ge 3 ]]; then
 	#statements
 	TRANSITIVE="implementation"
 	TEST_TRANSITIVE="testImplementation"
@@ -69,9 +78,7 @@ else
 	TEST_TRANSITIVE="testCompile"
 	ANDROID_TEST_TRANSITIVE="AndroidTestCompile"
 	DEBUG_TRANSITIVE="debugCompile"
-	#e_echo "menos 3 $GRADLE_BUILD_VERSION"
 fi
-
 
 if [ "$apkBuild" == "debug" ]; then
 	apkBuild="Debug"
@@ -168,7 +175,7 @@ for x in ${BUILDS[@]}; do
 	#Check if it is necessary to change the version of the SDK compiler
 	$SED_COMMAND -ri.bak 's#([ \t]*)compileSdkVersion(( )|( ?= ?))(android-)?(1?[0-9]{1}|20|[^0-9]+)$#\1compileSdkVersion\221#g' $x
 	#Check if it is necessary to change the tag for the Proguard
-	$SED_COMMAND -ri.bak "s#runProguard#minifyEnabled#g" $x
+	#$SED_COMMAND -ri.bak "s#runProguard#minifyEnabled#g" $x
 	#Change the remaining tags
 	$SED_COMMAND -ri.bak "s#packageNameSuffix #applicationIdSuffix #g" $x
 	$SED_COMMAND -ri.bak "s#android.plugin.bootClasspath #android.bootClasspath #g" $x
@@ -283,10 +290,10 @@ for x in ${BUILDS[@]}; do
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$NEW_RUNNER\"#g" $x
 					#e_echo "$csv -> actual runner : $NEW_RUNNER"
-					(echo $NEW_RUNNER) > actualrunner.txt
+					(echo $NEW_RUNNER) > $logDir/actualrunner.txt
 				else
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$OLD_RUNNER\"#g" $x
-					(echo $OLD_RUNNER) > actualrunner.txt
+					(echo $OLD_RUNNER) > $logDir/actualrunner.txt
 					#e_echo "$csv -> actual runner : $OLD_RUNNER"
 				fi
 				
@@ -294,10 +301,10 @@ for x in ${BUILDS[@]}; do
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -i.bak ""$ANDROID_LINE"i testInstrumentationRunner \"$NEW_RUNNER\"" $x
 					#e_echo "$csv -> actual runner : $NEW_RUNNER"
-					(echo $NEW_RUNNER) > actualrunner.txt
+					(echo $NEW_RUNNER) > $logDir/actualrunner.txt
 				else
 					$SED_COMMAND -i.bak ""$ANDROID_LINE"i testInstrumentationRunner \"$OLD_RUNNER\"" $x
-					(echo $OLD_RUNNER) > actualrunner.txt
+					(echo $OLD_RUNNER) > $logDir/actualrunner.txt
 					#e_echo "$csv -> actual runner : $OLD_RUNNER"
 				fi
 			fi
@@ -475,8 +482,10 @@ if [ -n "$STATUS_NOK" ]; then
 
 	if [ -n "$STATUS_NOK" ]; then
 		#the build failed
+		cp $logDir/buildStatus.log $FOLDER/
 		e_echo "$TAG Unable to build project $ID"
 		e_echo "[ERROR] Aborting"
+
 		exit 1
 	fi
 elif [ -n "$STATUS_OK" ]; then
