@@ -16,6 +16,9 @@ function b_echo {
 	echo -e "$blue_$1$rc_"
 }
 
+
+
+
 printf_new() {
      str=$1
      num=$2
@@ -143,6 +146,11 @@ getDeviceResourcesState(){
 getDeviceSpecs(){
 	devJson=$1
 	DEVICE=$(adb devices -l  2>&1 | tail -2)
+	has_devices_conected=$(adb shell echo "" 2>&1 | grep "devices/emulators found")
+	if [[ -n "$has_devices_conected" ]]; then
+		e_echo " No Conected Devices found. Conect the device to the development machine and try again. Aborting..."
+		exit -1
+	fi
 	#local device_model=$(   echo  $DEVICE  | grep -o "model.*" | cut -f2 -d: | cut -f1 -d\ )
 	local device_model=$(adb shell getprop ro.product.model)
 	local device_serial=$(   echo  $DEVICE | tail -n 2 | grep "model" | cut -f1 -d\ )
@@ -170,7 +178,7 @@ getDeviceState(){
 	# fields = ('state_id','state_os_version','state_miui_version', 
 	#'state_api_version','state_device','state_keyboard',
 	#'state_operator','state_operator_country')
-	local soft_version=$(adb shell getprop ro.build.software.version)
+	local soft_version=$(adb shell getprop ro.build.software.version | sed "s/Android//g" | cut -f1 -d_)
 	local ismi=$(test -z $(adb shell getprop ro.miui.cust_variant) && echo "true")
 	if [ -z "$ismi"  ]; then
 		local mi_version=$(adb shell getprop ro.miui.ui.version.name)

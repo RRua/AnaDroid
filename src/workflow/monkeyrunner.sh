@@ -218,6 +218,7 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 	cp $res_folder/device.json $localDir
+	cp $res_folder/config/GSlogin.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"

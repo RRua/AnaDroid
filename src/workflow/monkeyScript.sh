@@ -44,7 +44,7 @@ trepnLib="TrepnLib-release.aar"
 trepnJar="TrepnLib-release.jar"
 profileHardware="YES" # YES or something else
 logStatus="off"
-SLEEPTIME=60 # 1 minutes
+SLEEPTIME=10 # 10 s 
 
 # TODO put in monkey config file
 min_monkey_runs=1 #20
@@ -52,10 +52,16 @@ threshold_monkey_runs=1 #50
 number_monkey_events=500
 min_coverage=10
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
-
+DEBUG="TRUE"
 # trap - INT
 # trap 'quit' INT
 
+
+debug_echo(){
+	if [[ "$DEBUG" == "TRUE" ]]; then
+		e_echo "[DEBUG] $1"
+	fi
+}
 
 setup(){
 	if [ "$trace" == "testoriented" ]; then
@@ -108,7 +114,7 @@ quit(){
 	w_echo "uninstalling actual app $1"
 	$ANADROID_SRC_PATH/others/uninstall.sh $1 $2
 	w_echo "removing actual app from processed Apps log"
-	sed "s#$3##g" $logDir/processedApps.log
+	sed "s#$3##g" $logDir/processedApps.log > /dev/null 2>&1
 	rm ./allMethods.json >/dev/null 2>&1
 	w_echo "GOODBYE"
 	(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
@@ -183,14 +189,14 @@ checkConfig(){
 	fi	
 }
 
-checkIfIdIsReservedWord(){
+checkIfIdIsReservedWord(){  #historic reasons
 	if [ "$ID" == "success" ] || [ "$ID" == "failed" ] || [ "$ID" == "unknown" ]; then	
 		continue
 	fi
 }
 
 getFirstAppVersion(){
-	gradle_files=$(find ${f}/${prefix} -maxdepth 1 -name "build.gradle" )
+	gradle_files=$(find "${f}/${prefix}" -maxdepth 1 -name "build.gradle" )
 	for i in $words; do
 		appVersion=$(cat ${i} | grep "versionName" | head -1 | cut -f2 -d\")
 		if [[ -n "$appVersion" ]]; then
@@ -205,6 +211,7 @@ prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
 	$MKDIR_COMMAND -p $localDir
 	cp $temp_folder/* $localDir
+	cp $res_folder/config/GSlogin.json $localDir
 	#echo "$TAG Creating support folder..."
 	#mkdir -p $localDir
 	#$MKDIR_COMMAND -p $localDir/all
@@ -214,15 +221,16 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir $monkey $apkBuild $logDir
+	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
 	RET=$(echo $?)
-	if [[ "$RET" == "-1" ]]; then
+	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
 		continue
 	fi
 	echo "$ID" >> $logDir/success.log
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
-	total_methods=$( cat $projLocalDir/all/allMethods.json | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
+	total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
 	##########
@@ -299,18 +307,21 @@ runMonkeyTests(){
 }
 
 buildAppWithGradle(){
-	## BUILD PHASE						
-	GRADLE=($(find $FOLDER/$tName -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:))
-	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
+	## BUILD PHASE			
+	debug_echo "bob construtor toma -> $FOLDER/$tName "			
+	GRADLE=($(find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d:))
+	debug_echo "ulha os gradles -> ${GRADLE}"
+	#if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
-		#e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
-		$ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild "monkey"
+		e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
+		debug_echo "bou a tropa"	
+		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkey"
 		RET=$(echo $?)
-	else 
-		w_echo "[APP BUILDER] No changes since last run. Not building again"
-		RET=0
-	fi
-	(echo $trace) > $FOLDER/$tName/instrumentationType.txt
+	#else 
+		#w_echo "[APP BUILDER] No changes since last run. Not building again"
+		#RET=0
+	#fi
+	(echo $trace) > "$FOLDER/$tName/instrumentationType.txt"
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorBuildGradle.log
 		cp $logDir/buildStatus.log $f/buildStatus.log
@@ -325,29 +336,29 @@ buildAppWithGradle(){
 }
 
 instrumentGradleApp(){
-	oldInstrumentation=$(cat $FOLDER/$tName/instrumentationType.txt 2>/dev/null | grep  ".*Oriented" )
-	allmethods=$(find $projLocalDir/all -maxdepth 1 -name "allMethods.json")
+	oldInstrumentation=$(cat "$FOLDER/$tName/instrumentationType.txt" 2>/dev/null | grep  ".*Oriented" )
+	allmethods=$(find "$projLocalDir/all" -maxdepth 1 -name "allMethods.json")
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
 		w_echo "Different type of instrumentation. instrumenting again..."
 		rm -rf $zFOLDER/$tName
-		$MKDIR_COMMAND -p $FOLDER/$tName
-		echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
+		$MKDIR_COMMAND -p "$FOLDER/$tName"
+		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		#e_echo "command -> java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR"
-		java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
+		e_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
+		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
-		cp ./allMethods.json $projLocalDir/all/allMethods.json
+		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
 		#Instrument all manifestFiles
-		(find $FOLDER/$tName -name "AndroidManifest.xml" | egrep -v "/build/" | xargs $ANADROID_SRC_PATH/build/manifestInstr.py )
+		(find "$FOLDER/$tName" -name "AndroidManifest.xml" | egrep -v "/build/" | xargs -I{} $ANADROID_SRC_PATH/build/manifestInstr.py "{}" )
 	else 
 		e_echo "Same instrumentation of last time. Skipping instrumentation phase"
 	fi
 	#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
-	xx=$(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )
+	xx=$(find  "$projLocalDir/" -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )
 	##echo "xx -> $xx"
 	$MV_COMMAND -f $xx $projLocalDir/oldRuns/ >/dev/null 2>&1
 	echo "$FOLDER/$tName" > $logDir/lastTranformedApp.txt
-	for D in `find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
+	for D in `find "$FOLDER/$tName/" -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
 	    if [ -d "${D}" ]; then  ##RR
 	    	$MKDIR_COMMAND -p ${D}/libs  ##RR
 	     	cp $res_folder/libsAdded/$treprefix$trepnLib ${D}/libs  ##RR
@@ -359,17 +370,19 @@ setupLocalResultsFolder(){
 	echo "$TAG setting up local results folder"
 	#create results support folder
 	#echo "$TAG Creating support folder..."
-	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
+	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
 	$MKDIR_COMMAND -p $projLocalDir
 	$MKDIR_COMMAND -p $projLocalDir/oldRuns
-	($MV_COMMAND -f $(find $projLocalDir ! -path $projLocalDir -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
+	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
 	$MKDIR_COMMAND -p $projLocalDir/all
 	FOLDER=${f}${prefix} #$f
-	ORIGINAL_GRADLE=($(find $FOLDER/ -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
+	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print0 | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
 	APP_ID="unknown"
-	getAppUID ${GRADLE[0]} $MANIF_S APP_ID
+	getAppUID "${GRADLE[0]}" "$MANIF_S" APP_ID
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
+	
 	getFirstAppVersion 
+	
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
@@ -400,7 +413,8 @@ analyzeAPK(){
 inferPrefix(){
 	# needed because extracted apps from muse are in a folder name latest inside $ID folder
 	local searching_dir=$1
-	local have_prefix=$(find $searching_dir -type d -maxdepth 1 | grep $default_prefix )
+	#e_echo "searching dir $1"
+	local have_prefix=$(find "$searching_dir" -type d -maxdepth 1 | grep $default_prefix )
 	if [[ -n "$have_prefix" ]]; then
 		prefix=$default_prefix
 		#e_echo " has prefix"
@@ -431,20 +445,24 @@ seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
 last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
 for f in $DIR/*
+#find $DIR/* -type d | while read dir; 
 	do
 	if [[ -f $f ]]; then 
 		#if not a directory (i.e Android Project folder), ignore 
 		w_echo "$TAG $f is not a folder and will be ignored"
 		continue
 	fi
-
-	inferPrefix $f
+	#f="$dir"
+	#f=$( echo $f | sed -e "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/" ) # to escape spaces in folder name
+	inferPrefix "$f"
 	localDir=$localDirOriginal
 	cleanDeviceTrash
 	IFS='/' read -ra arr <<< "$f"
 	ID=${arr[*]: -1} # ID OF of the application (name of respective folder )
 	IFS=$(echo -en "\n\b")
 	now=$(date +"%d_%m_%y_%H_%M_%S")
+	ID=$(echo $ID | sed 's/ //g')
+	e_echo "ulha id-> $ID"
 	# check if app was already processed #TODO
 	checkIfAppAlreadyProcessed $ID
 	checkIfIdIsReservedWord	
@@ -456,7 +474,7 @@ for f in $DIR/*
 		continue
 ### Gradle proj			
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
-		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
+		MANIFESTS=($(find "$f" -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
 			for R in ${MP[@]}; do 
@@ -491,9 +509,9 @@ for f in $DIR/*
 		fi
 	else 
 		e_echo "Dropped support for Eclipse SDK projects"
-		exit -1
+		continue
 #SDK PROJ
-		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/bin/|$tName"))
+		MANIFESTS=($(find \"$f\" -name "AndroidManifest.xml" | egrep -v "/bin/|$tName"))
 		MP=($(python manifestParser.py ${MANIFESTS[*]}))
 		for R in ${MP[@]}; do
 			RESULT=($(echo "$R" | tr ':' '\n'))
@@ -557,7 +575,7 @@ for f in $DIR/*
 				#echo "$TAG Creating support folder..."
 				$MKDIR_COMMAND -p $projLocalDir
 				$MKDIR_COMMAND -p $projLocalDir/oldRuns
-				$MV_COMMAND -f $(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
+				$MV_COMMAND -f $(find  \"$projLocalDir/\" -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
 				$MKDIR_COMMAND -p $projLocalDir/all
 				
 				

@@ -129,6 +129,8 @@ installAndroidSDK(){
 			$ANDROID_HOME/tools/bin/sdkmanager --update
 			$ANDROID_HOME/tools/bin/sdkmanager "platforms;android-26"
  			$ANDROID_HOME/tools/bin/sdkmanager "platform-tools"
+ 			$ANDROID_HOME/tools/bin/sdkmanager "--install" "ndk-bundle"
+ 			cd $HOME/android-sdk/ndk-bundle; ln -s aarch64-linux-android-4.9 mips64el-linux-android; ln -s arm-linux-androideabi-4.9 mipsel-linux-android
  			e_echo "You also must set the ANDROID_HOME environment variable"
 			w_echo "More info at $URL"
 		else
@@ -140,6 +142,7 @@ installAndroidSDK(){
 			$ANDROID_HOME/tools/bin/sdkmanager --update
 			$ANDROID_HOME/tools/bin/sdkmanager "platforms;android-26"
  			$ANDROID_HOME/tools/bin/sdkmanager "platform-tools"
+ 			$ANDROID_HOME/tools/bin/sdkmanager "--install" "ndk-bundle"
  			e_echo "You also must set the ANDROID_HOME environment variable"
 			w_echo "More info at $URL"
 			

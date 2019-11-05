@@ -10,11 +10,11 @@ SUPPORTED_PROFILERS=( "trepn" )
 SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 #ANADROID DEFAULT CONFIG
 TEST_ORIENTATION="testoriented"
-URL="http://greensource.di.uminho.pt/"
+#URL="http://greensource.di.uminho.pt/"
 
 
 ##### DEFAULTS #####
-#URL="http://localhost:8000/"
+URL="http://localhost:8000/"
 #URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
@@ -218,6 +218,17 @@ echo APP_BUILD_TYPE    = "${APP_BUILD_TYPE}"
 #echo DEFAULT         = "${DEFAULT}"
 
 echo "${MonkeyRunnerList[@]}"
+
+
+if [[ "$URL" != "NONE" ]]; then
+    resLoginFile=$(cat $ANADROID_PATH/resources/config/GSlogin.json)
+    if [ -n "$resLoginFile" ] && [ -n "$(echo $resLoginFile | grep username )" ]; then
+        #statements
+        e_echo "Submiting test results to $URL using user $(echo $resLoginFile | grep username | cut -f1 -d, | cut -f2 -d: )"
+    else
+        e_echo "Fatal error. There is an error in GSlogin file. Please edit file $ANADROID_PATH/resources/config/GSlogin.json and try again"
+    fi
+fi
 
 
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then

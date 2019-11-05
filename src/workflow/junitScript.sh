@@ -237,6 +237,7 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 	cp $res_folder/device.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
+	cp $res_folder/config/GSlogin.json $localDir
 	#install on device
 	#./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir  #COMMENT, EVENTUALLY...
 	#e_echo "$ANADROID_SRC_PATH/others/install.sh $FOLDER/$tName \"X\" \"GRADLE\" $PACKAGE $projLocalDir $monkey $apkBuild	"
