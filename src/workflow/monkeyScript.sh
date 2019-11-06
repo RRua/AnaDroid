@@ -221,7 +221,7 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	#debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
@@ -308,37 +308,36 @@ runMonkeyTests(){
 
 buildAppWithGradle(){
 	## BUILD PHASE			
-	debug_echo "bob construtor toma -> $FOLDER/$tName "			
 	GRADLE=($(find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d:))
-	debug_echo "ulha os gradles -> ${GRADLE}"
-	#if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
-		w_echo "[APP BUILDER] Different instrumentation since last time. Building Again"
+	#debug_echo "ulha os gradles -> ${GRADLE}"
+	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]; then
+		w_echo "[APP BUILDER] Building Again"
 		e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
-		debug_echo "bou a tropa"	
 		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkey"
 		RET=$(echo $?)
-	#else 
-		#w_echo "[APP BUILDER] No changes since last run. Not building again"
-		#RET=0
-	#fi
+	else 
+		w_echo "[APP BUILDER] No changes since last run. Not building again"
+		RET=0
+	fi
 	(echo $trace) > "$FOLDER/$tName/instrumentationType.txt"
 	if [[ "$RET" != "0" ]]; then
+		# BUILD FAILED. SKIPPING APP
 		echo "$ID" >> $logDir/errorBuildGradle.log
 		cp $logDir/buildStatus.log $f/buildStatus.log
 		if [[ -n "$logStatus" ]]; then
 			cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
 		fi
 		continue
-	else 
-		i_echo "BUILD SUCCESSFULL"
 	fi
 	## END BUILD PHASE						
 }
 
 instrumentGradleApp(){
 	oldInstrumentation=$(cat "$FOLDER/$tName/instrumentationType.txt" 2>/dev/null | grep  ".*Oriented" )
-	allmethods=$(find "$projLocalDir/all" -maxdepth 1 -name "allMethods.json")
-	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$allmethods" ]; then
+	#allmethods=$(find "$projLocalDir/all" -maxdepth 1 -name "allMethods.json")
+	last_build_result=$(grep "BUILD SUCCESSFUL" "$FOLDER/$tName/buildStatus.log" 2>/dev/null  )
+	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ] ; then
+		# same instrumentation and build successfull 
 		w_echo "Different type of instrumentation. instrumenting again..."
 		rm -rf $zFOLDER/$tName
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
@@ -392,7 +391,7 @@ setupLocalResultsFolder(){
 }
 
 uninstallApp(){
-	$ANADROID_SRC_PATH/others/uninstall.sh $PACKAGE $TESTPACKAGE
+	$ANADROID_SRC_PATH/others/uninstall.sh "$PACKAGE" "$TESTPACKAGE"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log
@@ -410,20 +409,9 @@ analyzeAPK(){
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
 }
 
-inferPrefix(){
-	# needed because extracted apps from muse are in a folder name latest inside $ID folder
-	local searching_dir=$1
-	#e_echo "searching dir $1"
-	local have_prefix=$(find "$searching_dir" -type d -maxdepth 1 | grep $default_prefix )
-	if [[ -n "$have_prefix" ]]; then
-		prefix=$default_prefix
-		#e_echo " has prefix"
-	else
-		prefix=""
-		#e_echo " no prefix"
-	fi
 
-}
+
+
 
 setup
 $MKDIR_COMMAND -p $logDir
@@ -445,7 +433,6 @@ seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
 last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
 for f in $DIR/*
-#find $DIR/* -type d | while read dir; 
 	do
 	if [[ -f $f ]]; then 
 		#if not a directory (i.e Android Project folder), ignore 
@@ -462,7 +449,6 @@ for f in $DIR/*
 	IFS=$(echo -en "\n\b")
 	now=$(date +"%d_%m_%y_%H_%M_%S")
 	ID=$(echo $ID | sed 's/ //g')
-	e_echo "ulha id-> $ID"
 	# check if app was already processed #TODO
 	checkIfAppAlreadyProcessed $ID
 	checkIfIdIsReservedWord	
@@ -594,7 +580,7 @@ for f in $DIR/*
 				trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 				for i in $seeds20; do
 					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir		
+					./runMonkeyTest.sh "$i" "$number_monkey_events" "$trace" "$PACKAGE"	"$localDir" "$deviceDir"	
 					RET=$(echo $?)
 					if [[ $RET -ne 0 ]]; then
 						errorHandler $RET $PACKAGE
@@ -611,7 +597,7 @@ for f in $DIR/*
 					if [ "$totaUsedTests" -eq 30 ]; then
 						getBattery
 					fi
-					./trepnFix.sh $deviceDir
+					./trepnFix.sh "$deviceDir"
 				done
 
 ########## RUN TESTS  THRESHOLD ############
@@ -654,7 +640,7 @@ for f in $DIR/*
 				APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"1\"}" #" \"app_language\": \"Java\"}"
 				Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", project_apps:[$APP_JSON]} , project_packages=[]}"
 				echo "$Proj_JSON" > $localDir/projectApplication.json
-				./uninstall.sh $PACKAGE $TESTPACKAGE
+				./uninstall.sh "$PACKAGE" "$TESTPACKAGE"
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorUninstall.log

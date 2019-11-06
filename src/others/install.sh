@@ -32,10 +32,10 @@ IFS='%'
 #ID=${arr[*]: -1} # ID OF of the application (name of respective folder )
 
 if [ "$projtype" == "SDK" ]; then
-	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild*.apk" | while read dir; do echo $dir; done | grep -v $pathTests))
+	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" | while read dir; do echo $dir; done | grep -v $pathTests))
 	testAPK=($(find "$pathTests" -name "*-$apkBuild.apk"))
 elif [ "$projtype" == "GRADLE" ]; then
-	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild*.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests))
+	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests))
 	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | while read dir; do echo $dir; done )
 	#testAPK=($(find "$pathProject" -name "*$apkBuild-androidTest*.apk"))
 fi
@@ -97,17 +97,17 @@ elif [[ "$OK" != "1" ]]; then
 	if [[ "${#appAPK[@]}" == 0 ]]; then
 		e_echo "$TAG Error: Unexpected number of .apk files found."
 		exit -1
-	elif [[ "${#testAPK[@]}" == 0 ]]; then
+	elif [[ "${#testAPK[@]}" == "0" ]]; then
 		e_echo "$TAG Error: Unexpected number of test apk files found."
 	fi
 else 
-	echo "$TAG installing main apk ${appAPK[0]}"
+	w_echo "$TAG installing main apk ${appAPK[0]}"
 	(adb install -g -r "${appAPK[0]}") # >/dev/null 2>&1
 	installedAPK=${appAPK[0]}
 	echo "$installedAPK" > $logDir/lastInstalledAPK.txt
 	#w_echo "$TAG installing Test .apk's"
 	if [[ "$testingFramework" == "-junit" ]]; then
-		echo "$TAG installing test apk ${testAPK[0]}"
+		w_echo "$TAG installing test apk ${testAPK[0]}"
 		(adb install -g -r "${testAPK[0]}")   #>/dev/null 2>&1
 	fi
 	

@@ -440,8 +440,6 @@ if [ -n "$STATUS_NOK" ]; then
 		((try--))
 		w_echo "$TAG Common Error. Trying again..."
 		if [[ -n "$wrapperError" ]]; then
-			debug_echo "$wrapperError"
-			debug_echo " a culpa é do RAP"
 			mkdir -p "$FOLDER/gradle/wrapper" 2>&1
 			cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
 			cp $gradle_wrapper_location "$FOLDER/"
@@ -528,6 +526,7 @@ if [ -n "$STATUS_NOK" ]; then
 		
 		if [ -n "$STATUS_OK" ]; then
 			#the build was successful
+			cp $logDir/buildStatus.log "$FOLDER/"
 			i_echo "$TAG Build successful for project $ID"
 			break
 		fi
@@ -541,14 +540,17 @@ if [ -n "$STATUS_NOK" ]; then
 		#the build failed
 		cp $logDir/buildStatus.log "$FOLDER/"
 		e_echo "$TAG Unable to build project $ID"
-		e_echo "[ERROR] Aborting"
+		e_echo "$TAG Aborting"
 		exit 1
 	fi
 elif [ -n "$STATUS_OK" ]; then
 	i_echo "$TAG Build successful for project $ID"
+	cp $logDir/buildStatus.log "$FOLDER/"
 else
 	e_echo "$TAG Unable to build project $ID"
 	e_echo "[ERROR] Aborting"
+	cp $logDir/buildStatus.log "$FOLDER/"
 	exit 1
 fi
+
 exit 0

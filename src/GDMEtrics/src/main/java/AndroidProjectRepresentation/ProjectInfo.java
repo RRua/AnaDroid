@@ -126,7 +126,6 @@ public class ProjectInfo implements Serializable, JSONSerializable{
     public JSONObject fromJSONFile(String pathToJSONFile) {
         JSONParser parser = new JSONParser();
         JSONObject ja = new JSONObject();
-
         try {
             Object obj = parser.parse(new FileReader(pathToJSONFile));
             JSONObject jsonObject = (JSONObject)obj;

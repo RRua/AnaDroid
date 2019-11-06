@@ -56,6 +56,15 @@ initProfiler(){
 	sleep 3
 }
 
+stopProfiler(){
+	echo "stopping profiler..."
+	sleep 1
+	(adb shell am broadcast -a com.quicinc.trepn.stop_profiling) >/dev/null 2>&1
+	sleep 6
+	(adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_db_input_file "myfile" -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) >/dev/null 2>&1
+	sleep 1
+}
+
 
 
 #grantPermissions $package
@@ -91,12 +100,9 @@ w_echo "stopped tests. "
 echo "stopping running app"
 sleep 1
 adb shell am force-stop $package 
-echo "stopping profiler..."
-sleep 1
-(adb shell am broadcast -a com.quicinc.trepn.stop_profiling) >/dev/null 2>&1
-sleep 6
-(adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_db_input_file "myfile" -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) >/dev/null 2>&1
-sleep 1
+
+stopProfiler
+
 getDeviceResourcesState "$localDir/end_state$script_index.json"
 echo "cleaning app cache"
 adb shell pm clear $package >/dev/null 2>&1

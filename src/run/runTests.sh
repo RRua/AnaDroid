@@ -54,13 +54,21 @@ grantPermissions(){
 	(adb shell pm grant $pack android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
 	(adb shell pm grant $pack android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
 	(adb shell pm grant "$pack.test" android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
-	(adb shell pm grant "$pack.test" android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
-	
-
-	
+	(adb shell pm grant "$pack.test" android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1	
 }
 
-
+initProfiler(){
+	w_echo "starting the profiler"
+	adb shell monkey -p com.quicinc.trepn -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+	sleep 1
+	(adb shell am startservice --user 0 com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+	sleep 2
+	(adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME) > /dev/null 2>&1
+	#sleep 3
+	#e_echo "nao fiz load do dfichero de prefs !! " > /dev/null 2>&1
+	#(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/All.pref") >/dev/null 2>&1
+	#sleep 3
+}
 
 
 
@@ -68,7 +76,7 @@ runTests(){
 	state="begin"
 	adb shell "echo $GDflag > $deviceDir/GDflag"
 	#echo "sei la comando ($Timeout_COMMAND -s 9 $TIMEOUT adb shell am instrument -w $testPack/$runner) &> runStatus.log"
-	($Timeout_COMMAND -s 9 $TIMEOUT adb shell am instrument -w $testPack/$runner) &> runStatus.log
+	($Timeout_COMMAND -s 9 $TIMEOUT adb shell am instrument -w "$testPack/$runner") &> runStatus.log
 	#if went wrong
 	missingInstrumentation=$(grep "Unable to find instrumentation info for" runStatus.log)
 	flagInst="0"
@@ -129,16 +137,16 @@ pullResults(){
 			exit 2
 		fi
 	fi
-	cp $appFolder/application.json $localDir
-	cp device.json $localDir
-	cp $appFolder/appPermissions.json $localDir
-	adb shell ls "$deviceDir/Measures/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/Measures/{} $localDir
+	cp "$appFolder/application.json" "$localDir"
+	cp device.json "$localDir"
+	cp "$appFolder/appPermissions.json" "$localDir"
+	adb shell ls "$deviceDir/Measures/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/Measures/{} "$localDir"
 	#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
-	adb shell ls "$deviceDir/Traces/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/Traces/{} $localDir
-	adb shell ls "$deviceDir/TracedTests/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/TracedTests/{} $localDir
-	csvs=$(find $localDir -name "*.csv")
+	adb shell ls "$deviceDir/Traces/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/Traces/{} "$localDir"
+	adb shell ls "$deviceDir/TracedTests/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/TracedTests/{} "$localDir"
+	csvs=$(find "$localDir" -name "*.csv")
 	for i in $csvs; do
-		tags=$(cat $i |  grep "stopped" | wc -l)
+		tags=$(cat "$i" |  grep "stopped" | wc -l)
 		if [ $tags -lt "2" ] && [ "$folderPrefix" == "Test" ] ; then
 			e_echo " $i might contain an error "
 			echo "$i" >> logs/csvErrors.log
@@ -157,6 +165,8 @@ stateToJSON(){
 
 }
 
+#initProfiler
+
 if [ $nRuns -eq 2 ]; then
 	#run in measure and trace mode separately
 	GDflag="-1"
@@ -166,21 +176,23 @@ if [ $nRuns -eq 2 ]; then
 	stopAndcleanTrash
 	GDflag="1"
 	w_echo "$TAG Running the tests (Measuring mode)"
+	stateToJSON "begin"
+	grantPermissions
+	runTests 
+	stateToJSON "end"
+	stopAndcleanTrash
+	#stopSimiasque
+	pullResults
 else
 	# run only once, in normal mode
 	GDflag="0"
 	w_echo "$TAG Running the tests (Measuring mode)"
+
 	#initSimiasque
 fi
+
 (adb shell am stopservice com.quicinc.trepn/.TrepnService) # remove
 
-stateToJSON "begin"
-grantPermissions
-runTests 
-stateToJSON "end"
-stopAndcleanTrash
-#stopSimiasque
-pullResults
 
 # In case the missing instrumentation error occured, let's remove all apps with instrumentations now!
 #« if [[ "$flagInst" == 1 ]]; then
