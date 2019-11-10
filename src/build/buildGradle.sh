@@ -40,8 +40,9 @@ debug_echo(){
 
 function inferGradlePluginVersion(){
 	local main_gradle_file=$1
-	local gradle_plugin_version=$(grep "classpath" "$main_gradle_file" | awk '{print $2}' | tr -d \''"\' | rev | cut -f 1 -d: | rev)
-	if [ -z $gradle_plugin_version ]; then
+	echo "o main é $main_gradle_file"
+	local gradle_plugin_version=$(grep "classpath" "$main_gradle_file" | grep 'tools.build' | awk '{print $2}' | tr -d \''"\' | rev | cut -f 1 -d: | rev)
+	if [ -z "$gradle_plugin_version" ]; then
 		e_echo "unable to find gradle plugin version. Assuming"
 		GRADLE_PLUGIN_VERSION="2.3"
 	else

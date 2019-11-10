@@ -221,7 +221,7 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	#debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
@@ -308,7 +308,9 @@ runMonkeyTests(){
 
 buildAppWithGradle(){
 	## BUILD PHASE			
-	GRADLE=($(find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d:))
+	GRADLE=($(find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d: |  awk 'BEGIN{OFS=",";} {print length($1),$1}' | sort -nk 1  | head -1 | cut -f2 -d,))
+	echo "find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d:"
+	e_echo "debug os gradles sao ${GRADLE[0]}"
 	#debug_echo "ulha os gradles -> ${GRADLE}"
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]; then
 		w_echo "[APP BUILDER] Building Again"
@@ -409,6 +411,36 @@ analyzeAPK(){
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
 }
 
+inferPrefix(){
+	# needed because extracted apps from muse are in a folder name latest inside $ID folder
+	local searching_dir=$1
+	#e_echo "searching dir $1"
+	local have_prefix=$(find "$searching_dir" -type d -maxdepth 1 | grep $default_prefix )
+	if [[ -n "$have_prefix" ]]; then
+		prefix=$default_prefix
+		#e_echo " has prefix"
+	else
+		prefix=""
+		#e_echo " no prefix"
+	fi
+}
+
+checkBuildingTool(){
+	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
+	POM=$(find "${f}/${prefix}" -maxdepth 1 -name "pom.xml")
+	if [ -n "$POM" ]; then
+		POM=${POM// /\\ }
+		#e_echo "Maven projects are not considered yet..."
+		echo "Maven"
+		continue
+	elif [ -n "${GRADLE[0]}" ]; then
+		#statements
+		echo "Gradle"
+	else 
+		echo "Eclipse"
+	fi
+}
+
 
 
 
@@ -454,6 +486,7 @@ for f in $DIR/*
 	checkIfIdIsReservedWord	
 	projLocalDir=$localDir/$ID
 	BUILD_TYPE=$(checkBuildingTool)
+	w_echo "$TAG processing app $ID"
 	if [ "$BUILD_TYPE" == "Maven" ]; then
 		POM=${POM// /\\ }
 		e_echo " Maven projects are not considered yet... "

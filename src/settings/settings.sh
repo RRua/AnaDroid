@@ -204,20 +204,5 @@ getDeviceState(){
 	}" > "$statJson"
 }
 
-checkBuildingTool(){
-	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
-	POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
-	if [ -n "$POM" ]; then
-		POM=${POM// /\\ }
-		#e_echo "Maven projects are not considered yet..."
-		echo "Maven"
-		continue
-	elif [ -n "${GRADLE[0]}" ]; then
-		#statements
-		echo "Gradle"
-	else 
-		echo "Eclipse"
-	fi
-}
 
 

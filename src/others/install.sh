@@ -27,7 +27,6 @@ TAG="[APP INSTALLER]"
 
 #i_echo "$TAG Installing the apps on the device"
 #find the apk files
-OLD_IFS=$IFS
 IFS='%'
 #ID=${arr[*]: -1} # ID OF of the application (name of respective folder )
 
@@ -39,9 +38,9 @@ elif [ "$projtype" == "GRADLE" ]; then
 	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | while read dir; do echo $dir; done )
 	#testAPK=($(find "$pathProject" -name "*$apkBuild-androidTest*.apk"))
 fi
-IFS=$OLD_IFS
+IFS=$(echo -en "\n\b")
+
 OK="0"
-e_echo "olha o $appAPK"
 
 if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 
@@ -61,6 +60,8 @@ if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 		if [ "${#bqq[@]}" -ge "1" ]; then
 			OK="1"
 		fi
+	
+	#elif [ "${#appAPK[@]}" -ge 1 ] && [ "${#testAPK[@]}" == "0" ] ; then
 	elif [ "${#appAPK[@]}" -ge 1 ]; then
 		#statements
 		#Either there's no apk files found for the app and/or tests, 
@@ -83,12 +84,14 @@ if [ $testingFramework == "-junit" ]  && [ "${#testAPK[@]}" == "0" ]; then
 fi
 
 if [[ "$OK" == "2" ]]; then
-	if [ "${#appAPK[@]}" ==  "1" ]; then
+	if [ "${#appAPK[@]}" -eq  "1" ]; then
 		#w_echo "$TAG Ready to install generated Apps -> Finded : ${#x[@]} App .apk's, ${#testAPK[@]} Test .apk's"
 		#w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
-		(adb install -g -r "${appAPK[0]}") 
-		installedAPK=${appAPK[0]}
-		echo "$installedAPK" > $logDir/lastInstalledAPK.txt
+		for apk in $appAPK; do
+			(adb install -g -r "$apk") 
+			echo "$apk" > $logDir/lastInstalledAPK.txt
+		done
+		
 	else
 		e_echo "Error while installing. No APK's found"
 		exit -1
