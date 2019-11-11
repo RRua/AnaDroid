@@ -7,10 +7,10 @@ import time
 
 def dummy_test( pack_name):
 	device = MonkeyRunner.waitForConnection()
-	device.shell("monkey -p "+pack_name +" -c android.intent.category.LAUNCHER 1")
+	#device.shell("monkey -p "+pack_name +" -c android.intent.category.LAUNCHER 1")
 	time.sleep(2)
 	easydevice = EasyMonkeyDevice(device)
-	easydevice.type( 'id/batata_edit', 'batata')
+	#easydevice.type( 'id/batata_edit', 'batata')
 	result = device.takeSnapshot()
 	result.writeToFile( pack_name+ "_main.png",'png')
 
