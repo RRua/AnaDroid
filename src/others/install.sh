@@ -34,8 +34,8 @@ if [ "$projtype" == "SDK" ]; then
 	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" | while read dir; do echo $dir; done | grep -v $pathTests))
 	testAPK=($(find "$pathTests" -name "*-$apkBuild.apk"))
 elif [ "$projtype" == "GRADLE" ]; then
-	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests))
-	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | while read dir; do echo $dir; done )
+	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
+	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | while read dir; do echo $dir; done | grep -v "instant-run" )
 	#testAPK=($(find "$pathProject" -name "*$apkBuild-androidTest*.apk"))
 fi
 IFS=$(echo -en "\n\b")
