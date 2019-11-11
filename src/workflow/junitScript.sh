@@ -370,7 +370,8 @@ uninstallApp(){
 inferPrefix(){
 	# needed because extracted apps from muse are in a folder name latest inside $ID folder
 	local searching_dir=$1
-	local have_prefix=$(find "$searching_dir" -type d -maxdepth 1 | grep $default_prefix )
+	#e_echo "searching dir $1"
+	local have_prefix=$(find "$searching_dir"  -maxdepth 1  -type d | grep $default_prefix )
 	if [[ -n "$have_prefix" ]]; then
 		prefix=$default_prefix
 		#e_echo " has prefix"
@@ -378,7 +379,6 @@ inferPrefix(){
 		prefix=""
 		#e_echo " no prefix"
 	fi
-
 }
 
 setup
