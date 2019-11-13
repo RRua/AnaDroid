@@ -42,6 +42,12 @@ IFS=$(echo -en "\n\b")
 
 OK="0"
 
+if [[  "${#appAPK[@]}" == "0" ]]; then
+	appAPK=($(find "$pathProject" -type f -name "*.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
+	testAPK=$(find "$pathProject" -type f  -name "*-androidTest*.apk" -print | while read dir; do echo $dir; done | grep -v "instant-run" )
+	
+fi
+
 if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 
 	if [ "${#appAPK[@]}" -ge 1 ] && [ "${#testAPK[@]}" == "1" ]; then
@@ -69,6 +75,7 @@ if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 		OK="2"
 	else
 		e_echo "FATAL ERROR. No APK found for installation"
+
 		exit -1
 	fi
 else

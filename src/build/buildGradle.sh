@@ -430,6 +430,7 @@ STATUS_NOK=$(grep "BUILD FAILED" $logDir/buildStatus.log)
 STATUS_OK=$(grep "BUILD SUCCESS" $logDir/buildStatus.log)
 if [ -n "$STATUS_NOK" ]; then
 	try="6"
+	googleError=$(grep "method google() for arguments" $logDir/buildStatus.log )
 	libsError=$(grep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: \[libs\]" $logDir/buildStatus.log)
 	minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
 	buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)
@@ -437,10 +438,10 @@ if [ -n "$STATUS_NOK" ]; then
 	(export PATH=$ANDROID_HOME/tools/bin:$PATH)
 	sdkl=$(sdkmanager --list 2>&1) 
 	#echo "available _> $availableSdkTools"
-	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") ]]; do
+	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") || (-n "$googleError") ]]; do
 		((try--))
 		w_echo "$TAG Common Error. Trying again..."
-		if [[ -n "$wrapperError" ]]; then
+		if [[ -n "$wrapperError" ]] || [[ -n "$googleError" ]]; then
 			mkdir -p "$FOLDER/gradle/wrapper" 2>&1
 			cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
 			cp $gradle_wrapper_location "$FOLDER/"
@@ -517,7 +518,7 @@ if [ -n "$STATUS_NOK" ]; then
 		else
 			cd "$FOLDER"; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$x"
 		fi
-
+		googleError=$(grep "method google() for arguments" $logDir/buildStatus.log )
 		libsError=$(egrep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: [libs]" $logDir/buildStatus.log)
 		minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
 		buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)

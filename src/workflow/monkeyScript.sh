@@ -49,7 +49,7 @@ SLEEPTIME=10 # 10 s
 # TODO put in monkey config file
 min_monkey_runs=1 #20
 threshold_monkey_runs=1 #50
-number_monkey_events=500
+number_monkey_events=1000
 min_coverage=10
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 DEBUG="TRUE"
@@ -142,7 +142,7 @@ pingDevice(){
 			exit -1
 		fi
 	else
-		deviceExternal=$(adb shell 'echo -n $EXTERNAL_STORAGE' 2>&1)
+		deviceExternal=$(adb shell 'echo -n $EXTERNAL_STORAGE' | tail -1 2>&1)
 		if [ -z "$deviceExternal" ]; then
 			e_echo "$TAG Could not determine the device's external storage. Check and try again..."
 			exit 1
@@ -377,7 +377,7 @@ setupLocalResultsFolder(){
 	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
 	$MKDIR_COMMAND -p $projLocalDir/all
 	FOLDER=${f}${prefix} #$f
-	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print0 | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
+	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
 	APP_ID="unknown"
 	getAppUID "${GRADLE[0]}" "$MANIF_S" APP_ID
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
@@ -464,6 +464,7 @@ w_echo "$TAG searching for Android Projects in -> $DIR"
 seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
 last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
 #for each Android Proj in the specified DIR
+
 for f in $DIR/*
 	do
 	if [[ -f $f ]]; then 
