@@ -99,11 +99,12 @@ getAppUID(){
 		eval "$3='$APPID'"
 	else
 		#package from manifest
-		APPID=$(grep  -o "package=\".*\"" $2 | sed 's/package=//g'| sed 's/\"//g' )
+		APPID=$(grep -o "package=\"[^\"]*\"" $2 | sed 's/package=//g'| sed 's/\"//g' )
 		if [[ -n "$APPID" ]]; then
 			eval "$3='$APPID'"
 		fi		
 	fi
+	
 }
 # abort the script execution during testing phase
 quit(){
@@ -341,7 +342,7 @@ instrumentGradleApp(){
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ] ; then
 		# same instrumentation and build successfull 
 		w_echo "Different type of instrumentation. instrumenting again..."
-		rm -rf $zFOLDER/$tName
+		rm -rf $FOLDER/$tName
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
@@ -496,9 +497,13 @@ for f in $DIR/*
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
 		MANIFESTS=($(find "$f" -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
+			debug_echo " o comando do manif -> python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]})"
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
 			for R in ${MP[@]}; do 
 			# FOR EACH APP OF PROJECT
+				debug_echo " -> $R"
+				debug_echo " app id -> $(echo "$R" | sed "s%${f}%%g" | cut -f2 -d\/ | sed 's%/%%g' | cut -f1 -d:  )"
+				#continue
 				RESULT=($(echo "$R" | tr ':' '\n'))
 				TESTS_SRC=${RESULT[1]}
 				PACKAGE=${RESULT[2]}

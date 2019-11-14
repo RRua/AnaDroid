@@ -107,7 +107,7 @@ public class ProjectInfo implements Serializable, JSONSerializable{
                 proj.allPackagesOfProject.add(((String) job.get("package")));
             }
         }catch (Exception e){
-            e.printStackTrace();
+         //   e.printStackTrace();
         }
         try{
             JSONArray apps = ((JSONArray) jo.get("project_apps"));
@@ -117,7 +117,7 @@ public class ProjectInfo implements Serializable, JSONSerializable{
                     proj.apps.add((AppInfo) new AppInfo().fromJSONObject(job));
             }
         }catch (Exception e){
-            e.printStackTrace();
+         //   e.printStackTrace();
         }
         return proj;
     }
@@ -133,11 +133,11 @@ public class ProjectInfo implements Serializable, JSONSerializable{
                 return jsonObject;
             }
         } catch (FileNotFoundException var5) {
-            var5.printStackTrace();
+            //var5.printStackTrace();
         } catch (IOException var6) {
-            var6.printStackTrace();
+          //  var6.printStackTrace();
         } catch (org.json.simple.parser.ParseException var7) {
-            var7.printStackTrace();
+           // var7.printStackTrace();
         }
 
         return ja;

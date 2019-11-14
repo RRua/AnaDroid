@@ -192,6 +192,7 @@ getDeviceState(){
 	local conn_type=$(adb shell getprop gsm.network.type )
 	local kernel_version=$(adb shell cat /proc/version)
 	local device_id=$(adb shell getprop ro.serialno )
+	local nr_installed_apps=$( adb shell pm list packages | wc -l | sed 's/ //g')
 	echo "
 	{
 		\"state_device_id\": \"$device_id\",
@@ -200,7 +201,9 @@ getDeviceState(){
 		\"state_api_version\": \"$sdk_version\", 
 		\"state_kernel_version\": \"$kernel_version\", 
 		\"state_operator\": \"$operator\", 
-		\"state_operator_country\": \"$operator_country\"
+		\"state_operator_country\": \"$operator_country\",
+		\"state_nr_installed_apps\": \"$nr_installed_apps\"
+
 	}" > "$statJson"
 }
 

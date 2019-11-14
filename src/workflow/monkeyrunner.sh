@@ -343,7 +343,7 @@ instrumentGradleApp(){
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ] ; then
 		# same instrumentation and build successfull 
 		w_echo "Different type of instrumentation. instrumenting again..."
-		rm -rf $zFOLDER/$tName
+		rm -rf $FOLDER/$tName
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"

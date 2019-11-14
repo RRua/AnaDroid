@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import xml.sax, sys
+from xml.etree.ElementTree import ParseError
+
 
 class ManifestHandler( xml.sax.ContentHandler ):
    def __init__(self, path):
@@ -45,11 +47,14 @@ def main(argv):
       # override the default ContextHandler
       handler = ManifestHandler(path)
       parser.setContentHandler( handler )
-      
-      parser.parse(arg)
-
-      lst.append(handler)
-      lst_cpy = lst
+      try:
+         parser.parse(arg)
+         lst.append(handler)
+         lst_cpy = lst
+      except ParseError as e:
+         continue
+      except Exception as e:
+         continue
       #print(handler.package)
 
    p, source, tests, package, testPack="","","","",""

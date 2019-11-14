@@ -8,8 +8,11 @@ import sys
 
 def insertReadWritePerms(file):
 	ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
-	tree = ET.parse(file)
-	root = tree.getroot()
+	try:
+		tree = ET.parse(file)
+		root = tree.getroot()
+	except Exception as e:
+		return
 	#root == manifest
 	#hasPermission(root,"android.permission.READ_EXTERNAL_STORAGE")
 	read = ET.SubElement(root, 'uses-permission')

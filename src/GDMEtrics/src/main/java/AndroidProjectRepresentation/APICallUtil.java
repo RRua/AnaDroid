@@ -296,7 +296,7 @@ public class APICallUtil extends VoidVisitorAdapter implements Serializable, JSO
 
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+           // ex.printStackTrace();
 
         } finally {
 
@@ -304,7 +304,7 @@ public class APICallUtil extends VoidVisitorAdapter implements Serializable, JSO
                 try {
                     fout.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
 
@@ -312,7 +312,7 @@ public class APICallUtil extends VoidVisitorAdapter implements Serializable, JSO
                 try {
                     oos.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                   // e.printStackTrace();
                 }
             }
 

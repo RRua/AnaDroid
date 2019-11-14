@@ -29,12 +29,21 @@ DEBUG="TRUE"
 
 gradle_wrapper_jar_location="$ANADROID_PATH/resources/jars/gradle-wrapper.jar"
 gradle_wrapper_location="$ANADROID_PATH/resources/gradlew"
-
+gradle_wrapper_properties_location="$ANADROID_PATH/resources/gradle-wrapper.properties"
 
 
 debug_echo(){
 	if [[ "$DEBUG" == "TRUE" ]]; then
 		e_echo "[DEBUG] $1"
+	fi
+}
+
+function isInteger(){
+	re='^[0-9]+$'
+	if ! [[ $1 =~ $re ]] ; then
+	   eval "$2='false'"
+	else 
+		eval "$2='true'"
 	fi
 }
 
@@ -311,8 +320,11 @@ do
 			IFS=" " read -ra arr <<< "$vv"
 			csv=${arr[*]: -1}
 			IFS=$(echo -en "\n\b")
-			
-			if ! [[ -z "${HAS_RUNNER// }" ]] && [ -n $vv ]; then
+			bool_csv_is_integer=""
+			isInteger $csv bool_csv_is_integer
+			if [[ "$bool_csv_is_integer" == "false" ]]; then
+				echo "skipping testInstrumentationRunner"
+			elif ! [[ -z "${HAS_RUNNER// }" ]] && [ -n $vv ]; then
 				#echo "ja tem runner file $x xx$HAS_RUNNER xx $vv"
 				if [ "$csv" -ge "22" ] ; then
 					$SED_COMMAND -ri.bak "s#([ \t]*)testInstrumentationRunner .+#\1testInstrumentationRunner \"$NEW_RUNNER\"#g" "$x"
@@ -397,7 +409,7 @@ find "$FOLDER" -name "local.properties" -print | xargs -I{} cp "$local_propertie
 #WRAPPER=$(find $FOLDER -name "gradle-wrapper.properties")
 #if [ -n "$WRAPPER" ]; then
 #	WRAPPER=${WRAPPER// /\\ }
-#	$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=http\://services.gradle.org/distributions/gradle-$GRADLE_VERSION-all.zip#g" $WRAPPER
+	#$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=http\://services.gradle.org/distributions/gradle-$GRADLE_VERSION-all.zip#g" $WRAPPER
 #fi 
 
 #gradle --no-daemon -b $GRADLE clean build assembleAndroidTest &> $logDir/buildStatus.log
@@ -405,8 +417,10 @@ find "$FOLDER" -name "local.properties" -print | xargs -I{} cp "$local_propertie
 
 ## The 'RR' way:
 actual_path=$(pwd)
+cat "$FOLDER/gradlew" 
 if [[ -f "$FOLDER/gradlew" ]]; then
 	#statements
+	debug_echo "biterrabias"
 	echo "" > $logDir/buildStatus.log
 	chmod +x "$FOLDER/gradlew"
 	if [[ "$framework" == "junit" ]]; then
@@ -415,6 +429,7 @@ if [[ -f "$FOLDER/gradlew" ]]; then
 	 	cd "$FOLDER"; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
 	fi
 else
+	debug_echo "nabiças"
 	w_echo "$TAG enabling gradle wrapper"
 	cd "$FOLDER"; (gradle -b "$GRADLE" wrapper) > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
 	if [[ -f "$FOLDER/gradlew" ]]; then
@@ -425,26 +440,31 @@ else
 		fi
 	fi	
 fi
-
 STATUS_NOK=$(grep "BUILD FAILED" $logDir/buildStatus.log)
 STATUS_OK=$(grep "BUILD SUCCESS" $logDir/buildStatus.log)
-if [ -n "$STATUS_NOK" ]; then
+if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 	try="6"
+	debug_echo "liberio"
 	googleError=$(grep "method google() for arguments" $logDir/buildStatus.log )
 	libsError=$(grep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: \[libs\]" $logDir/buildStatus.log)
 	minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
 	buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)
 	wrapperError=$(egrep "try editing the distributionUrl" $logDir/buildStatus.log | egrep "gradle-wrapper.properties" )
+	anotherWrapperError=$(egrep "Wrapper properties file" $logDir/buildStatus.log  )
 	(export PATH=$ANDROID_HOME/tools/bin:$PATH)
 	sdkl=$(sdkmanager --list 2>&1) 
 	#echo "available _> $availableSdkTools"
-	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") || (-n "$googleError") ]]; do
+	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") || (-n "$googleError") || (-n "$anotherWrapperError") ]]; do
 		((try--))
 		w_echo "$TAG Common Error. Trying again..."
-		if [[ -n "$wrapperError" ]] || [[ -n "$googleError" ]]; then
+		debug_echo "jaimeeeee"
+		#check if its an error due to gradle wrapper misconfiguration
+		if [[ -n "$wrapperError" ]] || [[ -n "$googleError" ]] || [[ -n "$anotherWrapperError" ]]; then
 			mkdir -p "$FOLDER/gradle/wrapper" 2>&1
 			cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
 			cp $gradle_wrapper_location "$FOLDER/"
+			cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
+			$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=https\://services.gradle.org/distributions/gradle-${GRADLE_BUILD_VERSION}-all.zip#g" "$FOLDER/gradle/wrapper/gradle-wrapper.properties"
 		fi
 		unmatchVers=($($SED_COMMAND -nr "s/(.+)uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in (.+)$/\2\n\3/p" $logDir/buildStatus.log))
 		unmatchBuilds=($($SED_COMMAND -nr "s/(.+)The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)$/\2\n\4/p" $logDir/buildStatus.log))
@@ -523,9 +543,10 @@ if [ -n "$STATUS_NOK" ]; then
 		minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
 		buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)
 		wrapperError=$(egrep "try editing the distributionUrl"  $logDir/buildStatus.log | grep "gradle-wrapper.properties")
+		anotherWrapperError=$(egrep "Wrapper properties file" $logDir/buildStatus.log  )
 		STATUS_NOK=$(grep "BUILD FAILED" $logDir/buildStatus.log)
 		STATUS_OK=$(grep "BUILD SUCCESS" $logDir/buildStatus.log)
-		
+		cat $logDir/buildStatus.log
 		if [ -n "$STATUS_OK" ]; then
 			#the build was successful
 			cp $logDir/buildStatus.log "$FOLDER/"
@@ -534,11 +555,12 @@ if [ -n "$STATUS_NOK" ]; then
 		fi
 
 		if [[ "$try" -eq "0" ]]; then
+			STATUS_NOK="true"
 			break
+
 		fi
 	done
-
-	if [ -n "$STATUS_NOK" ]; then
+	if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 		#the build failed
 		cp $logDir/buildStatus.log "$FOLDER/"
 		e_echo "$TAG Unable to build project $ID"
