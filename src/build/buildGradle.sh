@@ -78,7 +78,7 @@ function buildLocalPropertiesFile(){
 i_echo "$TAG Building GRADLE PROJECT -> $ID "
 GRADLE_PLUGIN_VERSION=""  #(see https://developer.android.com/studio/releases/gradle-plugin.html#updating-gradle)
 inferGradlePluginVersion "$GRADLE"
-GRADLE_BUILD_VERSION=$(python $ANADROID_PATH/src/build/aux.py getMatchGradleVersion $GRADLE_PLUGIN_VERSION )  #"2.3.3" #TODO - Find a better way to determine this valu
+GRADLE_BUILD_VERSION=$(echo "$(python $ANADROID_PATH/src/build/aux.py getMatchGradleVersion $GRADLE_PLUGIN_VERSION)" | sed 's/+//g'  )  #"2.3.3" #TODO - Find a better way to determine this valu
 BUILD_VERSIONS=($(ls $ANDROID_HOME/build-tools/))
 TARGET_VERSIONS=($(ls $ANDROID_HOME/platforms/))
 OLD_RUNNER="android.test.InstrumentationTestRunner" # "android.support.test.runner.AndroidJUnitRunner" # 
@@ -417,10 +417,10 @@ find "$FOLDER" -name "local.properties" -print | xargs -I{} cp "$local_propertie
 
 ## The 'RR' way:
 actual_path=$(pwd)
-cat "$FOLDER/gradlew" 
+#cat "$FOLDER/gradlew" 
 if [[ -f "$FOLDER/gradlew" ]]; then
 	#statements
-	debug_echo "biterrabias"
+	debug_echo "existe ficheiro gradlew"
 	echo "" > $logDir/buildStatus.log
 	chmod +x "$FOLDER/gradlew"
 	if [[ "$framework" == "junit" ]]; then
@@ -429,7 +429,6 @@ if [[ -f "$FOLDER/gradlew" ]]; then
 	 	cd "$FOLDER"; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
 	fi
 else
-	debug_echo "nabiças"
 	w_echo "$TAG enabling gradle wrapper"
 	cd "$FOLDER"; (gradle -b "$GRADLE" wrapper) > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
 	if [[ -f "$FOLDER/gradlew" ]]; then
@@ -444,7 +443,7 @@ STATUS_NOK=$(grep "BUILD FAILED" $logDir/buildStatus.log)
 STATUS_OK=$(grep "BUILD SUCCESS" $logDir/buildStatus.log)
 if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 	try="6"
-	debug_echo "liberio"
+	debug_echo "build failed. trying again"
 	googleError=$(grep "method google() for arguments" $logDir/buildStatus.log )
 	libsError=$(grep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: \[libs\]" $logDir/buildStatus.log)
 	minSDKerror=$(egrep "uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in" $logDir/buildStatus.log)
