@@ -8,7 +8,8 @@ from subprocess import call, check_output, Popen, PIPE
 
 def createDir(dirname, content):
     try:
-        os.mkdir(dirname)
+        if not os.path.isdir(dirname):
+            os.mkdir(dirname)
         with open(dirname+"/data.json", 'w') as outfile:
             json.dump(content, outfile)
         print("ja taaa")
@@ -17,7 +18,8 @@ def createDir(dirname, content):
 
 
 def downloadSauce(obje,url):
-    dirname = "./fdroidApps/" + str(url).replace("https://f-droid.org/repo/","") 
+    #dirname = "./fdroidApps/" + str(url).replace("https://f-droid.org/repo/","") 
+    dirname = ("./fdroidApps/"+obje['pack_name'] ).replace(" ","")
     createDir(dirname,obje)
     cmd =' curl ' + url + ' --output ' + dirname+"/"+ url.replace("https://f-droid.org/repo/","") 
     #.replace(".tar.gz","")
@@ -45,9 +47,10 @@ def getSauce(url):
         print(err_msg)
     else:
         print("ok")
-        print("cajo" + std_out.strip().encode("UTF-8",'ignore'))
-        return json.loads(std_out.strip().replace("\'","\"").encode("UTF-8",'ignore'))
-
+        #print("cajo" + std_out.strip().encode("UTF-8",'ignore'))
+        print(std_out.strip())
+        jo = json.loads(std_out.strip().replace("\'","\"").encode("UTF-8",'ignore'))
+        return jo
 
 # coloca em pages.json todas as apps contidas no repo, indo pagina a pagina
 def getAppPageFromListPage(url):
@@ -89,9 +92,14 @@ def main(args):
                 print(x)
                 for url in x:
                     real_url = "https://f-droid.org" + url
-                    all_sauce.append(getSauce(real_url))
-                    print("processed " + real_url)
-
+                    try:
+                        jo_app = getSauce(real_url)
+                        all_sauce.append(jo_app)
+                        print("processed " + real_url)
+                    except Exception as e:
+                        print(e.message)
+                        print("ignored " + real_url)
+                   
             with open("all_sources.json", 'w') as outfile:
                 json.dump(all_sauce, outfile)
 
@@ -99,11 +107,32 @@ def main(args):
             data=all_sauce
             ct = len(data)
             for x in data:
+                print("x->"+str(x))
                 ct=ct-1
-                for url in x["versions"]:
-                    downloadSauce(x,url)
-                print("Downloading apk " + str(ct))
+                if x["versions"] is not None and len(x["versions"])>1:
+                    for versao in x["versions"]:
+                        url = versao['url']
+                        print("Downloading apk " + str(ct))
+                        downloadSauce(x,url)
+                else:
+                    print("Less than 1 version. Ignoring...")
+                
 
+        elif task == "crawlEachApp":
+
+            with open("all_sources.json", 'r') as json_file:
+                data = json.load(json_file)
+            #data=all_sauce
+            ct = len(data)
+            for x in data:
+                print("x->"+str(x))
+                ct=ct-1
+                if x["versions"] is not None and len(x["versions"])>1:
+                    for url in x["versions"]:
+                        print("Downloading apk " + str(ct))
+                        downloadSauce(x,url)
+                else:
+                    print("Less than 1 version. Ignoring...")
         else:
             print("Bad arg")
         #one_app_url = "https://f-droid.org/pt_BR/packages/com.uberspot.a2048/"   
