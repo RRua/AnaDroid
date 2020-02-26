@@ -323,15 +323,7 @@ buildAppWithGradle(){
 		RET=0
 	fi
 	(echo $trace) > "$FOLDER/$tName/instrumentationType.txt"
-	if [[ "$RET" != "0" ]]; then
-		# BUILD FAILED. SKIPPING APP
-		echo "$ID" >> $logDir/errorBuildGradle.log
-		cp $logDir/buildStatus.log $f/buildStatus.log
-		if [[ -n "$logStatus" ]]; then
-			cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
-		fi
-		continue
-	fi
+	
 	## END BUILD PHASE						
 }
 
@@ -517,6 +509,15 @@ for f in $DIR/*
 				setupLocalResultsFolder
 				instrumentGradleApp
 				buildAppWithGradle
+				if [[ "$RET" != "0" ]]; then
+					# BUILD FAILED. SKIPPING APP
+					echo "$ID" >> $logDir/errorBuildGradle.log
+					cp $logDir/buildStatus.log $f/buildStatus.log
+					if [[ -n "$logStatus" ]]; then
+						cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
+					fi
+					continue
+				fi
 				totaUsedTests=0	
 				prepareAndInstallApp
 				runMonkeyTests
