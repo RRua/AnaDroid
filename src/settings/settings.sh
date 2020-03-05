@@ -193,6 +193,7 @@ getDeviceState(){
 	local kernel_version=$(adb shell cat /proc/version)
 	local device_id=$(adb shell getprop ro.serialno )
 	local nr_installed_apps=$( adb shell pm list packages | wc -l | sed 's/ //g')
+	local device_lang=$( adb shell getprop persist.sys.locale)
 	echo "
 	{
 		\"state_device_id\": \"$device_id\",
@@ -203,7 +204,7 @@ getDeviceState(){
 		\"state_operator\": \"$operator\", 
 		\"state_operator_country\": \"$operator_country\",
 		\"state_nr_installed_apps\": \"$nr_installed_apps\"
-
+		\"state_current_lang\": \"$device_lang\"
 	}" > "$statJson"
 }
 

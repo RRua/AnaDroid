@@ -12,21 +12,33 @@ SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
 TEST_ORIENTATION="testoriented"
 #URL="http://greensource.di.uminho.pt/"
 
+SUPPORTED_APPROACHES=( "whitebox"  "blackbox" )
 
 ##### DEFAULTS #####
-URL="http://localhost:8000/"
-#URL="NONE"
+#URL="http://localhost:8000/"
+URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
 APP_BUILD_TYPE="debug"
 TARGET_DIR="$ANADROID_PATH/demoProjects/"
 MonkeyRunnerList=()
+DEFAULT_APPROACH="whitebox"
 
 containsElement () {
   local e match="$1"
   shift
   for e; do [[ "$e" == "$match" ]] && return 0; done
   return -1
+}
+
+containsApproach (){
+    for (( i = 0; i < ${#SUPPORTED_APPROACHES[@]} ; i++ )); do
+            #echo "${SUPPORTED_TESTING_FRAMEWORKS[$i]} == $1"
+            if [ "${SUPPORTED_APPROACHES[$i]}" == "$1" ] ; then
+                return $i
+            fi
+        done
+    return -1
 }
 
 containsTestingFramework (){
@@ -45,6 +57,19 @@ processAndValidateArguments(){
     do
     key="$1"
     case $key in
+        -a|--approach)
+        selectedapproach=$( echo "$2" | awk '{print tolower($0)}' )
+        containsApproach "${selectedapproach}"
+        RET=$?
+        if [ $RET -le 250 ]; then
+            DEFAULT_APPROACH="${SUPPORTED_APPROACHES[$RET]}"
+            echo "Selected testing Approach = ${DEFAULT_APPROACH}"
+        else
+            e_echo "ANADROID doesn't support \"$2\" approach ... Assuming ${DEFAULT_APPROACH} (default) as required testing approach"
+        fi
+        shift # past argument
+        shift # past value
+        ;;
         -u|--url)
         URL="$2"
         shift # past argument
@@ -107,6 +132,7 @@ processAndValidateArguments(){
         fi
 
         shift # past argument
+        shift # past value
         shift # past value
         ;;
         -s|--silent)
@@ -231,15 +257,15 @@ if [[ "$URL" != "NONE" ]]; then
 fi
 
 
+
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
-    $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
+    $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"
-    $SRC_FOLDER/workflow/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR
+    $SRC_FOLDER/workflow/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
-    $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR ${MonkeyRunnerList[@]}
-    #echo "ss"
+    $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
 else 
     echo "nada"
 fi

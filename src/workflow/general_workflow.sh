@@ -78,7 +78,7 @@ getDeviceState(){
 	local device_keyboard=$(adb shell dumpsys  input_method | grep "mCurMethodId" | cut -f2 -d= )
 	local operator=$(adb shell getprop gsm.sim.operator.alpha)
 	local operator_country=$(adb shell getprop gsm.operator.iso-country)
-	local conn_type=$(adb shel getprop gsm.network.type )
+	local conn_type=$(adb shell getprop gsm.network.type )
 	local kernel_version=$(adb shell cat /proc/version)
 	local device_serial=$(   echo  $DEVICE | tail -n 2 | grep "model" | cut -f1 -d\ )
 	echo "
@@ -95,11 +95,29 @@ getDeviceState(){
 }
 
 
+
+checkBuildingTool(){
+	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
+	POM=$(find "${f}/${prefix}" -maxdepth 1 -name "pom.xml")
+	if [ -n "$POM" ]; then
+		POM=${POM// /\\ }
+		#e_echo "Maven projects are not considered yet..."
+		echo "Maven"
+		continue
+	elif [ -n "${GRADLE[0]}" ]; then
+		#statements
+		echo "Gradle"
+	else 
+		echo "Eclipse"
+	fi
+}
+
+
 #used_cpu free_mem nr_procceses sdk_level api_level battery_temperature battery_voltage
-tempDir="$ANADROID_PATH/temp"
-getDeviceSpecs "$tempDir/devSpecs.json"
-getDeviceState "$tempDir/deviceState.json"
-getDeviceResourcesState "$tempDir/devResState.json"
+#tempDir="$ANADROID_PATH/temp"
+#getDeviceSpecs "$tempDir/devSpecs.json"
+#getDeviceState "$tempDir/deviceState.json"
+#getDeviceResourcesState "$tempDir/devResState.json"
 
 
 

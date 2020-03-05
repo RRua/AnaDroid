@@ -21,6 +21,8 @@ trace=$2
 GREENSOURCE_URL=$3
 apkBuild=$4
 DIR=$5
+APPROACH=$6
+
 # global
 ANADROID_SRC_PATH=$ANADROID_PATH/src/
 res_folder="$ANADROID_PATH/resources"
@@ -310,13 +312,12 @@ runMonkeyTests(){
 buildAppWithGradle(){
 	## BUILD PHASE			
 	GRADLE=($(find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d: |  awk 'BEGIN{OFS=",";} {print length($1),$1}' | sort -nk 1  | head -1 | cut -f2 -d,))
-	echo "find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d:"
-	e_echo "debug os gradles sao ${GRADLE[0]}"
+	debug_echo "debug os gradles sao ${GRADLE[0]}"
 	#debug_echo "ulha os gradles -> ${GRADLE}"
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]; then
 		w_echo "[APP BUILDER] Building Again"
-		e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
-		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkey"
+		debug_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
+		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkey" "$APPROACH"
 		RET=$(echo $?)
 	else 
 		w_echo "[APP BUILDER] No changes since last run. Not building again"
@@ -338,7 +339,7 @@ instrumentGradleApp(){
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		e_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
+		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
 		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
@@ -376,7 +377,7 @@ setupLocalResultsFolder(){
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
 	
 	getFirstAppVersion 
-	
+	debug_echo "rimas"
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
@@ -507,7 +508,17 @@ for f in $DIR/*
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"
 				setupLocalResultsFolder
-				instrumentGradleApp
+				
+				if [ "$APPROACH" == "whitebox" ]; then
+					instrumentGradleApp
+				
+				else
+					#justCopyToTransformed
+					#cp -r 
+					$MKDIR_COMMAND -p "$FOLDER/$tName"
+					# clone project to $tname
+					$(find "$FOLDER" ! -path "$FOLDER"  -maxdepth 1 | grep -v "$tName" | xargs -I{} cp -r {} "$FOLDER/$tName/")
+				fi
 				buildAppWithGradle
 				if [[ "$RET" != "0" ]]; then
 					# BUILD FAILED. SKIPPING APP
@@ -520,11 +531,11 @@ for f in $DIR/*
 				fi
 				totaUsedTests=0	
 				prepareAndInstallApp
-				runMonkeyTests
+				#runMonkeyTests
 				uninstallApp
-				analyzeAPK	
-				w_echo "Analyzing results .."
-				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
+				#analyzeAPK	
+				#w_echo "Analyzing results .."
+				#java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
 				w_echo "$TAG resuming Greendroid after nap"
@@ -558,10 +569,10 @@ for f in $DIR/*
 #instrumentation phase
 				if [[ "$SOURCE" != "$TESTS" ]]; then
 					echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-					java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID
+					java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID $APPROACH
 				else
 					echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-					java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID
+					java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID $APPROACH
 				fi
 				#copy the test runner
 				$MKDIR_COMMAND -p $SOURCE/$tName/libs

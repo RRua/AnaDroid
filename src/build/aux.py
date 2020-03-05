@@ -37,7 +37,7 @@ def getMatchGradleVersion(value):
 		print("2.13")
 
 	elif check(val, 200, 212 ):
-		print("2.13")
+		print("2.1")
 
 	elif check(val, 213, 223 ):
 		print("2.14.1+")

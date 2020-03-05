@@ -24,6 +24,8 @@ FOLDER=$2
 GRADLE=$3
 apkBuild=$4
 framework=$5
+APPROACH=$6
+
 TAG="[APP BUILDER]"
 DEBUG="TRUE"
 
@@ -198,15 +200,22 @@ do
 	### dummy way to add mavenCentral and jcenter
 	$SED_COMMAND  -i -e "\$a\ buildscript\ {repositories\ {jcenter()\ \n\ mavenCentral()}}" "$x"
 	###
-	#Add a line that includes the trepn library folder in build.gradle
-	$SED_COMMAND  -i -e "\$a\ allprojects\ {repositories\ {flatDir\ {\ dirs\ 'libs'}}}" "$x"
+
+	if [ "$APPROACH" == "whitebox" ] || [ "$framework" == "junit" ]; then
+		#statements
+		#Add a line that includes the trepn library folder in build.gradle
+		$SED_COMMAND  -i -e "\$a\ allprojects\ {repositories\ {flatDir\ {\ dirs\ 'libs'}}}" "$x"
+	fi
+
+	
+	#$SED_COMMAND  -i -e "\$a\ allprojects\ {repositories\ {flatDir\ {\ dirs\ 'libs'}}}" "$x"
 	#Change the packageName and testPackageName variables, if it exists
 	$SED_COMMAND -ri.bak "s#packageName (.+)#applicationId \1#g" "$x"
 	$SED_COMMAND -ri.bak "s#testPackageName (.+)#testApplicationId \1#g" "$x"
 	#Change the classpath variable, if necessary
 	#$SED_COMMAND -ri.bak "s#classpath ([\"]|[\'])com.android.tools.build:gradle:(.+)([\"]|[\'])#classpath 'com.android.tools.build:gradle:$GRADLE_PLUGIN'#g" $x
 	#Check if it is necessary to change the version of the SDK compiler
-	$SED_COMMAND -ri.bak 's#([ \t]*)compileSdkVersion(( )|( ?= ?))(android-)?(1?[0-9]{1}|20|[^0-9]+)$#\1compileSdkVersion\221#g' "$x"
+	#$SED_COMMAND -ri.bak 's#([ \t]*)compileSdkVersion(( )|( ?= ?))(android-)?(1?[0-9]{1}|20|[^0-9]+)$#\1compileSdkVersion\221#g' "$x"
 	#Check if it is necessary to change the tag for the Proguard
 	#$SED_COMMAND -ri.bak "s#runProguard#minifyEnabled#g" $x
 	#Change the remaining tags
@@ -349,52 +358,57 @@ do
 			fi
 		fi
 		
-		#Add TrepnLib dependency to build.gradle
-		HAS_DEPEND=$(egrep -n "dependencies( ?){" "$x")
-		AUX=$(egrep -n "buildscript *\{" "$x")
-		AUX_BS=$(egrep -n "buildscript *\{" "$x" | cut -f1 -d: | tail -1)
-		if [ -n "$HAS_DEPEND" ]; then
-			DEPEND_LINE=$(egrep -n "dependencies( ?){" "$x" | cut -f1 -d: | tail -1)
-			if [ -n "$AUX" ]; then
-				matching_brackets "$x" "$AUX_BS"
-				AUX_BS_2=$?
-				if [[ "$AUX_BS" -lt "$DEPEND_LINE" && "$DEPEND_LINE" -lt "$AUX_BS_2" ]]; then
-					DEPEND_LINE_2=$(egrep -n "dependencies( ?){" "$x" | cut -f1 -d: | head -1)
+		if [ "$APPROACH" == "whitebox" ] || [ "$framework" == "junit" ]; then
+			#Add TrepnLib dependency to build.gradle
+			HAS_DEPEND=$(egrep -n "dependencies( ?){" "$x")
+			AUX=$(egrep -n "buildscript *\{" "$x")
+			AUX_BS=$(egrep -n "buildscript *\{" "$x" | cut -f1 -d: | tail -1)
+			if [ -n "$HAS_DEPEND" ]; then
+				DEPEND_LINE=$(egrep -n "dependencies( ?){" "$x" | cut -f1 -d: | tail -1)
+				if [ -n "$AUX" ]; then
+					matching_brackets "$x" "$AUX_BS"
+					AUX_BS_2=$?
+					if [[ "$AUX_BS" -lt "$DEPEND_LINE" && "$DEPEND_LINE" -lt "$AUX_BS_2" ]]; then
+						DEPEND_LINE_2=$(egrep -n "dependencies( ?){" "$x" | cut -f1 -d: | head -1)
+					fi
 				fi
-			fi
-			if [[ "$DEPEND_LINE" == "$DEPEND_LINE_2" ]]; then
-				DEPEND_LINE=$(wc -l $x | cut -f1 -d\ )
-				echo "" >> "$x"
-				((DEPEND_LINE++))
-				$SED_COMMAND -i.bak ""$DEPEND_LINE"i dependencies {" "$x"
-				((DEPEND_LINE++))
-				$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLib-release', ext:'aar')" "$x"
-				((DEPEND_LINE++))
-				###
-				# For when we decide to use the new runner, this will be needed
-				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test:runner:$RUNNER_VERSION'" $x
-				# ((DEPEND_LINE++))
-  				# #// Set this dependency to use JUnit 4 rules
-  				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test:rules:$RUNNER_RULES'" $x
-  				# ((DEPEND_LINE  				# #// Set this dependency to build and run Espresso tests
-  				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test.espresso:$RUNNER_ESPRESSO'" $x
-  				# ((DEPEND_LINE++))
-  				# #// Set this dependency to build and run UI Automator tests
-  				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test.uiautomator:uiautomator-v18:$RUNNER_AUTOMATOR'" $x
-  				# ((DEPEND_LINE++))
-  				###
-				$SED_COMMAND -i.bak ""$DEPEND_LINE"i }" "$x"
+				if [[ "$DEPEND_LINE" == "$DEPEND_LINE_2" ]]; then
+					DEPEND_LINE=$(wc -l $x | cut -f1 -d\ )
+					echo "" >> "$x"
+					((DEPEND_LINE++))
+					$SED_COMMAND -i.bak ""$DEPEND_LINE"i dependencies {" "$x"
+					((DEPEND_LINE++))
+					$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLib-release', ext:'aar')" "$x"
+					((DEPEND_LINE++))
+					###
+					# For when we decide to use the new runner, this will be needed
+					# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test:runner:$RUNNER_VERSION'" $x
+					# ((DEPEND_LINE++))
+	  				# #// Set this dependency to use JUnit 4 rules
+	  				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test:rules:$RUNNER_RULES'" $x
+	  				# ((DEPEND_LINE  				# #// Set this dependency to build and run Espresso tests
+	  				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test.espresso:$RUNNER_ESPRESSO'" $x
+	  				# ((DEPEND_LINE++))
+	  				# #// Set this dependency to build and run UI Automator tests
+	  				# $SED_COMMAND -i.bak ""$DEPEND_LINE"i androidTestCompile 'com.android.support.test.uiautomator:uiautomator-v18:$RUNNER_AUTOMATOR'" $x
+	  				# ((DEPEND_LINE++))
+	  				###
+					$SED_COMMAND -i.bak ""$DEPEND_LINE"i }" "$x"
+				else
+					((DEPEND_LINE++))
+					$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLib-release', ext:'aar')" "$x"
+				fi
 			else
+				DEPEND_LINE=$(wc -l "$x" | cut -f1 -d\ )
+				echo "" >> $x
 				((DEPEND_LINE++))
-				$SED_COMMAND -i.bak ""$DEPEND_LINE"i $TRANSITIVE (name:'TrepnLib-release', ext:'aar')" "$x"
+				$SED_COMMAND  -i -e "\$a\ dependencies\ {$TRANSITIVE\ (name:'TrepnLib-release',\ ext:'aar')}" "$x"
+				((DEPEND_LINE++))
 			fi
-		else
-			DEPEND_LINE=$(wc -l "$x" | cut -f1 -d\ )
-			echo "" >> $x
-			((DEPEND_LINE++))
-			$SED_COMMAND  -i -e "\$a\ dependencies\ {$TRANSITIVE\ (name:'TrepnLib-release',\ ext:'aar')}" "$x"
-			((DEPEND_LINE++))
 		fi
+
+
+		
 	fi
 done
 
@@ -430,7 +444,14 @@ if [[ -f "$FOLDER/gradlew" ]]; then
 	fi
 else
 	w_echo "$TAG enabling gradle wrapper"
-	cd "$FOLDER"; (gradle -b "$GRADLE" wrapper) > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
+	#$d "$FOLDER"; (gradle -b "$GRADLE" wrapper) > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
+	mkdir -p "$FOLDER/gradle/wrapper" 2>&1
+	cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
+	cp $gradle_wrapper_location "$FOLDER/"
+	cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
+	debug_echo " o gradle build version é o ${GRADLE_BUILD_VERSION}"
+	$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=https\://services.gradle.org/distributions/gradle-${GRADLE_BUILD_VERSION}-all.zip#g" "$FOLDER/gradle/wrapper/gradle-wrapper.properties"
+		
 	if [[ -f "$FOLDER/gradlew" ]]; then
 		if [[ "$framework" == "junit" ]]; then
 		 	cd "$FOLDER"; ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
@@ -456,13 +477,14 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") || (-n "$googleError") || (-n "$anotherWrapperError") ]]; do
 		((try--))
 		w_echo "$TAG Common Error. Trying again..."
-		debug_echo "jaimeeeee"
+		#debug_echo "jaimeeeee"
 		#check if its an error due to gradle wrapper misconfiguration
 		if [[ -n "$wrapperError" ]] || [[ -n "$googleError" ]] || [[ -n "$anotherWrapperError" ]]; then
 			mkdir -p "$FOLDER/gradle/wrapper" 2>&1
 			cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
 			cp $gradle_wrapper_location "$FOLDER/"
 			cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
+			debug_echo " o gradle build version é o ${GRADLE_BUILD_VERSION}"
 			$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=https\://services.gradle.org/distributions/gradle-${GRADLE_BUILD_VERSION}-all.zip#g" "$FOLDER/gradle/wrapper/gradle-wrapper.properties"
 		fi
 		unmatchVers=($($SED_COMMAND -nr "s/(.+)uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in (.+)$/\2\n\3/p" $logDir/buildStatus.log))

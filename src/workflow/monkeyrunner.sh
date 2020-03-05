@@ -1,5 +1,5 @@
 #!/bin/bash
-source $ANADROID_PATH/src/settings/settings.sh
+source $ANADROID_PATH/src/workflow/general_workflow.sh
 
 TAG="[AD]"
 
@@ -21,12 +21,13 @@ trace=$2
 GREENSOURCE_URL=$3
 apkBuild=$4
 DIR=$5
+APPROACH=$6
 MonkeyRunnerScriptsList=()
 
 argc=$#
 argv=("$@")
-for (( j=5; j<argc; j++ )); do
-    echo "${argv[j]}"
+for (( j=6; j<argc; j++ )); do
+    echo " arg -> ${argv[j]}"
     MonkeyRunnerScriptsList+=("${argv[j]}")
 done
 
@@ -347,8 +348,8 @@ instrumentGradleApp(){
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		e_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
-		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" ##RR
+		#e_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\"  ##RR"
+		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
 		#Instrument all manifestFiles
@@ -488,7 +489,16 @@ for f in $DIR/*
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"	
 				setupLocalResultsFolder
-				instrumentGradleApp
+				
+				if [[ "$APPROACH" == "whitebox" ]]; then
+					instrumentGradleApp
+				
+				else
+					# no need to instrument project, clone project to $tname
+					$MKDIR_COMMAND -p "$FOLDER/$tName"
+					$(find "$FOLDER" ! -path "$FOLDER"  -maxdepth 1 | grep -v "$tName" | xargs -I{} cp -r {} "$FOLDER/$tName/")
+				fi
+
 				buildAppWithGradle
 				totaUsedTests=0	
 				prepareAndInstallApp
@@ -534,10 +544,10 @@ for f in $DIR/*
 #instrumentation phase
 				if [[ "$SOURCE" != "$TESTS" ]]; then
 					echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-					java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID
+					java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
 				else
 					echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-					java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID
+					java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
 				fi
 				#copy the test runner
 				$MKDIR_COMMAND -p $SOURCE/$tName/libs
