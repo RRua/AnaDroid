@@ -54,7 +54,7 @@ threshold_monkey_runs=1 #50
 number_monkey_events=1000
 min_coverage=10
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
-DEBUG="TRUE"
+DEBUG="TRUE" #"TRUE" 
 # trap - INT
 # trap 'quit' INT
 
@@ -324,7 +324,14 @@ buildAppWithGradle(){
 		RET=0
 	fi
 	(echo $trace) > "$FOLDER/$tName/instrumentationType.txt"
-	
+	if [[ "$RET" != "0" ]]; then
+		# BUILD FAILED. SKIPPING APP
+		echo "$ID" >> $logDir/errorBuildGradle.log
+		cp $logDir/buildStatus.log $f/buildStatus.log
+		if [[ -n "$logStatus" ]]; then
+			cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
+		fi
+	fi
 	## END BUILD PHASE						
 }
 
@@ -332,7 +339,7 @@ instrumentGradleApp(){
 	oldInstrumentation=$(cat "$FOLDER/$tName/instrumentationType.txt" 2>/dev/null | grep  ".*Oriented" )
 	#allmethods=$(find "$projLocalDir/all" -maxdepth 1 -name "allMethods.json")
 	last_build_result=$(grep "BUILD SUCCESSFUL" "$FOLDER/$tName/buildStatus.log" 2>/dev/null  )
-	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ] ; then
+	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]  ; then
 		# same instrumentation and build successfull 
 		w_echo "Different type of instrumentation. instrumenting again..."
 		rm -rf $FOLDER/$tName
@@ -509,24 +516,24 @@ for f in $DIR/*
 				MANIF_T="-"
 				setupLocalResultsFolder
 				
-				if [ "$APPROACH" == "whitebox" ]; then
+				if [ "$APPROACH" == "whitebox" ] ; then
+					debug_echo "white e diferente"
 					instrumentGradleApp
-				
 				else
-					#justCopyToTransformed
-					#cp -r 
+					last_testing_approach=$(grep "blackbox" "$FOLDER/$tName/instrumentationType.txt" 2> /dev/null  )
+					if [ -z "$last_testing_approach" ]; then
+						#statements
+						rm -rf "$FOLDER/$tName/*"
+					fi
+					# no need to  instrument app source code
+					# just  clone original project to $tname
+					debug_echo "ja eraaaa"
 					$MKDIR_COMMAND -p "$FOLDER/$tName"
-					# clone project to $tname
 					$(find "$FOLDER" ! -path "$FOLDER"  -maxdepth 1 | grep -v "$tName" | xargs -I{} cp -r {} "$FOLDER/$tName/")
 				fi
 				buildAppWithGradle
 				if [[ "$RET" != "0" ]]; then
-					# BUILD FAILED. SKIPPING APP
-					echo "$ID" >> $logDir/errorBuildGradle.log
-					cp $logDir/buildStatus.log $f/buildStatus.log
-					if [[ -n "$logStatus" ]]; then
-						cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
-					fi
+					# if BUILD FAILED, SKIPPING APP
 					continue
 				fi
 				totaUsedTests=0	

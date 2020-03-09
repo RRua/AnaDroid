@@ -489,11 +489,15 @@ for f in $DIR/*
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"	
 				setupLocalResultsFolder
-				
-				if [[ "$APPROACH" == "whitebox" ]]; then
-					instrumentGradleApp
-				
+
+				if [ "$APPROACH" == "whitebox" ]; then
+					instrumentGradleApp	
 				else
+					last_testing_approach=$(grep "$APPROACH" "$FOLDER/$tName/instrumentationType.txt" 2> /dev/null  )
+					if [ -z "$last_testing_approach" ]; then
+						#statements
+						rm -rf "$FOLDER/$tName/*"
+					fi
 					# no need to instrument project, clone project to $tname
 					$MKDIR_COMMAND -p "$FOLDER/$tName"
 					$(find "$FOLDER" ! -path "$FOLDER"  -maxdepth 1 | grep -v "$tName" | xargs -I{} cp -r {} "$FOLDER/$tName/")
