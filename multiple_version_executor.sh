@@ -2,7 +2,8 @@ SRC_FOLDER="$ANADROID_PATH/src/"
 source $SRC_FOLDER/settings/settings.sh
 
 file_remote_json=$1
-temp_folder="$ANADROID_PATH/fDroid_extractor/fdroidApps/"
+temp_folder="$ANADROID_PATH/demoProjects/demoProjects/"
+#temp_folder="$ANADROID_PATH/fDroid_extractor/fdroidApps/"
 #mkdir -p $temp_folder
 target_file="data.json"
 
@@ -27,13 +28,18 @@ unpack(){
 
 
 for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d ); do
+	
 
+	#delete previous runs
+	find "$app_folder/" ! -path "$app_folder/"  -maxdepth 1 -type d | xargs rm -rf 
+	
 	data_json="$app_folder/$target_file"
 	# create dir for each version
 	python $SRC_FOLDER/auxiliar/multiple_version_executor_aux.py "$data_json"
 
 	#iterate each version folder
 	for version_folder in $(find $app_folder -maxdepth 1 ! -path $app_folder -type d  ); do
+		e_echo "versione -> $version_folder"
 		filename=$(find $version_folder  -maxdepth 1 -type f)
 		echo "Processing FF $filename FF"
 		unpack
