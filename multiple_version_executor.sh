@@ -2,8 +2,8 @@ SRC_FOLDER="$ANADROID_PATH/src/"
 source $SRC_FOLDER/settings/settings.sh
 
 file_remote_json=$1
-temp_folder="$ANADROID_PATH/demoProjects/demoProjects/"
-#temp_folder="$ANADROID_PATH/fDroid_extractor/fdroidApps/"
+#temp_folder="$ANADROID_PATH/demoProjects/demoProjects/"
+temp_folder="$ANADROID_PATH/fDroid_extractor/samples/"
 #mkdir -p $temp_folder
 target_file="data.json"
 
@@ -29,7 +29,6 @@ unpack(){
 
 for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d ); do
 	
-
 	#delete previous runs
 	find "$app_folder/" ! -path "$app_folder/"  -maxdepth 1 -type d | xargs rm -rf 
 	
@@ -49,7 +48,7 @@ for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d
 		echo "Processing $folder_of_apk"
 		echo "----------------------------------------"
 		echo "----------------------------------------"
-		anaDroid -d "$version_folder/" -f "monkey"
+		anaDroid -a blackbox -d "$version_folder/" -f "monkey"
 
 	done
 

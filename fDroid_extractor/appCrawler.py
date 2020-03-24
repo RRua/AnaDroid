@@ -115,7 +115,7 @@ def main(args):
                         print("Downloading apk " + str(ct))
                         downloadSauce(x,url)
                 else:
-                    print("Less than 1 version. Ignoring...")
+                    print("Less than 2 version. Ignoring...")
                 
 
         elif task == "crawlEachApp":

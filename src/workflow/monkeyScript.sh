@@ -429,6 +429,8 @@ inferPrefix(){
 checkBuildingTool(){
 	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
 	POM=$(find "${f}/${prefix}" -maxdepth 1 -name "pom.xml")
+	NO_SOURCE=$(find "${f}/${prefix}" -name "*.java" -type f  )
+	#echo "no sauce ->$NO_SOURCE<-"
 	if [ -n "$POM" ]; then
 		POM=${POM// /\\ }
 		#e_echo "Maven projects are not considered yet..."
@@ -437,6 +439,9 @@ checkBuildingTool(){
 	elif [ -n "${GRADLE[0]}" ]; then
 		#statements
 		echo "Gradle"
+	elif [ -z "$NO_SOURCE" ]; then
+		has_apk=$(find "${f}/${prefix}" -name "*.apk" -type f  )
+		echo "NO_SOURCE"
 	else 
 		echo "Eclipse"
 	fi
@@ -538,7 +543,7 @@ for f in $DIR/*
 				fi
 				totaUsedTests=0	
 				prepareAndInstallApp
-				#runMonkeyTests
+				runMonkeyTests
 				uninstallApp
 				#analyzeAPK	
 				#w_echo "Analyzing results .."
@@ -551,7 +556,9 @@ for f in $DIR/*
 				totaUsedTests=0
 			done
 		fi
-	else 
+	elif [ "$BUILD_TYPE" ] && [ "$APPROACH" == "blackbox" ] ; then
+		e_echo "jaimeeee $BUILD_TYPE"
+	else
 		e_echo "Dropped support for Eclipse SDK projects"
 		continue
 #SDK PROJ

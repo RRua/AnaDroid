@@ -1,0 +1,17 @@
+http://stackoverflow.com/questions/28314139/how-to-install-android-studio-in-ubuntu
+
+1) Download the Linux SDK from the Android website.
+https://developer.android.com/studio/index.html#Other
+
+################################
+
+or 
+
+sudo apt-add-repository ppa:paolorotolo/android-studio
+sudo apt-get update
+sudo apt-get install android-studio
+
+
+
+/opt/android-studio/bin/studio.sh
+install sdks
