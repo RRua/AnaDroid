@@ -37,7 +37,7 @@ deviceExternal=""
 logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
 localDirOriginal="$HOME/GDResults"
-checkLogs="Off"
+checkLogs="On" # Off
 monkey="-Monkey"
 folderPrefix=""
 GD_ANALYZER="$res_folder/jars/AnaDroidAnalyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
@@ -161,19 +161,22 @@ cleanDeviceTrash() {
 
 checkIfAppAlreadyProcessed(){
 	x=$1
+	retValue="False"
 	suc=$(cat $logDir/success.log 2>&1 | sort -u | uniq | grep $x )
 	if [ -n $suc  ] && [ "$checkLogs" != "Off" ]; then
 		## it was already processed
-		w_echo "Aplicattion $x was already successfuly processed. Skipping.."
-		continue
+		#w_echo "Aplicattion $x was already successfuly processed. Skipping.."
+		retValue="True"
 	fi
 	procs=$(cat $logDir/processedApps.log 2>&1 | sort -u | uniq | grep $x )
 	if [ -n "$procs"  ] && [ "$checkLogs" != "Off" ]; then
 		## it was already processed
-		w_echo "Application $x already processed (But failed). Skipping... (if you want to turn off this verification, set the \"checkLogs\" flag to Off)"
-		continue
+		#w_echo "Application $x already processed (But failed). Skipping... (if you want to turn off this verification, set the \"checkLogs\" flag to Off)"
+		retValue="True"
 	fi
 	echo $f >> $logDir/processedApps.log
+	#return value
+	echo "$retValue"
 }
 
 checkConfig(){
@@ -489,7 +492,11 @@ for f in $DIR/*
 	now=$(date +"%d_%m_%y_%H_%M_%S")
 	ID=$(echo $ID | sed 's/ //g')
 	# check if app was already processed #TODO
-	checkIfAppAlreadyProcessed $ID
+	wasProcessed=$(checkIfAppAlreadyProcessed $ID)
+	if [ "$wasProcessed" == "True" ]; then
+		e_echo "Application $x was already successfuly processed. Skipping.."
+		continue
+	fi
 	checkIfIdIsReservedWord	
 	projLocalDir=$localDir/$ID
 	BUILD_TYPE=$(checkBuildingTool)
