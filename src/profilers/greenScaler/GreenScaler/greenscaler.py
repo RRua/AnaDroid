@@ -40,13 +40,19 @@ def cleaning(pkg, apk):
 def cpu_measurement(app, apk_file, n, package, *test_cmd):
 	
 	for i in range(n):          
-		cleaning(package, utils.APKS_PATH+apk_file)
+		cleaning(package, apk_file)
 		print "Start cpu profiling"
 		print("sleeping")
-		time.sleep(10)
+		#time.sleep(10)
 		app.cpu.cpu_before(package)
 		print "Running application"
-		duration=app.test.run(test_cmd )
+		print("tipo " +str(type(test_cmd)))
+		print(test_cmd)
+		conv= ' '.join([str(i) for i in test_cmd])
+		print("tipo conv " + str(type( conv  )))
+		print("conv: -%s-" %conv)
+		#print("lo test cmd" + ' '.join(map(str, test_cmd)))
+		duration=app.test.run(str(' '.join(map(str, test_cmd))))
 		app.cpu.duration=app.cpu.duration+duration
 		print "total duration=",duration
 		app.cpu.cpu_after(package)
@@ -61,7 +67,7 @@ def syscall_trace(app, apk_file, n, package):
 	for i in range(n):      
 		while 1:
 			print "running ", str((i+1))+"th round of strace"   
-			cleaning(package, utils.APKS_PATH+apk_file)
+			cleaning(package, apk_file)
 			time.sleep(5)
 			print "Start syscall tracing"   
 			app.syscall.syscall_capture()
@@ -217,11 +223,28 @@ def test_shaiful():
 	print ("Energy ="+str(energy)+" Joules")
 
 
-def exec_command(command ):
-	subprocess.call(command)
+def exec_command(self,command ):
+	#subprocess.call(command)
+	print("executing command -%s-" % command)
+	pipes = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	#If you are using python 2.x, you need to include shell=True in the above line
+	std_out, std_err = pipes.communicate()
 
-def exec_greenscaler(apk_file,*test_cmd ):
+	if pipes.returncode != 0:
+	    # an error happened!
+	    err_msg = "%s. Code: %s" % (std_err.strip(), pipes.returncode)
+	    raise Exception(err_msg)
+
+	elif len(std_err):
+		print(std_out)
+	    # return code is 0 (no error), but we may want to
+    # do something with the info on std_err
+    # i.e. logger.warning(std_err)
+
+
+def exec_greenscaler(apk_file,test_cmd ):
 	n=1
+	print("testito " + str(test_cmd))
 	print("installing apk")
 	try:
 		st=str(commands.getstatusoutput(utils.AAPT_PATH+"aapt dump badging "+apk_file))
@@ -252,7 +275,7 @@ if __name__=='__main__':
 	if len(sys.argv)>2:
 		apkfile=sys.argv[1]
 		print("Lo apk %s" % apkfile)
-		exec_greenscaler(apkfile, sys.argv[2:])      
+		exec_greenscaler(apkfile, ' '.join(sys.argv[2:]))      
 	else:
 		print ("bad arg len. Usage: python greenscaler <apk-path> [cmd and args]")
 		exit(-1)

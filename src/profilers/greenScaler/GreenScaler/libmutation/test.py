@@ -52,10 +52,11 @@ class Test(object):
         t3.join()
         return self.duration
 
-    def run(self, command=None,args=[]):
+    def run(self, command=None):
         st=time.time()
         print "start time="+str(st)
-        self._run(command,args)
+        print("lo comandito -%s-" % command)
+        self._run(command)
         en=time.time()
         print "end time="+str(en)
         print "duration="+str(en-st)
