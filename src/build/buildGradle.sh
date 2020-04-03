@@ -201,6 +201,7 @@ do
 	$SED_COMMAND  -i -e "\$a\ buildscript\ {repositories\ {jcenter()\ \n\ mavenCentral()}}" "$x"
 	###
 
+	#debug_echo "éé aproach $APPROACH"
 	if [ "$APPROACH" == "whitebox" ] || [ "$framework" == "junit" ]; then
 		#statements
 		#Add a line that includes the trepn library folder in build.gradle
@@ -482,17 +483,28 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 		if [[ -n "$wrapperError" ]] || [[ -n "$googleError" ]] || [[ -n "$anotherWrapperError" ]]; then
 			if [ -n "$wrapperError" ]; then
 				#statements
+				cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
+				cp $gradle_wrapper_location "$FOLDER/"
+				cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
 				actual_version=$(egrep "try editing the distributionUrl" $logDir/buildStatus.log  | egrep "gradle-wrapper.properties" | grep -o "version.* required" | tr -dc '[0-9]\.[0-9]+(\.[0-9])+?')
 				correct_version=$( egrep "try editing the distributionUrl" $logDir/buildStatus.log  | egrep "gradle-wrapper.properties" | grep -o "to .*.zip" | sed 's/.zip//g' | tr -dc '[0-9]\.[0-9]+(\.[0-9])+?')
 				w_echo "$TAG changing gradle version from $actual_version to $correct_version "
 				$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=https\://services.gradle.org/distributions/gradle-${correct_version}-all.zip#g" "$FOLDER/gradle/wrapper/gradle-wrapper.properties"
+			
+			elif [[ -n "$googleError" ]]; then
+				# The google() repository shortcut is only available for Gradle 4.1 and higher.  
+				#use Gradle 4.1 and later, and that should resolve your issue.
+				correct_version="5.4.1"  # setting a default version  (could be 4.1)
+				w_echo "$TAG changing gradle version to $correct_version "
+				$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=https\://services.gradle.org/distributions/gradle-${correct_version}-all.zip#g" "$FOLDER/gradle/wrapper/gradle-wrapper.properties"
+			else
+				mkdir -p "$FOLDER/gradle/wrapper" 2>&1
+				cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
+				cp $gradle_wrapper_location "$FOLDER/"
+				cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
+				debug_echo " o gradle build version é o ${GRADLE_BUILD_VERSION}"
 			fi
-			mkdir -p "$FOLDER/gradle/wrapper" 2>&1
-			cp $gradle_wrapper_jar_location "$FOLDER/gradle/wrapper/"
-			cp $gradle_wrapper_location "$FOLDER/"
-			cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
-			debug_echo " o gradle build version é o ${GRADLE_BUILD_VERSION}"
-			#$SED_COMMAND -ri.bak "s#distributionUrl.+#distributionUrl=https\://services.gradle.org/distributions/gradle-${GRADLE_BUILD_VERSION}-all.zip#g" "$FOLDER/gradle/wrapper/gradle-wrapper.properties"
+
 		fi
 		unmatchVers=($($SED_COMMAND -nr "s/(.+)uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in (.+)$/\2\n\3/p" $logDir/buildStatus.log))
 		unmatchBuilds=($($SED_COMMAND -nr "s/(.+)The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)$/\2\n\4/p" $logDir/buildStatus.log))

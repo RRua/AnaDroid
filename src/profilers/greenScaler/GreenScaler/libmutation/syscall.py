@@ -35,7 +35,7 @@ class SYSCALL:
 		time.sleep(2)   	
 	def start_profiling(self):
 		
-        	subprocess.call("adb shell sh /sdcard/strc_gen.sh "+ self.package, shell=True)
+        	subprocess.call("adb shell su -c \" sh /sdcard/strc_gen.sh \" "+ self.package, shell=True)
 
 	def syscall_stop(self):
 		subprocess.call("adb shell su -c \" sh /sdcard/kill.sh \" "+ self.package, shell=True)

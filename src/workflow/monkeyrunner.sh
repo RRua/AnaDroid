@@ -318,7 +318,7 @@ buildAppWithGradle(){
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]; then
 		w_echo "[APP BUILDER] Building Again"
 		e_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
-		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkeyrunner"
+		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkeyrunner" "$APPROACH"
 		RET=$(echo $?)
 	else 
 		w_echo "[APP BUILDER] No changes since last run. Not building again"

@@ -21,7 +21,7 @@ BASE_PATH="/Users/ruirua/repos/AnaDroid/src/profilers/greenScaler/GreenScaler/"
 
 APKS_PATH=BASE_PATH+"apks/"
 TESTS_PATH=BASE_PATH+"tests/" 
-AAPT_PATH=" /Users/ruirua/Library/Android/sdk/build-tools/23.0.3/"
+AAPT_PATH="/Users/ruirua/Library/Android/sdk/build-tools/26.0.2/"
 
 IMAGE_PATH=BASE_PATH+"dest/images/"
 
