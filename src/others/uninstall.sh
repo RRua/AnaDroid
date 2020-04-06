@@ -17,6 +17,7 @@ adb shell pm uninstall "$PACKAGE"
 #Uninstall the tests
 echo -n "$TAG Removing Tests: "
 adb shell pm uninstall "$TESTPACKAGE" > /dev/null 2>&1
+echo ""
 exit
 
 ## list apps

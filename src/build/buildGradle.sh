@@ -2,6 +2,7 @@
 
 source $ANADROID_PATH/src/settings/settings.sh
 source $ANADROID_PATH/src/settings/util.sh
+#source $ANADROID_PATH/src/settings/general_workflow.sh
 
 machine=''
 getSO machine
@@ -129,7 +130,7 @@ do
 #for x in `find "$FOLDER" -name "build.gradle" -print | egrep -v "/build/"`; do
 	#remove \r characters
 	x=$dir
-	$SED_COMMAND -ri.bak "s#\r##g" "$x"
+	$SED_COMMgeAND -ri.bak "s#\r##g" "$x"
 	
 	#change the garbage collector settings
 	dexOpt=$(egrep -n "dexOptions( ?){" "$x")
@@ -472,6 +473,7 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 	buildSDKerror=$(egrep "The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)" $logDir/buildStatus.log)
 	wrapperError=$(egrep "try editing the distributionUrl" $logDir/buildStatus.log | egrep "gradle-wrapper.properties" )
 	anotherWrapperError=$(egrep "Wrapper properties file" $logDir/buildStatus.log  )
+	ndkError=$(grep "NDK toolchains folder" $logDir/buildStatus.log)
 	(export PATH=$ANDROID_HOME/tools/bin:$PATH)
 	sdkl=$(sdkmanager --list 2>&1) 
 	#echo "available _> $availableSdkTools"
@@ -504,8 +506,19 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 				cp $gradle_wrapper_properties_location "$FOLDER/gradle/wrapper/"
 				debug_echo " o gradle build version é o ${GRADLE_BUILD_VERSION}"
 			fi
-
 		fi
+
+		if [ -n "$ndkError" ]; then
+			if [ "$machine" == "Mac" ]; then
+				mkdir -p $ANDROID_HOME/ndk-bundle/toolchains/darwin-x86_64/prebuilt/linux-x86_64
+
+			else 
+				mkdir -p $ANDROID_HOME/ndk-bundle/toolchains/mips64el-linux-android/prebuilt/linux-x86_64
+			fi
+		fi
+
+
+
 		unmatchVers=($($SED_COMMAND -nr "s/(.+)uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in (.+)$/\2\n\3/p" $logDir/buildStatus.log))
 		unmatchBuilds=($($SED_COMMAND -nr "s/(.+)The SDK Build Tools revision \((.+)\) is too low for project ':(.+)'. Minimum required is (.+)$/\2\n\4/p" $logDir/buildStatus.log))
 		oldV=${unmatchVers[0]}

@@ -3,6 +3,16 @@ source $ANADROID_PATH/src/settings/settings.sh
 
 
 
+isAppInstalled(){
+	appPackage=$1
+	isInstalled=$( adb shell pm list packages | grep "$appPackage")
+	if [ -z "$isInstalled" ]; then
+		echo "FALSE"
+	else
+		echo "TRUE"
+	fi
+}
+
 getDeviceResourcesState(){
 	resState=$1
 	# hree numbers represent averages over progressively longer periods of time (one, five, and fifteen minute averages),
@@ -112,6 +122,19 @@ checkBuildingTool(){
 	fi
 }
 
+countSourceCodeLines(){
+	project_dir=$1
+	cloc "$project_dir" > "${project_dir}/cloc.out"	
+}
+
+getBattery(){
+	battery_level=$(adb shell dumpsys battery | grep -o "level.*" | cut -f2 -d: | grep -E -o "[0-9]+" )
+	limit=20
+	if [ "$battery_level" -le "$limit" ]; then
+		echo "battery level below ${limit}%. Sleeping again"
+		sleep 300 # sleep 5 min to charge battery
+	fi
+}
 
 #used_cpu free_mem nr_procceses sdk_level api_level battery_temperature battery_voltage
 #tempDir="$ANADROID_PATH/temp"

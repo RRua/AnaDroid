@@ -241,6 +241,8 @@ echo TEST_ORIENTATION     = "${TEST_ORIENTATION}"
 echo TEST_FRAMEWORK    = "${TEST_FRAMEWORK}"
 echo PROFILER    = "${PROFILER}"
 echo APP_BUILD_TYPE    = "${APP_BUILD_TYPE}"
+echo APPROACH    = "${DEFAULT_APPROACH}"
+
 #echo DEFAULT         = "${DEFAULT}"
 
 echo "${MonkeyRunnerList[@]}"

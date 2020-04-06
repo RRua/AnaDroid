@@ -1,5 +1,6 @@
 #!/bin/bash
 source $ANADROID_PATH/src/settings/settings.sh
+source $ANADROID_PATH/src/workflow/general_workflow.sh
 
 TAG="[AD]"
 
@@ -108,6 +109,7 @@ getAppUID(){
 	fi
 	
 }
+
 # abort the script execution during testing phase
 quit(){
 	w_echo "Aborting.."
@@ -124,14 +126,7 @@ quit(){
 	exit -1
 }
 # get battery from the connected android device
-getBattery(){
-	battery_level=$(adb shell dumpsys battery | grep -o "level.*" | cut -f2 -d: | sed 's/ //g')
-	w_echo " Actual battery level : $battery_level"
-	if [ "$battery_level" -le 20 ]; then
-		w_echo "battery level below 20%. Sleeping again"
-		sleep 300 # sleep 5 min to charge battery
-	fi
-}
+
 
 pingDevice(){
 	DEVICE=$(adb devices -l  2>&1 | tail -2)
@@ -227,18 +222,19 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	#debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
-		continue
 	fi
 	echo "$ID" >> $logDir/success.log
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
 	total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
+
+
 	##########
 }
 
@@ -315,11 +311,11 @@ runMonkeyTests(){
 buildAppWithGradle(){
 	## BUILD PHASE			
 	GRADLE=($(find "$FOLDER/$tName" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep -L "com.android.library" "{}" | xargs -I{} grep -l "buildscript" "{}" | cut -f1 -d: |  awk 'BEGIN{OFS=",";} {print length($1),$1}' | sort -nk 1  | head -1 | cut -f2 -d,))
-	debug_echo "debug os gradles sao ${GRADLE[0]}"
+	#debug_echo "debug os gradles sao ${GRADLE[0]}"
 	#debug_echo "ulha os gradles -> ${GRADLE}"
 	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]; then
 		w_echo "[APP BUILDER] Building Again"
-		debug_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
+		#debug_echo "gradle -> $ANADROID_SRC_PATH/build/buildGradle.sh $ID $FOLDER/$tName ${GRADLE[0]} $apkBuild \"monkey\""
 		$ANADROID_SRC_PATH/build/buildGradle.sh "$ID" "$FOLDER/$tName" "${GRADLE[0]}" "$apkBuild" "monkey" "$APPROACH"
 		RET=$(echo $?)
 	else 
@@ -329,6 +325,7 @@ buildAppWithGradle(){
 	(echo $trace) > "$FOLDER/$tName/instrumentationType.txt"
 	if [[ "$RET" != "0" ]]; then
 		# BUILD FAILED. SKIPPING APP
+		
 		echo "$ID" >> $logDir/errorBuildGradle.log
 		cp $logDir/buildStatus.log $f/buildStatus.log
 		if [[ -n "$logStatus" ]]; then
@@ -349,7 +346,7 @@ instrumentGradleApp(){
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
+		#debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
 		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
@@ -387,7 +384,6 @@ setupLocalResultsFolder(){
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
 	
 	getFirstAppVersion 
-	debug_echo "rimas"
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
@@ -509,12 +505,12 @@ for f in $DIR/*
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
 		MANIFESTS=($(find "$f" -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
-			debug_echo " o comando do manif -> python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]})"
+			#debug_echo " o comando do manif -> python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]})"
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
 			for R in ${MP[@]}; do 
-			# FOR EACH APP OF PROJECT
-				debug_echo " -> $R"
-				debug_echo " app id -> $(echo "$R" | sed "s%${f}%%g" | cut -f2 -d\/ | sed 's%/%%g' | cut -f1 -d:  )"
+			# FOR EACH Module OF PROJECT
+				#debug_echo " -> $R"
+				#debug_echo " app id -> $(echo "$R" | sed "s%${f}%%g" | cut -f2 -d\/ | sed 's%/%%g' | cut -f1 -d:  )"
 				#continue
 				RESULT=($(echo "$R" | tr ':' '\n'))
 				TESTS_SRC=${RESULT[1]}
@@ -529,7 +525,7 @@ for f in $DIR/*
 				setupLocalResultsFolder
 				
 				if [ "$APPROACH" == "whitebox" ] ; then
-					debug_echo "white e diferente"
+					#debug_echo "white e diferente"
 					instrumentGradleApp
 				else
 					last_testing_approach=$(grep "blackbox" "$FOLDER/$tName/instrumentationType.txt" 2> /dev/null  )
@@ -539,7 +535,7 @@ for f in $DIR/*
 					fi
 					# no need to  instrument app source code
 					# just  clone original project to $tname
-					debug_echo "ja eraaaa"
+				
 					$MKDIR_COMMAND -p "$FOLDER/$tName"
 					$(find "$FOLDER" ! -path "$FOLDER"  -maxdepth 1 | grep -v "$tName" | xargs -I{} cp -r {} "$FOLDER/$tName/")
 				fi
@@ -548,8 +544,14 @@ for f in $DIR/*
 					# if BUILD FAILED, SKIPPING APP
 					continue
 				fi
+				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
+				isInstalled=$( isAppInstalled $PACKAGE )
+				if [[ "$isInstalled" == "FALSE" ]]; then
+					e_echo "$TAG App not installed. Skipping tests execution"
+					continue
+				fi
 				runMonkeyTests
 				uninstallApp
 				#analyzeAPK	
@@ -564,7 +566,7 @@ for f in $DIR/*
 			done
 		fi
 	elif [ "$BUILD_TYPE" ] && [ "$APPROACH" == "blackbox" ] ; then
-		e_echo "jaimeeee $BUILD_TYPE"
+		e_echo "error. Unsupported build type: $BUILD_TYPE"
 	else
 		e_echo "Dropped support for Eclipse SDK projects"
 		continue
