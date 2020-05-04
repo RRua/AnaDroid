@@ -52,7 +52,7 @@ SLEEPTIME=10 # 10 s
 # TODO put in monkey config file
 min_monkey_runs=1 #20
 threshold_monkey_runs=1 #50
-number_monkey_events=1000
+number_monkey_events=10
 min_coverage=10
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 DEBUG="TRUE" #"TRUE" 
@@ -69,8 +69,14 @@ debug_echo(){
 setup(){
 	if [ "$trace" == "testoriented" ]; then
 		trace="-TestOriented"
-	else
+	elif [ "$trace" == "methodriented" ]; then
+		#statements
 		trace="-MethodOriented"
+	elif [ "$trace" == "activityoriented" ]; then
+		#statements
+		trace="-ActivityOriented"
+	else
+		trace="-TestOriented"
 	fi
 }
 
@@ -178,9 +184,12 @@ checkConfig(){
 	if [[ $trace == "-TestOriented" ]]; then
 		e_echo "	Test Oriented Profiling:      ✔"
 		folderPrefix="MonkeyTest"
-	else 
+	elif [[ $trace == "-MethodOriented" ]]; then
 		e_echo "	Method Oriented profiling:    ✔"
 		folderPrefix="MonkeyMethod"
+	elif [[ $trace == "-ActivityOriented" ]]; then
+		e_echo "	Activity Oriented profiling:    ✔"
+		folderPrefix="MonkeyActivity"
 	fi 
 	if [[ $profileHardware == "YES" ]]; then
 		w_echo "	Profiling hardware:           ✔"
@@ -238,11 +247,33 @@ prepareAndInstallApp(){
 	##########
 }
 
+
+pullTestResultsFromDevice(){
+	if [[ $trace == "-ActivityOriented" ]]; then
+		#e_echo "tirei o trace"
+		#adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.trace" |  xargs -I{} adb pull $deviceDir/{} $localDir
+		adb pull "$deviceExternal/anadroidDebugTrace.trace" "$localDir/"
+		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$i.txt"
+		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$i.txt"
+		debug_echo "dumpei"
+	else
+		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
+		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
+	fi
+	e_echo "Pulling results from device..."
+	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
+	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+	analyzeCSV $localDir/GreendroidResultTrace$i.csv
+		
+}
+
+
 runMonkeyTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
+		debug_echo "$ANADROID_SRC_PATH/run/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir"
 		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir		
 		RET=$(echo $?)
 		if [[ $RET -ne 0 ]]; then
@@ -252,20 +283,16 @@ runMonkeyTests(){
 			totaUsedTests=0
 			break				
 		fi
-		e_echo "Pulling results from device..."
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-		analyzeCSV $localDir/GreendroidResultTrace$i.csv
-		totaUsedTests=$(($totaUsedTests + 1))
-		adb shell am force-stop $PACKAGE						
-		echo "methods invoked : $(cat $localDir/TracedMethods$i.txt | wc -l)"
-		echo "total dif. methods invoked : $(cat $localDir/TracedMethods$i.txt | sort -u | uniq | wc -l )"
+		
+		pullTestResultsFromDevice
+
+		totaUsedTests=$(($totaUsedTests + 1))						
+		#echo "methods invoked : $(cat $localDir/TracedMethods$i.txt | wc -l)"
+		#echo "total dif. methods invoked : $(cat $localDir/TracedMethods$i.txt | sort -u | uniq | wc -l )"
 		if [ "$totaUsedTests" -eq 10 ]; then
 			getBattery
 		fi
-		$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+		"$localDir/"trepnFix.sh $deviceDir
 	done
 
 	########## RUN TESTS  THRESHOLD ############
@@ -273,7 +300,12 @@ runMonkeyTests(){
 		continue
 	fi
 	##check if have enough coverage
-	nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
+	if [[ $trace == "-ActivityOriented" ]]; then
+		nr_methods=$( grep -o "$PACKAGE.*" $localDir/TracedMethods*.txt  | sort -u | wc -l | $SED_COMMAND 's/ //g')
+	else
+		nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
+	fi
+	#nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
 	actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
 	e_echo "actual coverage -> 0$actual_coverage"
 	
@@ -346,7 +378,7 @@ instrumentGradleApp(){
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		#debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
+		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" $tName \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" \"$APPROACH\" ##RR"
 		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
@@ -508,10 +540,6 @@ for f in $DIR/*
 			#debug_echo " o comando do manif -> python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]})"
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
 			for R in ${MP[@]}; do 
-			# FOR EACH Module OF PROJECT
-				#debug_echo " -> $R"
-				#debug_echo " app id -> $(echo "$R" | sed "s%${f}%%g" | cut -f2 -d\/ | sed 's%/%%g' | cut -f1 -d:  )"
-				#continue
 				RESULT=($(echo "$R" | tr ':' '\n'))
 				TESTS_SRC=${RESULT[1]}
 				PACKAGE=${RESULT[2]}
@@ -554,9 +582,9 @@ for f in $DIR/*
 				fi
 				runMonkeyTests
 				uninstallApp
-				#analyzeAPK	
-				#w_echo "Analyzing results .."
-				#java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
+				analyzeAPK	
+				w_echo "Analyzing results .."
+				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
 				w_echo "$TAG resuming Greendroid after nap"

@@ -6,10 +6,10 @@ source $SRC_FOLDER/settings/settings.sh
 
 #ANADROID FINAL CONFIG
 SUPPORTED_TESTING_FRAMEWORKS=( "monkey" "junit" "monkeyrunner" )
-SUPPORTED_PROFILERS=( "trepn" )
-SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodOriented" )
+SUPPORTED_PROFILERS=( "trepn" "greenscaler" "both" )
+SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodoriented" "activityoriented" )
 #ANADROID DEFAULT CONFIG
-TEST_ORIENTATION="testoriented"
+
 #URL="http://greensource.di.uminho.pt/"
 
 SUPPORTED_APPROACHES=( "whitebox"  "blackbox" )
@@ -19,6 +19,7 @@ SUPPORTED_APPROACHES=( "whitebox"  "blackbox" )
 URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
+TEST_ORIENTATION="activityoriented"
 APP_BUILD_TYPE="debug"
 TARGET_DIR="$ANADROID_PATH/demoProjects/"
 MonkeyRunnerList=()
@@ -49,6 +50,17 @@ containsTestingFramework (){
             fi
         done
     return -1
+}
+
+writeConfigJSON(){
+    configFile=".ana/anaconfig.json"
+    echo "
+    {
+        \"approach\": \"$DEFAULT_APPROACH\",
+         \"instrumentationType\": \"$TEST_ORIENTATION\",
+         \"testingFramework\": \"$TEST_FRAMEWORK\",
+         \"profiler\": \"$PROFILER\",
+     }" > "$ANADROID_PATH/$configFile"
 }
 
 processAndValidateArguments(){
@@ -258,10 +270,11 @@ if [[ "$URL" != "NONE" ]]; then
     fi
 fi
 
-
+writeConfigJSON
 
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
+    echo "jaime $TEST_ORIENTATION"
     $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"
@@ -269,7 +282,7 @@ elif [ "$TEST_FRAMEWORK" == "junit" ]; then
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
     $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
 else 
-    echo "nada"
+    e_echo "Fatal error"
 fi
 
 

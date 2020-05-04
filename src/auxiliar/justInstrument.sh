@@ -1,5 +1,6 @@
 #!/bin/bash
-source settings.sh
+SRC_FOLDER="$ANADROID_PATH/src/"
+source $SRC_FOLDER/settings/settings.sh
 
 TAG="[GD]"
 
@@ -18,18 +19,18 @@ fi
 OLDIFS=$IFS
 tName="_TRANSFORMED_"
 deviceDir=""
-prefix="latest" # "latest" or "" ; Remove if normal app
+prefix="" # "latest" or "" ; Remove if normal app
 deviceExternal=""
 logDir="logs"
 localDir="$HOME/GDResults"
-localDirOriginal="/Users/ruirua/Documents/Tese/resultados/GDResults/relevant40"
+#localDirOriginal="/Users/ruirua/Documents/Tese/resultados/GDResults/relevant40"
 #trace="-MethodOriented"   #trace=$2  ##RR
 checkLogs="Off"
-trace="-TestOriented"
+trace="-ActivityOriented"
 monkey="-Monkey"
 folderPrefix=""
-GD_ANALYZER="jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
-GD_INSTRUMENT="jars/jInst.jar"
+GD_ANALYZER="$ANADROID_PATH/resources/jars/Analyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
+GD_INSTRUMENT="$ANADROID_PATH/resources/jars/jInst.jar"
 trepnLib="TrepnLib-release.aar"
 trepnJar="TrepnLib-release.jar"
 profileHardware="YES" # YES or ""
@@ -41,7 +42,9 @@ threshold_monkey_runs=3 #50
 number_monkey_events=500
 min_coverage=10
 totaUsedTests=0
-DIR=/Users/ruirua/tests/actual/*
+
+DIR=$ANADROID_PATH/demoProjects/*
+#DIR=/Users/ruirua/tests/actual/*
 #DIR=/Users/ruirua/Documents/Tese/resultados/relevantApps/*
 
 getAppUID(){
@@ -74,16 +77,20 @@ for f in $DIR/ ; do
 		if [[ $trace == "-TestOriented" ]]; then
 			e_echo "	Test Oriented Profiling:      ✔"
 			folderPrefix="MonkeyTest"
-		else 
+		elif[[ $trace == "-MethodOriented" ]]:
 			e_echo "	Method Oriented profiling:    ✔"
 			folderPrefix="MonkeyMethod"
+		
+		else
+			e_echo "	Activity Oriented profiling:    ✔"
+			folderPrefix="ActivityMethod"			
 		fi 
 		GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
 		POM=$(find ${f}/${prefix} -maxdepth 1 -name "pom.xml")
 		$MKDIR_COMMAND -p $f/$tName/
 		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
-			MP=($(python manifestParser.py ${MANIFESTS[*]}))
+			MP=($(python $SRC_FOLDER/build/manifestParser.py ${MANIFESTS[*]}))
 			for R in ${MP[@]}; do
 				RESULT=($(echo "$R" | tr ':' '\n'))
 				TESTS_SRC=${RESULT[1]}
@@ -121,7 +128,8 @@ for f in $DIR/ ; do
 				mkdir -p $FOLDER/$tName
 				echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
 				
-				java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
+				java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ##RR
+				#java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID ##RR
 				#create results support folder
 				#rm -rf $projLocalDir/all/*
 				$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
@@ -137,12 +145,12 @@ for f in $DIR/ ; do
 				cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $monkey_folder
 				#copy the trace/measure lib
 				#folds=($(find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"))
-				for D in `find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
-				    if [ -d "${D}" ]; then  ##RR
-				    	$MKDIR_COMMAND -p ${D}/libs  ##RR
-				     	cp libsAdded/$treprefix$trepnLib ${D}/libs  ##RR
-				    fi  ##RR
-				done  ##RR
+				#for D in `find $FOLDER/$tName/ -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
+				#    if [ -d "${D}" ]; then  ##RR
+				#    	$MKDIR_COMMAND -p ${D}/libs  ##RR
+				#     	cp libsAdded/$treprefix$trepnLib ${D}/libs  ##RR
+				#    fi  ##RR
+				#done  ##RR
 			done
 		fi
 	fi
