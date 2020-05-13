@@ -19,7 +19,7 @@ SUPPORTED_APPROACHES=( "whitebox"  "blackbox" )
 URL="NONE"
 PROFILER="trepn"
 TEST_FRAMEWORK="monkey"
-TEST_ORIENTATION="activityoriented"
+TEST_ORIENTATION="testoriented"
 APP_BUILD_TYPE="debug"
 TARGET_DIR="$ANADROID_PATH/demoProjects/"
 MonkeyRunnerList=()
@@ -46,6 +46,16 @@ containsTestingFramework (){
     for (( i = 0; i < ${#SUPPORTED_TESTING_FRAMEWORKS[@]} ; i++ )); do
             #echo "${SUPPORTED_TESTING_FRAMEWORKS[$i]} == $1"
             if [ "${SUPPORTED_TESTING_FRAMEWORKS[$i]}" == "$1" ] ; then
+                return $i
+            fi
+        done
+    return -1
+}
+
+containsProfiler (){
+    for (( i = 0; i < ${#SUPPORTED_PROFILERS[@]} ; i++ )); do
+            #echo "${SUPPORTED_TESTING_FRAMEWORKS[$i]} == $1"
+            if [ "${SUPPORTED_PROFILERS[$i]}" == "$1" ] ; then
                 return $i
             fi
         done
@@ -93,7 +103,7 @@ processAndValidateArguments(){
         RET=$?
         if [ $RET -le 250 ]; then
             TEST_ORIENTATION="${SUPPORTED_MONITORING_TYPES[$RET]}"
-            echo TEST_ORIENTATION     = "${TEST_ORIENTATION}"
+            #echo TEST_ORIENTATION     = "${TEST_ORIENTATION}"
         else
             e_echo "ANADROID doesn't suport \"$2\" monitoring type ... Assuming Test Oriented (default) as required monitoring type"
         fi
@@ -115,7 +125,7 @@ processAndValidateArguments(){
         ;;
         -p|--profiler)
         lower2=$( echo "$2" | awk '{print tolower($0)}' )
-        containsElement "${lower2}" "${SUPPORTED_PROFILERS[@]}"
+        containsProfiler "${lower2}" "${SUPPORTED_PROFILERS[@]}"
         RET=$?
         if [ $RET -ge 0 ]; then
             PROFILER="${SUPPORTED_PROFILERS[$RET]}"
@@ -272,15 +282,15 @@ fi
 
 writeConfigJSON
 
+
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
-    echo "jaime $TEST_ORIENTATION"
-    $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
+    $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"
-    $SRC_FOLDER/workflow/junitScript.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
+    $SRC_FOLDER/workflow/junitScript.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
-    $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
+    $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
 else 
     e_echo "Fatal error"
 fi

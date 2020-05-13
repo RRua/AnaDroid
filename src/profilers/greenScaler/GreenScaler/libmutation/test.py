@@ -55,7 +55,6 @@ class Test(object):
     def run(self, command=None):
         st=time.time()
         print "start time="+str(st)
-        print("lo comandito -%s-" % command)
         self._run(command)
         en=time.time()
         print "end time="+str(en)

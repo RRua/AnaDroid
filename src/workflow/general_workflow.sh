@@ -1,7 +1,37 @@
 #!/bin/bash
 source $ANADROID_PATH/src/settings/settings.sh
 
+debug_echo(){
+	if [[ "$DEBUG" == "TRUE" ]]; then
+		e_echo "[DEBUG] $1"
+	fi
+}
 
+setup(){
+	if [ "$trace" == "testoriented" ]; then
+		echo "-TestOriented"
+	elif [ "$trace" == "methodriented" ]; then
+		#statements
+		echo "-MethodOriented"
+	elif [ "$trace" == "activityoriented" ]; then
+		#statements
+		echo "-ActivityOriented"
+	else
+		echo "-TestOriented"
+	fi
+}
+
+
+checkIfIdIsReservedWord(){  #historic reasons
+	if [ "$ID" == "success" ] || [ "$ID" == "failed" ] || [ "$ID" == "unknown" ]; then	
+		continue
+	fi
+}
+
+
+cleanDeviceTrash() {
+	adb shell rm -rf "$deviceDir/allMethods.txt" "$deviceDir/TracedMethods.txt" "$deviceDir/Traces/*" "$deviceDir/Measures/*" "$deviceDir/TracedTests/*"
+}
 
 isAppInstalled(){
 	appPackage=$1
@@ -10,6 +40,32 @@ isAppInstalled(){
 		echo "FALSE"
 	else
 		echo "TRUE"
+	fi
+}
+
+isProfilingWithTrepn(){
+	profiler=$1
+	if [ -n "$(echo $profiler | grep "trepn")" ]; then
+		echo "TRUE"
+	elif [ -n "$(echo $profiler | grep "both")" ]; then
+		echo "TRUE"
+	elif [ -n "$(echo $profiler | grep "all")" ]; then
+		echo "TRUE"
+	else
+		echo "FALSE"
+	fi
+}
+
+isProfilingWithGreenscaler(){
+	profiler=$1
+	if [ -n "$(echo $profiler | grep "greenscaler")" ]; then
+		echo "TRUE"
+	elif [ -n "$(echo $profiler | grep "both")" ]; then
+		echo "TRUE"
+	elif [ -n "$(echo $profiler | grep "all")" ]; then
+		echo "TRUE"
+	else
+		echo "FALSE"
 	fi
 }
 
@@ -124,7 +180,8 @@ checkBuildingTool(){
 
 countSourceCodeLines(){
 	project_dir=$1
-	cloc "$project_dir" > "${project_dir}/cloc.out"	
+	scc "$project_dir" > "${project_dir}/cloc.out"	
+
 }
 
 getBattery(){

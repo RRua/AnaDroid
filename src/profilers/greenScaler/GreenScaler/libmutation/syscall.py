@@ -39,7 +39,8 @@ class SYSCALL:
 
 	def syscall_stop(self):
 		subprocess.call("adb shell su -c \" sh /sdcard/kill.sh \" "+ self.package, shell=True)
-		utils.uninstall_app(self.package)
+		utils.stop_app(self.package)
+		#utils.uninstall_app(self.package)
 
 	def pull_syscall(self):
 		subprocess.call(["adb", "pull", "/sdcard/strace.txt", \

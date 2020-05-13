@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import sys, argparse, time, threading
+import sys, argparse, time, threading, subprocess
 from libmutation import utils, application,model
 import os
 import time
@@ -22,7 +22,7 @@ import sys
 import shutil
 import commands
 from os import listdir
-import subprocess
+from subprocess import check_output
 from random import randint
 import re
 
@@ -30,17 +30,22 @@ EVENT_PATH = "/dev/input/event1"
 
 def cleaning(pkg, apk):
 
-	print "Uninstall app if already installed"
+	print ("Uninstall app if already installed")
 	utils.uninstall_app(pkg)
-	print "Install app"
+	print ("Install app")
 	utils.install_app(apk)
 
 
+def get_foreground_app():
+	output = subprocess.check_output("adb shell dumpsys activity recents | grep 'Recent #0' | cut -d= -f2 | sed 's| .*||' | cut -d '/' -f1", shell=True)
+	#p = subprocess.Popen("pwd", stdout=subprocess.PIPE)
+	#result = p.communicate()[0]
+	return output.strip()
 # 
 def cpu_measurement(app, apk_file, n, package, test_cmd):
 	
 	for i in range(n):          
-		cleaning(package, apk_file)
+		#cleaning(package, apk_file)
 		print "Start cpu profiling"
 		print("sleeping")
 		time.sleep(5)
@@ -48,12 +53,10 @@ def cpu_measurement(app, apk_file, n, package, test_cmd):
 		print "Running application"
 		duration=app.test.run(test_cmd)
 		app.cpu.duration=app.cpu.duration+duration
-		print "total duration=",duration
+		print("total duration=" + str(duration))
 		app.cpu.cpu_after(package)
-		print "Collect CPU measurements"
+		print ("Collect CPU measurements")
 		app.cpu.pull_cpu(package)
-
-		print("jack -> "+ str(apk_file[:-4]))
 		app.cpu.count_cpu(apk_file[:-4])
 		
 
@@ -61,7 +64,7 @@ def syscall_trace(app, apk_file, n, package,  test_cmd):
 	for i in range(n):      
 		while 1:
 			print "running ", str((i+1))+"th round of strace"   
-			cleaning(package, apk_file)
+			#cleaning(package, apk_file)
 			time.sleep(5)
 			print "Start syscall tracing"   
 			app.syscall.syscall_capture()
@@ -81,23 +84,20 @@ def syscall_trace(app, apk_file, n, package,  test_cmd):
 				print("Syscall did not work this time\nStarting this round again")
 
 def screen_capture(app, apk_file, n, package,test_cmd):
-
-		cleaning(package, apk_file)
+		#cleaning(package, apk_file)
 		app.color.capture_images()
 		print "Running application"
 		app.test.run(test_cmd)
-		utils.uninstall_app(package)
 		app.color.pull_images()
 		app.color.delete_images()
 	
 		no_img=0
 		for img in listdir(utils.IMAGE_PATH+package+"/screen_shots/"):
-			
 			no_img=no_img+1
 		print "total captured_images="+str(no_img)
 		if no_img>=1:
 			app.color.calculate_rgb()
-			utils.uninstall_app(package)
+			#utils.uninstall_app(package)
 			return 1
 		else:
 			print "Images were not captured properly"
@@ -117,7 +117,6 @@ def default_greenscaler(n_runs=1):
 			start="package: name=\'"
 			end="\' versionCode="
 			package=((st.split(start))[1].split(end)[0])
-			print("lo packkko " +str(package))
 			start="launchable-activity: name=\'"
 			end="\'  label=\'"  
 			main_activity=((st.split(start))[1].split(end)[0])
@@ -151,7 +150,7 @@ def default_greenscaler(n_runs=1):
 
 def exec_command(self,command ):
 	#subprocess.call(command)
-	print("executing command -%s-" % command)
+	#print("executing command -%s-" % command)
 	pipes = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 	#If you are using python 2.x, you need to include shell=True in the above line
 	std_out, std_err = pipes.communicate()
@@ -168,47 +167,48 @@ def exec_command(self,command ):
     # i.e. logger.warning(std_err)
 
 
-def exec_greenscaler(apk_file,test_cmd ):
+def exec_greenscaler(package,test_cmd ):
 	n=1
-	try:
-		st=str(commands.getstatusoutput(utils.AAPT_PATH+"aapt dump badging "+apk_file))
-		start="package: name=\'"
-		end="\' versionCode="
-		package=((st.split(start))[1].split(end)[0])
-		start="launchable-activity: name=\'"
-		end="\'  label=\'"  
-		main_activity=((st.split(start))[1].split(end)[0])
-			#pid = utils.clean_up(package, utils.APKS_PATH+apk_file)
-	except:
-		print "Could not find Package name"
-	print "=========================================================="
-	### initialize an app with zero resource usage
-	app=application.Application(apk_file, package, runTestCommand=exec_command)
+	app=application.Application(package, package, runTestCommand=exec_command)
 	print("executing test")
-	cpu_measurement(app, apk_file, n, package,test_cmd )
+	cpu_measurement(app, package, n, package,test_cmd )
+	foreground_app=get_foreground_app()
+	print("-"+foreground_app+"-")
+	if foreground_app != package:
+		print("Error detected. App crashed or stopped during execution")
+		exit(-1) 
+	app.stop_and_clean_app()
 	print "capture system calls"
-	syscall_trace(app, apk_file, n, package,test_cmd)
+	syscall_trace(app, package, n, package,test_cmd)
+	foreground_app=get_foreground_app()
+	if foreground_app != package:
+		print("Error detected. App crashed or stopped during execution")
+		exit(-1) 
+	app.stop_and_clean_app()
 	print "Now run to capture screen shots"
-	while 1:
-		n_image=screen_capture(app, apk_file, n, package, test_cmd)
+	n_tries=5
+	while n_tries>0:
+		n_tries=n_tries-1
+		app.stop_and_clean_app()
+		n_image=screen_capture(app, package, n, package, test_cmd)
 		if n_image==1:
 			break
 
-	energy=model.estimate_energy(apk_file, app, n)
+	energy=model.estimate_energy(package, app, n)
 	print "Energy ="+str(energy)+" Joules"
-
+	app.stop_and_clean_app()
+	exit(0)
 
 	
 
 
 
 
-if __name__=='__main__':
-					
+if __name__=='__main__':					
 	if len(sys.argv)>2:
-		apkfile=sys.argv[1]
-		print("Lo apk %s" % apkfile)
-		exec_greenscaler(apkfile, ' '.join(sys.argv[2:]))      
+		package=sys.argv[1]
+		#print("Lo apk %s" % apkfile)
+		exec_greenscaler(package, ' '.join(sys.argv[2:]))      
 	else:
 		print ("bad arg len. Usage: python greenscaler <apk-path> [cmd and args]")
 		exit(-1)

@@ -17,12 +17,11 @@ limitations under the License.
 import os, subprocess, time, threading
 
 ### this is the path to the GreenScaler folder
-BASE_PATH="/Users/ruirua/repos/AnaDroid/src/profilers/greenScaler/GreenScaler/"
+BASE_PATH= os.environ['ANADROID_PATH'] + "/src/profilers/greenScaler/GreenScaler/"
 
 APKS_PATH=BASE_PATH+"apks/"
 TESTS_PATH=BASE_PATH+"tests/" 
-AAPT_PATH="/Users/ruirua/Library/Android/sdk/build-tools/26.0.2/"
-
+AAPT_PATH= os.environ['ANDROID_HOME'] + "/build-tools/26.0.2/"
 IMAGE_PATH=BASE_PATH+"dest/images/"
 
 def uninstall_app(pkg):
@@ -30,8 +29,15 @@ def uninstall_app(pkg):
         return
     subprocess.call("adb shell pm uninstall " + pkg, shell=True)
 
-def install_app(apk):
+
+def stop_app(pkg):
+    if pkg is not None:
+    	subprocess.call("adb shell am force-stop " + pkg , shell=True)
+
+
+
+def install_app(pkg):
     if apk is None:
         return
-    subprocess.call("adb install " + apk, shell=True)
+    subprocess.call("adb install apks/" + pkg +".apk" , shell=True)
 

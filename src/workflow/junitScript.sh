@@ -17,10 +17,13 @@ fi
 
 # args
 ANADROID_PATH=$1
-trace=$2 
-GREENSOURCE_URL=$3
-apkBuild=$4
-DIR=$5
+PROFILER=$2
+trace=$3
+GREENSOURCE_URL=$4
+apkBuild=$5
+DIR=$6
+APPROACH=$7
+
 # global
 ANADROID_SRC_PATH=$ANADROID_PATH/src/
 res_folder="$ANADROID_PATH/resources"

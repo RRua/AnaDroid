@@ -9,7 +9,7 @@ except ImportError:
 	from PIL import Image
 	
 class RGB:
-    
+	
 	def __init__(self, package):
 		self.r=0
 		self.g=0
@@ -36,23 +36,18 @@ class RGB:
 			os.system("mv "+utils.IMAGE_PATH+self.package+"/* "+utils.IMAGE_PATH+self.package+"/screen_shots/")
 
 	def delete_images(self):
-
 		subprocess.call(["adb", "shell", "rm", "-rf", "/sdcard/screen_shots"])
 
 
 	def capture_images(self):
-
-	
-        	t1 = threading.Thread(target=self.run_screencap)
-	
+		t1 = threading.Thread(target=self.run_screencap)
 		print "making directory to /sdcard/"	
 		self.makedir()
-
 		print "screencap started"
 		t1.start()
 		time.sleep(3)	
 
-        	
+			
 
 	def calculate_rgb(self):
 		print "=================================\n"
@@ -64,7 +59,7 @@ class RGB:
 		tot_B=0	
 		no_image=0	
 		for image in listdir(utils.IMAGE_PATH+self.package+"/screen_shots/"):
-			
+			print("image" + str(image))
 			R=0
 			G=0
 			B=0
@@ -85,7 +80,6 @@ class RGB:
 				no_image=no_image+1	
 			
 			except:
-				
 				continue
 
 			tot_R=tot_R+(R/count)	
@@ -93,6 +87,9 @@ class RGB:
 			tot_G=tot_G+(G/count)
 			tot_B=tot_B+(B/count)
 
+		if no_image==0:
+			print("empty screenshots")
+			no_image=1
 		self.r=tot_R/no_image
 		self.g=tot_G/no_image
 		self.b=tot_B/no_image

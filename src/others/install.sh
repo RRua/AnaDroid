@@ -22,6 +22,7 @@ if [ "$apkBuild" == "" ]; then
 	apkBuild="debug"
 fi
 
+
 TAG="[APP INSTALLER]"
 #echo ""
 
@@ -97,6 +98,7 @@ if [[ "$OK" == "2" ]]; then
 		for apk in $appAPK; do
 			(adb install -g -r "$apk") 
 			echo "$apk" > $logDir/lastInstalledAPK.txt
+			echo "$apk" > $resDir/installedAPK.log
 		done
 		
 	else

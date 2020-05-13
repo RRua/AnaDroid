@@ -18,6 +18,7 @@ import cpu
 import test
 import syscall
 import color
+import os
 class Application:
     
 	def __init__(self, apk, package, runTestCommand=None):
@@ -26,6 +27,16 @@ class Application:
 		self.syscall=syscall.SYSCALL(package)
 		self.color=color.RGB(package)
 		self.test=test.Test(apk, runTestCommand)
+		self.package = package
 		#self.syscalls=Syscalls()
 		#self.rgb=RGB()	
+
+
+	def stop_app(self):
+		os.system("adb shell am force-stop " + self.package)
+	
+	def stop_and_clean_app(self):
+		#os.system("adb shell pm clear" + self.package)
+		self.stop_app()
+		os.system("adb shell pm clear " + self.package)
 
