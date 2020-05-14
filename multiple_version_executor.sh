@@ -3,7 +3,7 @@ source $SRC_FOLDER/settings/settings.sh
 
 file_remote_json=$1
 #temp_folder="$ANADROID_PATH/demoProjects/demoProjects/"
-temp_folder="$ANADROID_PATH/fDroid_extractor/samples/"
+temp_folder="$ANADROID_PATH/demoProjects/fdroidApps/"
 #mkdir -p $temp_folder
 target_file="data.json"
 
@@ -48,7 +48,7 @@ for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d
 		echo "Processing $folder_of_apk"
 		echo "----------------------------------------"
 		echo "----------------------------------------"
-		anaDroid -a blackbox -d "$version_folder/" -f "monkey"
+		anaDroid -a whitebox -d "$version_folder/" -f "monkey"
 
 	done
 

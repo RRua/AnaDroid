@@ -59,6 +59,12 @@ setImmersiveMode(){
 	adb shell settings put global policy_control immersive.full=$package
 }
 
+stopAndCleanApp(){
+	package=$1
+	adb shell am force-stop $package >/dev/null 2>&1
+	adb shell pm clear $package >/dev/null 2>&1
+}
+
 
 #set brightness to lowest possible 
 #adb shell settings put system screen_brightness_mode 0 

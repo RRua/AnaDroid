@@ -55,7 +55,7 @@ SLEEPTIME=10 # 10 s
 # TODO put in monkey config file
 min_monkey_runs=1 #20
 threshold_monkey_runs=1 #50
-number_monkey_events=10
+number_monkey_events=1
 min_coverage=10
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 DEBUG="TRUE" #"TRUE" 
@@ -199,6 +199,16 @@ getFirstAppVersion(){
 	done
 }
 
+getInstalledPackage(){
+	#sometimes the build scripts change the package name of the apk
+	# and in the device the package name is different, wich causes problems in test execution
+	#and app uninstll proccess
+	NEW_PACKAGE=$(adb shell pm list packages | grep $PACKAGE | sed 's/package://g' | tr -d '\r' )
+	if [ -z "$NEW_PACKAGE" ]; then
+		NEW_PACKAGE=$PACKAGE
+	fi
+	w_echo "$TAG installed package: $NEW_PACKAGE"
+}
 
 
 prepareAndInstallApp(){
@@ -217,6 +227,7 @@ prepareAndInstallApp(){
 	w_echo "[APP INSTALLER] Installing the apps on the device"
 	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "$monkey" "$apkBuild" "$logDir"
+	getInstalledPackage 
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -254,7 +265,7 @@ pullTestResultsFromDevice(){
 
 runMonkeyTests(){
 	########## RUN TESTS 1 phase ############
-	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
+	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
 		RET1="0"
@@ -262,36 +273,44 @@ runMonkeyTests(){
 		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
 			#statements
 			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir		
+			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
+			$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
 			RET=$(echo $?)
 		fi
 		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
 			#statements
 			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE $localDir $deviceDir		
+			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
+			$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
 			RET1=$(echo $?)
 		fi
 
 		if [ "$RET1" !=  "0" ] || [ "$RET" != "0" ] ; then
-			errorHandler $RET $PACKAGE
-			IGNORE_RUN="YES"
-			$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-			totaUsedTests=0
-			break				
-		fi
-		
-		pullTestResultsFromDevice
+			if [ "$RET1" !=  "0" ] ; then
+				errorHandler $RET $NEW_PACKAGE
+				IGNORE_RUN="YES"
+				#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+				totaUsedTests=0	
+				e_echo "An error occured during test execution. Skipping test $i"
+			fi
 
-		totaUsedTests=$(($totaUsedTests + 1))						
-		#echo "methods invoked : $(cat $localDir/TracedMethods$i.txt | wc -l)"
-		#echo "total dif. methods invoked : $(cat $localDir/TracedMethods$i.txt | sort -u | uniq | wc -l )"
-		if [ "$totaUsedTests" -eq 10 ]; then
-			getBattery
+			if [ "$RET" !=  "0" ] ; then
+				errorHandler $RET $NEW_PACKAGE
+				IGNORE_RUN="YES"
+				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+				totaUsedTests=0		
+			
+			fi			
+		else
+			pullTestResultsFromDevice
+			totaUsedTests=$(($totaUsedTests + 1))						
+			if [ "$totaUsedTests" -eq 10 ]; then
+				getBattery
+			fi
+			"$ANADROID_SRC_PATH/others/trepnFix.sh" $deviceDir
 		fi
-		"$ANADROID_SRC_PATH/others/trepnFix.sh" $deviceDir
-	done
+	
+		done
 
 	########## RUN TESTS  THRESHOLD ############
 	if [[ "$IGNORE_RUN" != "" ]]; then
@@ -314,7 +333,7 @@ runMonkeyTests(){
 			break
 		fi
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE $localDir $deviceDir
+		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $j $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir
 		e_echo "Pulling results from device..."
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
@@ -325,7 +344,7 @@ runMonkeyTests(){
 		acu=$(echo "${actual_coverage} * 100" | bc -l)
 		w_echo "actual coverage -> $acu %"
 		totaUsedTests=$(($totaUsedTests + 1))
-		adb shell am force-stop $PACKAGE
+		adb shell am force-stop $NEW_PACKAGE
 		if [ "$totaUsedTests" -eq 30 ]; then
 			getBattery
 		fi
@@ -422,7 +441,7 @@ setupLocalResultsFolder(){
 }
 
 uninstallApp(){
-	$ANADROID_SRC_PATH/others/uninstall.sh "$PACKAGE" "$TESTPACKAGE"
+	$ANADROID_SRC_PATH/others/uninstall.sh "$NEW_PACKAGE" "$TESTPACKAGE"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log

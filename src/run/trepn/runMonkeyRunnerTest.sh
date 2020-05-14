@@ -31,54 +31,91 @@ else
 	TIMEOUT_COMMAND="timeout"
 fi
 
-#grantPermissions(){
-	#w_echo "Granting permissions on $1"
-	#(adb shell pm grant $1 android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
-	#(adb shell pm grant $1 android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
-#}
+runMonkeyRunnerTest(){
 
-setImmersiveMode
-initTrepnProfiler
+}
 
-(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
-w_echo "setting immersive mode"
-adb shell settings put global policy_control immersive.full=$package
-adb shell "echo 0 > $deviceDir/GDflag"
+
+runTraceOnlyTest(){
+	adb shell "echo -1 > $deviceDir/GDflag" # inform trepnlib to only trace methods
+	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
+	w_echo "[Tracing]$now Running Monkey Runner tests..."
+	runMonkeyRunnerTest	
+	w_echo "[Tracing] stopped tests. "
+	
+	exceptions=$(grep "Exception" $localDir/monkeyrunner.log )
+	if [[ -n "$exceptions"  ]]; then
+		# if an exception occured during test execution
+		e_echo "error while running -> error code : $RET"
+		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
+		exit 1
+	else
+		i_echo "[Tracing] Test Successfuly Executed"
+	fi
+	gracefullyQuitApp
+	foreground_app=$(getForegroundApp)
+	if [[ "$package" == "$foreground_app"  ]]; then
+		# gracefull exit failed. force kill
+		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
+		stopAndCleanApp "$package"
+	fi
+	
+}
+
+runMeasureOnlyTest(){
+	adb shell "echo 1 > $deviceDir/GDflag"
+	i_echo "actual seed -> $monkey_seed"
+	now=$(date +"%d/%m/%y-%H:%M:%S")
+	initTrepnProfiler
+	sleep 1
+	w_echo "starting profiling phase"
+	(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
+	sleep 3
+	getDeviceResourcesState "$localDir/begin_state$script_index.json"
+	w_echo "[Measuring]$now Running monkey Runner tests..."
+
+	if [[ $trace != "-MethodOriented" ]]; then
+		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
+	fi 
+	
+	runMonkeyTest
+
+	if [[ $trace != "-MethodOriented" ]]; then
+		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 0 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
+	fi
+
+	w_echo "[Measuring] stopped tests. "
+	getDeviceResourcesState  "$localDir/end_state$script_index.json"
+
+	eexceptions=$(grep "Exception" $localDir/monkeyrunner.log )
+	if [[ -n "$exceptions"  ]]; then
+		# if an exception occured during test execution
+		e_echo "error while running -> error code : $RET"
+		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
+		exit 1
+	else
+		i_echo "[Tracing] Test Successfuly Executed"
+	fi
+	gracefullyQuitApp
+	foreground_app=$(getForegroundApp)
+	if [[ "$package" == "$foreground_app"  ]]; then
+		# gracefull exit failed. force kill
+		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
+		stopAndCleanApp "$package"
+	fi
+
+	stopTrepnProfiler
+}
+
 i_echo "actual Script-> $script_name"
-now=$(date +"%d/%m/%y-%H:%M:%S")
-getDeviceResourcesState "$localDir/begin_state$script_index.json"
-sleep 1
-w_echo "starting profiling phase"
-(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
-sleep 3
+setImmersiveMode $package
 
-w_echo "[Measuring]$now Running monkey tests..."
-
-if [[ $trace == "-TestOriented" ]]; then
-	adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value "1" -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
-fi 
-
-#e_echo "monkeyrunner $script_name "\"$apk\"" "\"$package\"""
-(monkeyrunner $script_name "$apk"  "$package" )
-
-if [[ $trace == "-TestOriented" ]]; then
-	adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value "0" -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
-fi
-w_echo "stopped tests. "
+## RUN TWICE: One in trace mode and another in measure mode
+runMeasureOnlyTest
+cleanAppCache $package
+runTraceOnlyTest
+cleanAppCache $package
 
 
-echo "stopping running app"
-sleep 1
-adb shell am force-stop $package 
-
-stopProfiler
-
-getDeviceResourcesState "$localDir/end_state$script_index.json"
-echo "cleaning app cache"
-adb shell pm clear $package >/dev/null 2>&1
-echo "stopping running app"
-adb shell am force-stop $package 
 exit 0
-
-
-

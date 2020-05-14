@@ -39,13 +39,14 @@ fi
 
 runMonkeyTest(){
 	#e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-crashes --ignore-security-exceptions --throttle 10 $monkey_nr_events) &> $localDir/monkey.log"
+	e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle 100 $monkey_nr_events) &> $localDir/monkey.log)"
 	($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle 100 $monkey_nr_events) &> $localDir/monkey.log 
 	##################
 }
 
 
 runTraceOnlyTest(){
-	adb shell "echo -1 > $deviceDir/GDflag" # inform trepnlib to only trace methods
+	adb shell "echo 0 > $deviceDir/GDflag" # inform trepnlib to only trace methods
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Tracing]$now Running monkey tests..."
@@ -64,10 +65,12 @@ runTraceOnlyTest(){
 		i_echo "[Tracing] Test Successfuly Executed"
 	fi
 	gracefullyQuitApp
-	getForegroundApp
-	if [[ "$package" == "$foregroundApp"  ]]; then
+	foreground_app=$(getForegroundApp)
+	e_echo "foreground_app = $foreground_app"
+	if [[ "$package" == "$foreground_app"  ]]; then
 		# gracefull exit failed. force kill
 		e_echo "$package,$monkey_seed" > $logDir/badExit.log
+		stopAndCleanApp "$package"
 	fi
 	echo "stopping running app"
 	adb shell ps | grep "com.android.commands.monkey" | awk '{print $2}' | xargs -I{} adb shell kill -9 {}
@@ -101,6 +104,7 @@ runMeasureOnlyTest(){
 	fi
 
 	w_echo "[Measuring] stopped tests. "
+	getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 
 	exceptions=$(grep "Exception" $localDir/monkey.log )
 	if [[ -n "$exceptions"  ]]; then
@@ -114,15 +118,14 @@ runMeasureOnlyTest(){
 	fi
 
 	gracefullyQuitApp
-	getForegroundApp
-
-	if [[ "$package" == "$foregroundApp"  ]]; then
+	foreground_app=$(getForegroundApp)
+e_echo "foreground_app = $foreground_app"
+	if [[ "$package" == "$foreground_app"  ]]; then
 		# gracefull exit failed. force kill
 		e_echo "$package,$monkey_seed" > $logDir/badExit.log
-
+		stopAndCleanApp "$package"
 	fi
 
-	getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 	stopTrepnProfiler
 
 	echo "stopping running app"
@@ -154,7 +157,7 @@ runBothModeTest(){
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 0 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
 	fi
-
+	getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 	w_echo "[Both] stopped tests. "
 
 	exceptions=$(grep "Exception" $localDir/monkey.log )
@@ -169,15 +172,14 @@ runBothModeTest(){
 	fi
 
 	gracefullyQuitApp
-	getForegroundApp
-
-	if [[ "$package" == "$foregroundApp"  ]]; then
+	foreground_app=$(getForegroundApp)
+e_echo "foreground_app = $foreground_app"
+	if [[ "$package" == "$foreground_app"  ]]; then
 		# gracefull exit failed. force kill
 		e_echo "$package,$monkey_seed" > $logDir/badExit.log
-
+		stopAndCleanApp "$package"
 	fi
 
-	getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 	stopTrepnProfiler
 
 	echo "stopping running app"
@@ -194,7 +196,7 @@ setImmersiveMode $package
 
 ## RUN TWICE: One in trace mode and another in measure mode
 runMeasureOnlyTest
-cleanAppCache $package
+#cleanAppCache $package
 runTraceOnlyTest
 
 

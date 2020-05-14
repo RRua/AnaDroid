@@ -130,7 +130,7 @@ do
 #for x in `find "$FOLDER" -name "build.gradle" -print | egrep -v "/build/"`; do
 	#remove \r characters
 	x=$dir
-	$SED_COMMgeAND -ri.bak "s#\r##g" "$x"
+	$SED_COMMAND -ri.bak "s#\r##g" "$x"
 	
 	#change the garbage collector settings
 	dexOpt=$(egrep -n "dexOptions( ?){" "$x")

@@ -43,9 +43,4 @@ buildMonkeyTestCommand(){
 
 buildMonkeyTestCommand
 python "$ANADROID_PATH/src/profilers/greenScaler/GreenScaler/greenscaler.py" "$package" $mkey_command
-RET=$?
-e_echo "retorno = $RET"
-
-
-exit 0
-
+exit $?
