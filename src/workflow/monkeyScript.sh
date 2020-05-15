@@ -55,7 +55,7 @@ SLEEPTIME=10 # 10 s
 # TODO put in monkey config file
 min_monkey_runs=3 #20
 threshold_monkey_runs=5 #50
-number_monkey_events=1
+number_monkey_events=20
 min_coverage=50
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 DEBUG="TRUE" #"TRUE" 
@@ -199,6 +199,14 @@ getFirstAppVersion(){
 	done
 }
 
+analyzeResults(){
+	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"
+	w_echo "Analyzing results .."
+	java -jar $GD_ANALYZER $trace "$projLocalDir/" $monkey $GREENSOURCE_URL
+				
+}
+
+
 getInstalledPackage(){
 	#sometimes the build scripts change the package name of the apk
 	# and in the device the package name is different, wich causes problems in test execution
@@ -326,7 +334,7 @@ runMonkeyTests(){
 	actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
 	e_echo "actual coverage -> 0$actual_coverage"
 	
-	for j in $last30; do
+	for i in $last30; do
 		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
 		if [ "$coverage_exceded" -gt 0 ]; then
 			echo "$ID|$totaUsedTests" >> $logDir/above$min_coverage.log
@@ -601,8 +609,7 @@ for f in $DIR/*
 				runMonkeyTests
 				uninstallApp
 				analyzeAPK	
-				w_echo "Analyzing results .."
-				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
+				analyzeResults
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
 				w_echo "$TAG resuming Greendroid after nap"
