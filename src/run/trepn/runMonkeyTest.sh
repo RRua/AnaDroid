@@ -80,6 +80,7 @@ runTraceOnlyTest(){
 
 runMeasureOnlyTest(){
 	adb shell "echo 1 > $deviceDir/GDflag"
+	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	i_echo "actual seed -> $monkey_seed"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
@@ -136,10 +137,11 @@ e_echo "foreground_app = $foreground_app"
 #to run both modes simultaneously
 runBothModeTest(){
 	adb shell "echo 0 > $deviceDir/GDflag"
+	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	i_echo "actual seed -> $monkey_seed"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
-	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	#(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	sleep 1
 	w_echo "starting profiling phase"
 	(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
