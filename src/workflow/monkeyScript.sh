@@ -294,19 +294,19 @@ runMonkeyTests(){
 		fi
 
 		if [ "$RET1" !=  "0" ] || [ "$RET" != "0" ] ; then
+			e_echo "An error occured during test execution. Skipping test $i"
 			if [ "$RET1" !=  "0" ] ; then
 				errorHandler $RET $NEW_PACKAGE
 				IGNORE_RUN="YES"
 				#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				totaUsedTests=0	
-				e_echo "An error occured during test execution. Skipping test $i"
+				#totaUsedTests=0	
+			
 			fi
-
 			if [ "$RET" !=  "0" ] ; then
 				errorHandler $RET $NEW_PACKAGE
 				IGNORE_RUN="YES"
 				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				totaUsedTests=0		
+				#totaUsedTests=0		
 			
 			fi			
 		else
@@ -317,13 +317,12 @@ runMonkeyTests(){
 			fi
 			"$ANADROID_SRC_PATH/others/trepnFix.sh" $deviceDir
 		fi
+
 	
-		done
+	done
 
 	########## RUN TESTS  THRESHOLD ############
-	if [[ "$IGNORE_RUN" != "" ]]; then
-		continue
-	fi
+	
 	##check if have enough coverage
 	if [[ $trace == "-ActivityOriented" ]]; then
 		nr_methods=$( grep -o "$PACKAGE.*" $localDir/TracedMethods*.txt  | sort -u | wc -l | $SED_COMMAND 's/ //g')
@@ -336,27 +335,56 @@ runMonkeyTests(){
 	
 	for i in $last30; do
 		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
-		if [ "$coverage_exceded" -gt 0 ]; then
-			echo "$ID|$totaUsedTests" >> $logDir/above$min_coverage.log
-			break
+		RET1="0"
+		RET="0"
+		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
+			#statements
+			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
+			$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
+			RET=$(echo $?)
 		fi
-		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		$ANADROID_SRC_PATH/run/runMonkeyTest.sh $j $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir
-		e_echo "Pulling results from device..."
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
+			#statements
+			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
+			$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
+			RET1=$(echo $?)
+		fi
+
+		if [ "$RET1" !=  "0" ] || [ "$RET" != "0" ] ; then
+			e_echo "An error occured during test execution. Skipping test $i"
+			if [ "$RET1" !=  "0" ] ; then
+				errorHandler $RET $NEW_PACKAGE
+				IGNORE_RUN="YES"
+				#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+				#totaUsedTests=0	
+			fi
+
+			if [ "$RET" !=  "0" ] ; then
+				errorHandler $RET $NEW_PACKAGE
+				IGNORE_RUN="YES"
+				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+				#totaUsedTests=0		
+			
+			fi			
+		else
+			pullTestResultsFromDevice
+			totaUsedTests=$(($totaUsedTests + 1))						
+			if [ "$totaUsedTests" -eq 10 ]; then
+				getBattery
+			fi
+		fi
 		nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
 		actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
 		acu=$(echo "${actual_coverage} * 100" | bc -l)
 		w_echo "actual coverage -> $acu %"
-		totaUsedTests=$(($totaUsedTests + 1))
+		#totaUsedTests=$(($totaUsedTests + 1))
 		adb shell am force-stop $NEW_PACKAGE
 		if [ "$totaUsedTests" -eq 30 ]; then
 			getBattery
 		fi
-		$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+		#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
 	done
 
 	trap - INT
