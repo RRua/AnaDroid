@@ -1,4 +1,4 @@
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#!/usr/bin/python3.6
 from androguard.misc import AnalyzeAPK, AnalyzeDex
 from androguard.core.analysis.analysis import ExternalMethod
 import matplotlib.pyplot as plt

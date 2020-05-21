@@ -420,6 +420,7 @@ buildAppWithGradle(){
 }
 
 instrumentGradleApp(){
+	RET="TRUE"
 	oldInstrumentation=$(cat "$FOLDER/$tName/instrumentationType.txt" 2>/dev/null | grep  ".*Oriented" )
 	#allmethods=$(find "$projLocalDir/all" -maxdepth 1 -name "allMethods.json")
 	last_build_result=$(grep "BUILD SUCCESSFUL" "$FOLDER/$tName/buildStatus.log" 2>/dev/null  )
@@ -431,7 +432,11 @@ instrumentGradleApp(){
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
 		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" $tName \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" \"$APPROACH\" ##RR"
-		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ##RR
+		instr_output=$(java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ) ##RR
+		if [ -n "$(echo $instr_output | grep Exception )"]; then
+			echo "$FOLDER" >> "$logDir/errorInstrument.log"
+			RET="FALSE"
+		fi
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
 		#Instrument all manifestFiles
@@ -609,6 +614,11 @@ for f in $DIR/*
 				if [ "$APPROACH" == "whitebox" ] ; then
 					#debug_echo "white e diferente"
 					instrumentGradleApp
+					if [ "$RET" == "FALSE" ]; then
+						e_echo "error in instrumentation phase. skipping app"
+						continue
+					fi
+
 				else
 					last_testing_approach=$(grep "blackbox" "$FOLDER/$tName/instrumentationType.txt" 2> /dev/null  )
 					if [ -z "$last_testing_approach" ]; then

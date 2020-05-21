@@ -3,9 +3,11 @@ source $SRC_FOLDER/settings/settings.sh
 
 file_remote_json=$1
 #temp_folder="$ANADROID_PATH/demoProjects/demoProjects/"
-temp_folder="$ANADROID_PATH/demoProjects/fdroidApps/"
+temp_folder="$ANADROID_PATH/fDroid_extractor/fdroidApps/"
 #mkdir -p $temp_folder
 target_file="data.json"
+processAgain="TRUE"
+
 
 unpack(){
 	current_folder=$(pwd)
@@ -25,6 +27,15 @@ unpack(){
 }
 
 
+checkIfAlreadyProcessed(){
+	app_folder=$1
+	is_processed=$(grep "$app_folder" .ana/logs/processedApps.log)
+	if [[ -n "$is_processed" ]]; then
+		echo "TRUE"
+	else
+		echo "FALSE"
+	fi
+}
 
 
 for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d ); do
@@ -48,8 +59,13 @@ for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d
 		echo "Processing $folder_of_apk"
 		echo "----------------------------------------"
 		echo "----------------------------------------"
-		anaDroid -a whitebox -d "$version_folder/" -f "monkey"
-
+		#echo  "$version_folder" > .ana/logs/processedApps.log
+		was_processed=$(checkIfAlreadyProcessed $version_folder)
+		if [ "$was_processed" == "TRUE" ] && [ "$processAgain" == "TRUE" ] ; then
+			echo "Skipping already processed app"
+		else
+			anaDroid -a whitebox -d "$version_folder/" -f "monkey"
+		fi
 	done
 
 done

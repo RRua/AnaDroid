@@ -35,7 +35,8 @@ cleanDeviceTrash() {
 
 isAppInstalled(){
 	appPackage=$1
-	isInstalled=$( adb shell pm list packages | grep "$appPackage")
+	all_packages=$(adb shell pm list packages)
+	isInstalled=$( echo $all_packages | grep "$appPackage")
 	if [ -z "$isInstalled" ]; then
 		echo "FALSE"
 	else
