@@ -74,13 +74,12 @@ for app_folder in $( find $temp_folder  ! -path $temp_folder -maxdepth 1 -type d
 		echo "----------------------------------------"
 		#echo  "$version_folder" > .ana/logs/processedApps.log
 		was_processed=$(checkIfAlreadyProcessed $version_folder)
-		if [ "$was_processed" == "TRUE" ] && [ "$processAgain" == "TRUE" ] ; then
+		if [ "$was_processed" == "TRUE" ] && [ "$processAgain" == "FALSE" ] ; then
 			echo "Skipping already processed app"
 		else
 			anaDroid -a whitebox -d "$version_folder/" -f "monkey"
 		fi
 	done
-
 done
 
 
