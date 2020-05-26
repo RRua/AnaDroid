@@ -1,9 +1,9 @@
 
 	{
-		"device_serial_number": "79b3f648",
-		 "device_model": "MI 5",
-		 "device_brand": "Xiaomi",
-		 "device_ram": "2775028kB",
+		"device_serial_number": "066b699f006080ac",
+		 "device_model": "Nexus 5",
+		 "device_brand": "google",
+		 "device_ram": "1899508kB",
 		 "device_cores": "4",
-		 "device_max_cpu_freq": "2.15"
+		 "device_max_cpu_freq": "/system/bin/sh: cat: /proc/cpumaxfreq: No such file or directory"
 	}

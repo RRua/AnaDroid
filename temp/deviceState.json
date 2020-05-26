@@ -1,10 +1,11 @@
 
 	{
-		"state_device_id": "79b3f648",
-		"state_os_version": "8.0.0",
-		"state_miui_version": "V10", 
-		"state_api_version": "26", 
-		"state_kernel_version": "Linux version 3.18.71-perf-gcbf6f59 (builder@c3-miui-ota-bd76.bj) (gcc version 4.9.x 20150123 (prerelease) (GCC) ) #1 SMP PREEMPT Fri Aug 31 17:46:24 CST 2018", 
-		"state_operator": ",WTF", 
-		"state_operator_country": ",pt"
+		"state_os_version": "",
+		"state_miui_version": "", 
+		"state_api_version": "23", 
+		"state_kernel_version": "Linux version 3.4.0-gcf10b7e (android-build@wpiv11.hot.corp.google.com) (gcc version 4.8 (GCC) ) #1 SMP PREEMPT Mon Sep 19 22:14:08 UTC 2016", 
+		"state_keyboard": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME", 
+		"state_operator": "", 
+		"state_operator_country": "",
+		"state_device_id": "066b699f006080ac"
 	}

@@ -22,6 +22,7 @@ setup(){
 }
 
 
+
 checkIfIdIsReservedWord(){  #historic reasons
 	if [ "$ID" == "success" ] || [ "$ID" == "failed" ] || [ "$ID" == "unknown" ]; then	
 		continue

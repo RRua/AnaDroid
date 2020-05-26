@@ -285,12 +285,12 @@ writeConfigJSON
 
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
-    $SRC_FOLDER/workflow/monkeyScript.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
+    $SRC_FOLDER/workflow/monkey_workflow.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"
-    $SRC_FOLDER/workflow/junitScript.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
+    $SRC_FOLDER/workflow/junit_workflow.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
-    $SRC_FOLDER/workflow/monkeyrunner.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
+    $SRC_FOLDER/workflow/monkeyrunner_workflow.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
 else 
     e_echo "Fatal error"
 fi

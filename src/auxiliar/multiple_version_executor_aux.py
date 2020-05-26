@@ -14,9 +14,10 @@ def main(argv):
         if data["versions"] is None:
             exit(-1)
         for version in data['versions']:
-            target_folder_of_apk_version = data_json_dir+"/"+(str(version['id']) + "--"+str(version['date'])).replace(" ","").replace("Verso","")
+            target_folder_of_apk_version = data_json_dir+"/"+(str(version['id']).replace(" ","").replace("+","") + "--"+str(version['date'])).replace(" ","").replace("Verso","")
             if not os.path.exists(target_folder_of_apk_version):
                 os.mkdir(target_folder_of_apk_version)
+            os.system("echo \""+ str(version['id']).replace(" ","").replace("Verso","") + "\" > " + target_folder_of_apk_version + "/version.log" )
             target_apk = version['url'].replace("https://f-droid.org/repo/","")
             newPath = shutil.copy(data_json_dir+"/"+target_apk,  target_folder_of_apk_version + "/" + target_apk)
 
