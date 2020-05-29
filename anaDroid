@@ -5,7 +5,7 @@ SRC_FOLDER="$ANADROID_PATH/src/"
 source $SRC_FOLDER/settings/settings.sh
 
 #ANADROID FINAL CONFIG
-SUPPORTED_TESTING_FRAMEWORKS=( "monkey" "junit" "monkeyrunner" )
+SUPPORTED_TESTING_FRAMEWORKS=( "monkey" "junit" "monkeyrunner" "reran")
 SUPPORTED_PROFILERS=( "trepn" "greenscaler" "both" )
 SUPPORTED_MONITORING_TYPES=( "testoriented"  "methodoriented" "activityoriented" )
 #ANADROID DEFAULT CONFIG
@@ -291,6 +291,9 @@ elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     $SRC_FOLDER/workflow/junit_workflow.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "monkeyrunner" ]; then
     $SRC_FOLDER/workflow/monkeyrunner_workflow.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH ${MonkeyRunnerList[@]} 
+
+elif [ "$TEST_FRAMEWORK" == "reran" ]; then
+    $SRC_FOLDER/workflow/reran_workflow.sh  $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 else 
     e_echo "Fatal error"
 fi

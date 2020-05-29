@@ -46,7 +46,7 @@ runMonkeyTest(){
 
 
 runTraceOnlyTest(){
-	adb shell "echo 0 > $deviceDir/GDflag" # inform trepnlib to only trace methods
+	adb shell "echo -1 > $deviceDir/GDflag" # inform trepnlib to only trace methods
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Tracing]$now Running monkey tests..."

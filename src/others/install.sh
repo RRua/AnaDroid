@@ -83,11 +83,11 @@ else
 	OK="1"
 fi
 
-if [[ $testingFramework == "-Monkey" ]]; then
+if [[ "$testingFramework" == "-Monkey" ]]; then
 	OK="2"
 fi
 
-if [ $testingFramework == "-junit" ]  && [ "${#testAPK[@]}" == "0" ]; then
+if [ "$testingFramework" == "-junit" ]  && [ "${#testAPK[@]}" == "0" ]; then
 	OK="-1"
 fi
 
@@ -98,7 +98,7 @@ if [[ "$OK" == "2" ]]; then
 		for apk in $appAPK; do
 			(adb install -g -r "$apk") 
 			echo "$apk" > $logDir/lastInstalledAPK.txt
-			echo "$apk" > $resDir/installedAPK.log
+			echo "$apk" >> "$resDir/installedAPK.log"
 		done
 		
 	else
@@ -116,11 +116,14 @@ else
 	w_echo "$TAG installing main apk ${appAPK[0]}"
 	(adb install -g -r "${appAPK[0]}") # >/dev/null 2>&1
 	installedAPK=${appAPK[0]}
+	echo "$installedAPK" > "$resDir/installedAPK.log"
 	echo "$installedAPK" > $logDir/lastInstalledAPK.txt
 	#w_echo "$TAG installing Test .apk's"
 	if [[ "$testingFramework" == "-junit" ]]; then
 		w_echo "$TAG installing test apk ${testAPK[0]}"
 		(adb install -g -r "${testAPK[0]}")   #>/dev/null 2>&1
+		echo "$installedAPK" > "$resDir/installedAPK.log"
+
 	fi
 	
 fi

@@ -4,7 +4,9 @@ source $ANADROID_PATH/src/settings/settings.sh
 this_dir="$(dirname "$0")"
 source "$this_dir/general_workflow.sh"
 
-TAG="[AD]"
+TESTING_FRAMEWORK="Monkey"
+TAG="[${TESTING_FRAMEWORK} Workflow]"
+
 
 machine=''
 getSO machine
@@ -167,19 +169,18 @@ checkIfAppAlreadyProcessed(){
 checkConfig(){
 	if [[ $trace == "-TestOriented" ]]; then
 		e_echo "	Test Oriented Profiling:      ✔"
-		folderPrefix="MonkeyTest"
+		folderPrefix="${TESTING_FRAMEWORK}Test"
 	elif [[ $trace == "-MethodOriented" ]]; then
 		e_echo "	Method Oriented profiling:    ✔"
-		folderPrefix="MonkeyMethod"
+		folderPrefix="${TESTING_FRAMEWORK}Method"
 	elif [[ $trace == "-ActivityOriented" ]]; then
 		e_echo "	Activity Oriented profiling:    ✔"
-		folderPrefix="MonkeyActivity"
+		folderPrefix="${TESTING_FRAMEWORK}Activity"
 	fi 
 	if [[ $profileHardware == "YES" ]]; then
 		w_echo "	Profiling hardware:           ✔"
 		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
 			(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/trepnPreferences/All.pref") > /dev/null 2>&1
-	
 		fi
 		#(adb shell am broadcast -a com.quicinc.trepn.load_preferences -e com.quicinc.trepn.load_preferences_file "$deviceDir/saved_preferences/trepnPreferences/All.pref") > /dev/null 2>&1
 	else
@@ -261,21 +262,22 @@ prepareAndInstallApp(){
 
 
 pullTestResultsFromDevice(){
+	test_id=$1
 	if [[ $trace == "-ActivityOriented" ]]; then
 		#e_echo "tirei o trace"
 		#adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.trace" |  xargs -I{} adb pull $deviceDir/{} $localDir
 		adb pull "$deviceExternal/anadroidDebugTrace.trace" "$localDir/"
-		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$i.txt"
-		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$i.txt"
+		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$test_id.txt"
+		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$test_id.txt"
 		debug_echo "dumpei"
 	else
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
+		mv $localDir/TracedMethods.txt "$localDir/TracedMethods$test_id.txt"
 	fi
 	e_echo "Pulling results from device..."
 	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-	analyzeCSV $localDir/GreendroidResultTrace$i.csv
+	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$test_id.csv
+	analyzeCSV $localDir/GreendroidResultTrace$test_id.csv
 		
 }
 
@@ -319,7 +321,7 @@ runMonkeyTests(){
 			
 			fi			
 		else
-			pullTestResultsFromDevice
+			pullTestResultsFromDevice "$i"
 			totaUsedTests=$(($totaUsedTests + 1))						
 			if [ "$totaUsedTests" -eq 10 ]; then
 				getBattery
@@ -378,7 +380,7 @@ runMonkeyTests(){
 			
 			fi			
 		else
-			pullTestResultsFromDevice
+			pullTestResultsFromDevice "$i"
 			totaUsedTests=$(($totaUsedTests + 1))						
 			if [ "$totaUsedTests" -eq 10 ]; then
 				getBattery

@@ -15,7 +15,7 @@ initTrepnProfiler(){
 
 
 stopTrepnProfiler(){
-	echo "stopping profiler..."
+	#echo "stopping profiler..."
 	sleep 1
 	(adb shell am broadcast -a com.quicinc.trepn.stop_profiling) >/dev/null 2>&1
 	sleep 6

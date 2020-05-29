@@ -1,7 +1,11 @@
 #!/bin/bash
 source $ANADROID_PATH/src/settings/settings.sh
 
+
+
+
 debug_echo(){
+	DEBUG="FALSE" #"TRUE" 
 	if [[ "$DEBUG" == "TRUE" ]]; then
 		e_echo "[DEBUG] $1"
 	fi

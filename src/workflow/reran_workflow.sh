@@ -5,7 +5,7 @@ this_dir="$(dirname "$0")"
 source "$this_dir/general_workflow.sh"
 
 TESTING_FRAMEWORK="RERAN"
-TAG="[RERAN Workflow]"
+TAG="[${TESTING_FRAMEWORK} Workflow]"
 
 # args
 ANADROID_PATH=$1
@@ -42,10 +42,12 @@ profileHardware="YES" # YES or something else
 logStatus="off"
 SLEEPTIME=10 # 10 s 
 
+
+TESTS_DIR="$ANADROID_PATH/tests/RERANTests/"
 reran_replay_delay=0
 
+
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
-DEBUG="TRUE" #"TRUE" 
 
 if [ "$machine" == "Mac" ]; then
 	SED_COMMAND="gsed" #mac
@@ -204,27 +206,16 @@ getFirstAppVersion(){
 	if [[ -z "$appVersion" ]]; then
 			appVersion="0.0"
 	fi
-	echo "$appVersion"
 }
 
 analyzeResults(){
 	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"
-	w_echo "Analyzing results .."
-	java -jar $GD_ANALYZER $trace "$projLocalDir/" "${TESTING_FRAMEWORK}" $GREENSOURCE_URL
+	#w_echo "Analyzing results .."
+	debug_echo "java -jar $GD_ANALYZER \"$trace\" \"$projLocalDir/\" \"-${TESTING_FRAMEWORK}\" \"$GREENSOURCE_URL\""
+	java -jar "$GD_ANALYZER" "$trace" "$projLocalDir/" "-${TESTING_FRAMEWORK}" "$GREENSOURCE_URL"
 				
 }
 
-
-getInstalledPackage(){
-	#sometimes the build scripts change the package name of the apk
-	# and in the device the package name is different, wich causes problems in test execution
-	#and app uninstll proccess
-	NEW_PACKAGE=$(adb shell pm list packages | grep $PACKAGE | sed 's/package://g' | tr -d '\r' )
-	if [ -z "$NEW_PACKAGE" ]; then
-		NEW_PACKAGE=$PACKAGE
-	fi
-	w_echo "$TAG installed package: $NEW_PACKAGE"
-}
 
 
 prepareAndInstallApp(){
@@ -241,9 +232,8 @@ prepareAndInstallApp(){
 	cp $FOLDER/$tName/appPermissions.json $localDir
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"-${TESTING_FRAMEWORK}\" \"$apkBuild\" \"$logDir\""
-	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "${TESTING_FRAMEWORK}" "$apkBuild" "$logDir"
-	getInstalledPackage 
+	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "$TESTING_FRAMEWORK" "$apkBuild" "$logDir" 
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -254,157 +244,63 @@ prepareAndInstallApp(){
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
 
-
+	INSTALLED_PACKAGE=$PACKAGE
+	isInstalled=$( isAppInstalled $PACKAGE )
+	if [[ "$isInstalled" == "FALSE" ]]; then
+		#e_echo "$TAG App not installed. Skipping tests execution"
+		installed_apk=$(cat $localDir/installedAPK.log)
+		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
+		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
+	fi
 	##########
 }
 
 
 pullTestResultsFromDevice(){
+	test_id=$1
 	if [[ $trace == "-ActivityOriented" ]]; then
 		#e_echo "tirei o trace"
 		#adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.trace" |  xargs -I{} adb pull $deviceDir/{} $localDir
 		adb pull "$deviceExternal/anadroidDebugTrace.trace" "$localDir/"
-		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$i.txt"
-		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$i.txt"
+		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$test_id.txt"
+		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$test_id.txt"
 		debug_echo "dumpei"
 	else
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
-		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
+		mv $localDir/TracedMethods.txt "$localDir/TracedMethods$test_id.txt"
 	fi
 	e_echo "Pulling results from device..."
 	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-	analyzeCSV $localDir/GreendroidResultTrace$i.csv
+	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$test_id.csv
+	analyzeCSV $localDir/GreendroidResultTrace$test_id.csv
 		
 }
 
 
 
 runRERANTests(){
-
-}
-
-runMonkeyTests(){
-	########## RUN TESTS 1 phase ############
-	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
-	for i in $seeds20; do
-		w_echo "APP: $ID | SEED Number : $totaUsedTests"
-		RET1="0"
-		RET="0"
-		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
-			#statements
-			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
-			RET=$(echo $?)
-		fi
-		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
-			#statements
-			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
-			RET1=$(echo $?)
-		fi
-
-		if [ "$RET1" !=  "0" ] || [ "$RET" != "0" ] ; then
-			e_echo "An error occured during test execution. Skipping test $i"
-			if [ "$RET1" !=  "0" ] ; then
-				errorHandler $RET $NEW_PACKAGE
-				IGNORE_RUN="YES"
-				#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				#totaUsedTests=0	
+	APP_TEST_DIR="$TESTS_DIR/$PACKAGE"
+	if [ -d "$APP_TEST_DIR" ]; then
+		test_index=0
+		i_echo "$TAG found RERAN tests in $APP_TEST_DIR  "
+		for test_file in $(find "$APP_TEST_DIR" -type f | grep "translated" ); do
 			
-			fi
-			if [ "$RET" !=  "0" ] ; then
-				errorHandler $RET $NEW_PACKAGE
-				IGNORE_RUN="YES"
-				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				#totaUsedTests=0		
+			debug_echo "$ANADROID_SRC_PATH/run/$PROFILER/reranTest.sh \"$test_file\" \"$test_index\" \"$reran_replay_delay\" \"$trace\" \"$NEW_PACKAGE\" \"$localDir\" \"$deviceDir\""			
+			"$ANADROID_SRC_PATH/run/$PROFILER/reranTest.sh" "$test_file" "$test_index" "$reran_replay_delay" "$trace" "$NEW_PACKAGE" "$localDir" "$deviceDir"		
 			
-			fi			
-		else
-			pullTestResultsFromDevice
-			totaUsedTests=$(($totaUsedTests + 1))						
-			if [ "$totaUsedTests" -eq 10 ]; then
-				getBattery
-			fi
-			"$ANADROID_SRC_PATH/others/trepnFix.sh" $deviceDir
-		fi
+			pullTestResultsFromDevice "$test_index"
+			test_index=$(($test_index + 1))
+			"$ANADROID_SRC_PATH/others/trepnFix.sh" "$deviceDir"
 
-	
-	done
-
-	########## RUN TESTS  THRESHOLD ############
-	
-	##check if have enough coverage
-	if [[ $trace == "-ActivityOriented" ]]; then
-		nr_methods=$( grep -o "$PACKAGE.*" $localDir/TracedMethods*.txt  | sort -u | wc -l | $SED_COMMAND 's/ //g')
+		done
 	else
-		nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
+		e_echo "$TAG RERAN tests directory not found "
+		e_echo "$TAG $APP_TEST_DIR not found"
+		RET="1"
 	fi
-	#nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-	actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-	e_echo "actual coverage -> 0$actual_coverage"
-	
-	for i in $last30; do
-		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
-		RET1="0"
-		RET="0"
-		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
-			#statements
-			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/trepn/runMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
-			RET=$(echo $?)
-		fi
-		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
-			#statements
-			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir		
-			RET1=$(echo $?)
-		fi
 
-		if [ "$RET1" !=  "0" ] || [ "$RET" != "0" ] ; then
-			e_echo "An error occured during test execution. Skipping test $i"
-			if [ "$RET1" !=  "0" ] ; then
-				errorHandler $RET $NEW_PACKAGE
-				IGNORE_RUN="YES"
-				#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				#totaUsedTests=0	
-			fi
-
-			if [ "$RET" !=  "0" ] ; then
-				errorHandler $RET $NEW_PACKAGE
-				IGNORE_RUN="YES"
-				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				#totaUsedTests=0		
-			
-			fi			
-		else
-			pullTestResultsFromDevice
-			totaUsedTests=$(($totaUsedTests + 1))						
-			if [ "$totaUsedTests" -eq 10 ]; then
-				getBattery
-			fi
-		fi
-		nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-		actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-		acu=$(echo "${actual_coverage} * 100" | bc -l)
-		w_echo "actual coverage -> $acu %"
-		#totaUsedTests=$(($totaUsedTests + 1))
-		adb shell am force-stop $NEW_PACKAGE
-		if [ "$totaUsedTests" -eq 30 ]; then
-			getBattery
-		fi
-		#$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-	done
-
-	trap - INT
-	if [ "$coverage_exceded" -eq 0 ]; then
-		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
-	fi
 }
+
 
 buildAppWithGradle(){
 	## BUILD PHASE			
@@ -444,12 +340,17 @@ instrumentGradleApp(){
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" $tName \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"${TESTING_FRAMEWORK}\" \"$GREENSOURCE_APP_UID\" \"$APPROACH\" ##RR"
-		instr_output=$(java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "-${TESTING_FRAMEWORK}" "$GREENSOURCE_APP_UID" "$APPROACH" ) ##RR
-		if [ -n "$(echo $instr_output | grep Exception )"]; then
+		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" $tName \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" \"$APPROACH\" ##RR"
+		instr_output=$(java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ) ##RR
+		#w_echo "ai jasus o output $instr_output"
+		if [ -n "$(echo $instr_output | grep 'Exception' )" ]; then
+			echo "-$(echo $instr_output | grep 'Exception' )-"
 			echo "$FOLDER" >> "$logDir/errorInstrument.log"
 			RET="FALSE"
+		else
+			w_echo "$TAG Project instrumented successfuly"
 		fi
+
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
 		#Instrument all manifestFiles
@@ -471,7 +372,7 @@ instrumentGradleApp(){
 }
 
 setupLocalResultsFolder(){
-	echo "$TAG setting up local results folder"
+	#echo "$TAG setting up local results folder"
 	#create results support folder
 	#echo "$TAG Creating support folder..."
 	
@@ -511,8 +412,8 @@ analyzeAPK(){
 	#PACKAGE=${RESULT[2]}
 	# apk file
 	apkFile=$(cat $logDir/lastInstalledAPK.txt)
-	w_echo "\nANALYZING APK!!!!\n!!!!!"
-	$ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
+	w_echo "Analyzing APK"
+	python3 $ANADROID_SRC_PATH/others/analyzeAPIs.py $apkFile $PACKAGE
 	$MV_COMMAND ./$PACKAGE.json $projLocalDir/all/
 }
 
@@ -626,7 +527,6 @@ for f in $DIR/*
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"
 				setupLocalResultsFolder
-				
 				if [ "$APPROACH" == "whitebox" ] ; then
 					#debug_echo "white e diferente"
 					instrumentGradleApp
@@ -652,16 +552,10 @@ for f in $DIR/*
 					# if BUILD FAILED, SKIPPING APP
 					continue
 				fi
-
 				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
-				isInstalled=$( isAppInstalled $PACKAGE )
-				if [[ "$isInstalled" == "FALSE" ]]; then
-					e_echo "$TAG App not installed. Skipping tests execution"
-					continue
-				fi
-				#runMonkeyTests
+				runRERANTests
 				uninstallApp
 				analyzeAPK	
 				analyzeResults
