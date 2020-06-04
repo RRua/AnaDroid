@@ -492,7 +492,7 @@ for f in $DIR/*
 	localDir=$localDirOriginal
 	cleanDeviceTrash
 	IFS='/' read -ra arr <<< "$f"
-	ID=${arr[*]x: -1} # ID OF of the application (name of respective folder )
+	ID=${arr[*]: -1} # ID OF of the application (name of respective folder )
 	IFS=$(echo -en "\n\b")
 	now=$(date +"%d_%m_%y_%H_%M_%S")
 	# check if app was already processed #TODO
