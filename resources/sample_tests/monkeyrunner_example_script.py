@@ -12,7 +12,7 @@ def dummy_test( pack_name):
 	#easydevice = EasyMonkeyDevice(device)
 	#easydevice.type( 'id/batata_edit', 'batata')
 	result = device.takeSnapshot()
-	result.writeToFile( pack_name+ "_main.png",'png')
+	result.writeToFile(  pack_name+ "_main.png",'png')
 
 
 if __name__== "__main__":

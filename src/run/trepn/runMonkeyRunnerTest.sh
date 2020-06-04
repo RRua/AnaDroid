@@ -32,7 +32,7 @@ else
 fi
 
 runMonkeyRunnerTest(){
-
+	(monkeyrunner $script_name "$package" ) > "$logDir/monkeyrunner.log"
 }
 
 
@@ -65,7 +65,7 @@ runTraceOnlyTest(){
 
 runMeasureOnlyTest(){
 	adb shell "echo 1 > $deviceDir/GDflag"
-	i_echo "actual seed -> $monkey_seed"
+	i_echo "actual seed -> $script_index"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
 	sleep 1
@@ -79,7 +79,7 @@ runMeasureOnlyTest(){
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
 	
-	runMonkeyTest
+	runMonkeyRunnerTest
 
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 0 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
@@ -88,7 +88,7 @@ runMeasureOnlyTest(){
 	w_echo "[Measuring] stopped tests. "
 	getDeviceResourcesState  "$localDir/end_state$script_index.json"
 
-	eexceptions=$(grep "Exception" $localDir/monkeyrunner.log )
+	exceptions=$(grep "Exception" $localDir/monkeyrunner.log )
 	if [[ -n "$exceptions"  ]]; then
 		# if an exception occured during test execution
 		e_echo "error while running -> error code : $RET"
@@ -108,13 +108,62 @@ runMeasureOnlyTest(){
 	stopTrepnProfiler
 }
 
+runBothModeTest(){
+	adb shell "echo 0 > $deviceDir/GDflag"
+	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	i_echo "actual test index -> $script_index"
+	now=$(date +"%d/%m/%y-%H:%M:%S")
+	initTrepnProfiler
+	#(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	sleep 1
+	w_echo "starting profiling phase"
+	(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
+	sleep 3
+	getDeviceResourcesState "$localDir/begin_state$script_index.json"
+	w_echo "[Both] $now Running monkey tests..."
+
+	if [[ $trace != "-MethodOriented" ]]; then
+		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
+	fi 
+	# adb shell -s <seed> -p <package-name> -v <number-of-events> ----pct-syskeys 0 --ignore-crashes --kill-process-after-error
+
+	runMonkeyRunnerTest
+
+	if [[ $trace != "-MethodOriented" ]]; then
+		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 0 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
+	fi
+	getDeviceResourcesState "$localDir/end_state$script_index.json"
+	w_echo "[Both] stopped tests. "
+
+	exceptions=$(grep "Exception" $localDir/monkeyrunner.log )
+	if [[ -n "$exceptions"  ]]; then
+		# if an exception occured during test execution
+		e_echo "error while running -> error code : $RET"
+		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
+		exit 1
+	else
+		i_echo "[Tracing] Test Successfuly Executed"
+	fi
+	gracefullyQuitApp
+	foreground_app=$(getForegroundApp)
+	if [[ "$package" == "$foreground_app"  ]]; then
+		# gracefull exit failed. force kill
+		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
+		stopAndCleanApp "$package"
+	fi
+
+	stopTrepnProfiler
+}
+
+
 i_echo "actual Script-> $script_name"
 setImmersiveMode $package
 
 ## RUN TWICE: One in trace mode and another in measure mode
-runMeasureOnlyTest
-cleanAppCache $package
-runTraceOnlyTest
+#runMeasureOnlyTest
+runBothModeTest
+#cleanAppCache $package
+#runTraceOnlyTest
 cleanAppCache $package
 
 

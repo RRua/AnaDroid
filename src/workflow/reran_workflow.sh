@@ -244,7 +244,7 @@ prepareAndInstallApp(){
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
 
-	INSTALLED_PACKAGE=$PACKAGE
+	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"

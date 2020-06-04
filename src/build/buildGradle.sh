@@ -58,6 +58,7 @@ function inferGradlePluginVersion(){
 		e_echo "unable to find gradle plugin version. Assuming"
 		GRADLE_PLUGIN_VERSION="2.3"
 	else
+		debug_echo "batata $gradle_plugin_version"
 		GRADLE_PLUGIN_VERSION=$gradle_plugin_version
 	fi
 	w_echo "$TAG using version $GRADLE_PLUGIN_VERSION of Gradle plugin "

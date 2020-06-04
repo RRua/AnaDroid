@@ -27,7 +27,7 @@ MonkeyRunnerScriptsList=()
 
 argc=$#
 argv=("$@")
-for (( j=6; j<argc; j++ )); do
+for (( j=7; j<argc; j++ )); do
     echo " arg -> ${argv[j]}"
     MonkeyRunnerScriptsList+=("${argv[j]}")
 done
@@ -237,16 +237,41 @@ prepareAndInstallApp(){
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
 	##########
+
+	NEW_PACKAGE=$PACKAGE
+	isInstalled=$( isAppInstalled $PACKAGE )
+	if [[ "$isInstalled" == "FALSE" ]]; then
+		#e_echo "$TAG App not installed. Skipping tests execution"
+		installed_apk=$(cat $localDir/installedAPK.log)
+		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
+		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
+	fi
 }
 
 runMonkeyRunnerTests(){
 	########## RUN TESTS 1 phase ############
-	trap 'quit $PACKAGE $TESTPACKAGE $f' INT
+	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
 	for (( i = 0; i < ${#MonkeyRunnerScriptsList[@]}; i++ )); do
 	#for i in ${MonkeyRunnerScriptsList[@]}; do
 		w_echo "APP: $ID |  Script : $i"
 		e_echo "$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh \"$i\" \"${MonkeyRunnerScriptsList[$i]}\" \"$APK\" \"$PACKAGE\" \"$localDir\" \"$deviceDir\" \"$trace\""
-		$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$APK" "$PACKAGE" "$localDir" "$deviceDir" "$trace"
+		
+		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
+			#statements
+			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
+			$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$APK" "$PACKAGE" "$localDir" "$deviceDir" "$trace"
+			RET=$(echo $?)
+		fi
+		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
+			#statements
+			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
+			$ANADROID_SRC_PATH/run/greenscaler/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$APK" "$PACKAGE" "$localDir" "$deviceDir" "$trace"
+			RET1=$(echo $?)
+		fi
+
+		#$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$APK" "$PACKAGE" "$localDir" "$deviceDir" "$trace"
 		RET=$(echo $?)
 		if [[ $RET -ne 0 ]]; then
 			errorHandler $RET $PACKAGE
@@ -260,6 +285,7 @@ runMonkeyRunnerTests(){
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
 		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
 		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+		find . -maxdepth 1 -name "*.png" | xargs -I{} mv {} "$localDir/"
 		echo "${MonkeyRunnerScriptsList[$i]}" >> $localDir/TracedTests.txt 
 		analyzeCSV $localDir/GreendroidResultTrace$i.csv
 		totaUsedTests=$(($totaUsedTests + 1))
@@ -405,12 +431,19 @@ uninstallApp(){
 	fi				
 }
 
+analyzeResults(){
+	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"
+	java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
+			
+}
+
 analyzeAPK(){
 	#PACKAGE=${RESULT[2]}
 	# apk file
 	apkFile=$(cat $logDir/lastInstalledAPK.txt)
 	w_echo "\nANALYZING APK!!!!\n!!!!!"
-	$ANADROID_SRC_PATH/others/analyzeAPIs.py "$apkFile" "$PACKAGE"
+	debug_echo " python3 analyzeAPIs.py $apkFile $PACKAGE"
+	python3 $ANADROID_SRC_PATH/others/analyzeAPIs.py "$apkFile" "$PACKAGE"
 	$MV_COMMAND "./$PACKAGE.json" "$projLocalDir/all/"
 }
 
@@ -505,6 +538,11 @@ for f in $DIR/*
 				fi
 
 				buildAppWithGradle
+				if [[ "$RET" != "0" ]]; then
+					# if BUILD FAILED, SKIPPING APP
+					continue
+				fi
+				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
 				runMonkeyRunnerTests
@@ -514,7 +552,7 @@ for f in $DIR/*
 				w_echo "Analyzing results .."
 				# NEW
 				analyzeAPK
-				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
+				analyzeResults
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
 				w_echo "$TAG resuming Greendroid after nap"
@@ -599,7 +637,7 @@ for f in $DIR/*
 				
 				##copy MethodMetric to support folder
 				#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
-				cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
+				zcp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 				echo "$ID" >> $logDir/success.log
 				#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u | wc -l | sed 's/ //g')
 				total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
