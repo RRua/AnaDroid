@@ -25,10 +25,10 @@ unpack(){
 		cd $current_folder
 	elif [[ -n "$(echo $filename| grep ".zip")" ]]; then
 		# zip file
-		cd $app_folder; mkdir "${filename}_src";  (unzip -a -o "$filename" -d "${filename}_src") >/dev/null ; cd $current_folder
+		cd $app_folder; mkdir -p "${filename}_src";  (unzip -a -o "$filename" -d "${filename}_src") >/dev/null ; cd $current_folder
 	
 	elif [ ! -d "$filename" ]; then
-		cd $app_folder; mkdir "${filename}_src"; ( unzip -a -o "$filename" -d "${filename}_src" ) > /dev/null ; cd $current_folder
+		cd $app_folder; mkdir -p "${filename}_src"; ( unzip -a -o "$filename" -d "${filename}_src" ) > /dev/null ; cd $current_folder
 	else
 		echo "filename" > "$logDir/unpackError.log" 
 		continue
