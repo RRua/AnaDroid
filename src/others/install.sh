@@ -34,6 +34,7 @@ IFS='%'
 if [ "$projtype" == "SDK" ]; then
 	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" | while read dir; do echo $dir; done | grep -v $pathTests))
 	testAPK=($(find "$pathTests" -name "*-$apkBuild.apk"))
+
 elif [ "$projtype" == "GRADLE" ]; then
 	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
 	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | while read dir; do echo $dir; done | grep -v "instant-run" )
@@ -48,7 +49,6 @@ if [[  "${#appAPK[@]}" == "0" ]]; then
 	testAPK=$(find "$pathProject" -type f  -name "*-androidTest*.apk" -print | while read dir; do echo $dir; done | grep -v "instant-run" )
 	
 fi
-
 if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 
 	if [ "${#appAPK[@]}" -ge 1 ] && [ "${#testAPK[@]}" == "1" ]; then
@@ -97,13 +97,23 @@ if [[ "$OK" == "2" ]]; then
 		#w_echo "$TAG installing App .apk's -> ${appAPK[0]}" 
 		for apk in $appAPK; do
 			(adb install -g -r "$apk") 
-			echo "$apk" > $logDir/lastInstalledAPK.txt
-			echo "$apk" >> "$resDir/installedAPK.log"
+			echo "$apk" > "$logDir/lastInstalledAPK.txt"
+			echo "$apk" > "$resDir/installedAPK.log"
 		done
 		
 	else
-		e_echo "Error while installing. No APK's found"
-		exit -1
+		w_echo "No APK's found. Trying the first apk found in directory"
+		appAPK=$(find "$pathProject" -name "*.apk" | head -1 )
+		if [[ -n "$appAPK" ]]; then
+			(adb install -g -r "$appAPK") 
+			echo "$appAPK" > "$logDir/lastInstalledAPK.txt"
+			echo "$appAPK" > "$resDir/installedAPK.log"
+			exit 0
+		else
+			e_echo " FATAL ERROR. NO APK's found. "
+			exit -1
+		fi
+		
 	fi
 elif [[ "$OK" != "1" ]]; then
 	if [[ "${#appAPK[@]}" == 0 ]]; then

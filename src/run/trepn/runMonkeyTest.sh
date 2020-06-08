@@ -66,7 +66,7 @@ runTraceOnlyTest(){
 	fi
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
-	e_echo "foreground_app = $foreground_app"
+	#e_echo "foreground_app = $foreground_app"
 	if [[ "$package" == "$foreground_app"  ]]; then
 		# gracefull exit failed. force kill
 		e_echo "$package,$monkey_seed" > $logDir/badExit.log
@@ -120,7 +120,7 @@ runMeasureOnlyTest(){
 
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
-e_echo "foreground_app = $foreground_app"
+#e_echo "foreground_app = $foreground_app"
 	if [[ "$package" == "$foreground_app"  ]]; then
 		# gracefull exit failed. force kill
 		e_echo "$package,$monkey_seed" > $logDir/badExit.log
@@ -175,7 +175,7 @@ runBothModeTest(){
 
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
-e_echo "foreground_app = $foreground_app"
+#_echo "foreground_app = $foreground_app"
 	if [[ "$package" == "$foreground_app"  ]]; then
 		# gracefull exit failed. force kill
 		e_echo "$package,$monkey_seed" > $logDir/badExit.log

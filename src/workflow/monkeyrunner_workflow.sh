@@ -100,17 +100,19 @@ errorHandler(){
 getAppUID(){
 	GRADLE_FILE=$1
 	MANIFEST_FILE=$2
-	APPID=$(grep -o "applicationId\s\".*\"" $1 | awk '{ print $2 }'| sed 's/\"//g')
-	if [[ -n "$APPID" ]]; then
+	#package from manifest
+	APPID=$(grep -o "package=\"[^\"]*\"" $2 | sed 's/package=//g'| sed 's/\"//g' )
+	if [ -n "$APPID" ]; then
 		eval "$3='$APPID'"
 	else
-		#package from manifest
-		APPID=$(grep  -o "package=\".*\"" $2 | sed 's/package=//g'| sed 's/\"//g' )
-		if [[ -n "$APPID" ]]; then
+		# from gradle
+		APPID=$(grep -o "applicationId\s\".*\"" $1 | awk '{ print $2 }'| sed 's/\"//g')
+		if [ -n "$APPID" ]; then
 			eval "$3='$APPID'"
-		fi		
+		fi
 	fi
 }
+
 # abort the script execution during testing phase
 quit(){
 	w_echo "Aborting.."
@@ -201,51 +203,67 @@ checkIfIdIsReservedWord(){
 		continue
 	fi
 }
-
 getFirstAppVersion(){
-	gradle_files=$(find ${f}/${prefix} -maxdepth 1 -name "build.gradle" )
-	for i in $words; do
-		appVersion=$(cat ${i} | grep "versionName" | head -1 | cut -f2 -d\")
-		if [[ -n "$appVersion" ]]; then
-			break
-		fi
-	done
+
+	#version_file="${f}/version.log"
+	version_file=$( find "${DIR}" -maxdepth 2 -type f -name version.log | head -1 )
+	if [[ -f "$version_file" ]]; then
+		debug_echo "achei ficheiro versão"
+		appVersion=$(head -1 "$version_file")
+	else
+		gradle_files=$(find "${f}/${prefix}" -maxdepth 1 -name "build.gradle" )
+		for i in $gradle_files; do
+			appVersion=$(cat ${i} | grep "versionName" | head -1 | cut -f2 -d\")
+			if [[ -n "$appVersion" ]]; then
+				break
+			fi
+		done
+	fi
+	if [[ -z "$appVersion" ]]; then
+			appVersion="0.0"
+	fi
+	echo "$appVersion"
 }
 
 
 
 prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
-	$MKDIR_COMMAND -p $localDir/all
+	$MKDIR_COMMAND -p $localDir
+	cp $temp_folder/* $localDir
+	cp "$res_folder/config/GSlogin.json" $localDir
+	#echo "$TAG Creating support folder..."
+	#mkdir -p $localDir
+	#$MKDIR_COMMAND -p $localDir/all
 	##copy MethodMetric to support folder
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
-	cp "$FOLDER/$tName/$GREENSOURCE_APP_UID.json" "$localDir"
-	cp "$res_folder/device.json" "$localDir"
-	cp "$res_folder/config/GSlogin.json" "$localDir"
-	cp "$FOLDER/$tName/appPermissions.json" "$localDir"
+	cp "$FOLDER/$tName/$GREENSOURCE_APP_UID.json" $localDir
+	cp "$FOLDER/$tName/appPermissions.json" $localDir
+
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
-	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" $PACKAGE "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
+	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "$monkey" "$apkBuild" "$logDir" 
 	RET=$(echo $?)
-	if [[ "$RET" == "-1" ]]; then
+	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
-		exit -1
 	fi
-	APK=$(cat $logDir/lastInstalledAPK.txt)
 	echo "$ID" >> $logDir/success.log
-	total_methods=$( cat "$projLocalDir/all/allMethods.txt" | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
+	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
+	total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
-	##########
 
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		installed_apk=$(cat $localDir/installedAPK.log)
+		APK=$installed_apk
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
+	##########
 }
 
 runMonkeyRunnerTests(){
@@ -254,20 +272,19 @@ runMonkeyRunnerTests(){
 	for (( i = 0; i < ${#MonkeyRunnerScriptsList[@]}; i++ )); do
 	#for i in ${MonkeyRunnerScriptsList[@]}; do
 		w_echo "APP: $ID |  Script : $i"
-		e_echo "$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh \"$i\" \"${MonkeyRunnerScriptsList[$i]}\" \"$APK\" \"$PACKAGE\" \"$localDir\" \"$deviceDir\" \"$trace\""
-		
+
 		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
 			#statements
 			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$APK" "$PACKAGE" "$localDir" "$deviceDir" "$trace"
+			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh $i ${MonkeyRunnerScriptsList[$i]} $NEW_PACKAGE $localDir $deviceDir $trace"
+			$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$NEW_PACKAGE" "$localDir" "$deviceDir" "$trace"
 			RET=$(echo $?)
 		fi
 		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
 			#statements
 			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
-			debug_echo "$ANADROID_SRC_PATH/run/greenscaler/gscalerMonkeyTest.sh $i $number_monkey_events $trace $NEW_PACKAGE $localDir $deviceDir"
-			$ANADROID_SRC_PATH/run/greenscaler/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$APK" "$PACKAGE" "$localDir" "$deviceDir" "$trace"
+			debug_echo "$ANADROID_SRC_PATH/run/trepn/runMonkeyRunnerTest.sh $i ${MonkeyRunnerScriptsList[$i]} $NEW_PACKAGE $localDir $deviceDir $trace"
+			$ANADROID_SRC_PATH/run/greenscaler/runMonkeyRunnerTest.sh "$i" "${MonkeyRunnerScriptsList[$i]}" "$NEW_PACKAGE" "$localDir" "$deviceDir" "$trace"
 			RET1=$(echo $?)
 		fi
 
@@ -379,9 +396,11 @@ instrumentGradleApp(){
 		java -jar "$GD_INSTRUMENT" "-gradle" "$tName" "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID" "$APPROACH" ##RR
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
+		cp ./allMethods.json "$FOLDER/$tName/allMethods.json"
 		#Instrument all manifestFiles
 		(find "$FOLDER/$tName" -name "AndroidManifest.xml" | egrep -v "/build/" | xargs -I{} $ANADROID_SRC_PATH/build/manifestInstr.py "{}" )
 	else 
+		cp "$FOLDER/$tName/allMethods.json" "$projLocalDir/all/allMethods.json"
 		e_echo "Same instrumentation of last time. Skipping instrumentation phase"
 	fi
 	#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
@@ -402,20 +421,23 @@ setupLocalResultsFolder(){
 	echo "$TAG setting up local results folder"
 	#create results support folder
 	#echo "$TAG Creating support folder..."
-	GRADLE=($(find ${f}/${prefix} -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
+	
+	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
+	APP_ID="unknown"
+	getAppUID "${GRADLE[0]}" "$MANIF_S" APP_ID
+	projLocalDir="$localDir/$APP_ID"
+	$MKDIR_COMMAND -p $projLocalDir
+	GREENSOURCE_APP_UID="$ID--$APP_ID"
+
+	getFirstAppVersion $appVersion
+	projLocalDir="$projLocalDir/$appVersion"
 	$MKDIR_COMMAND -p $projLocalDir
 	$MKDIR_COMMAND -p $projLocalDir/oldRuns
-	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") "$projLocalDir/oldRuns/" ) >/dev/null 2>&1
+	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
 	$MKDIR_COMMAND -p $projLocalDir/all
 	FOLDER=${f}${prefix} #$f
-	ORIGINAL_GRADLE=($(find ${FOLDER} -name "*.gradle" -type f -print0 | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
-	APP_ID="unknown"
-	getAppUID ${GRADLE[0]} $MANIF_S APP_ID
-	GREENSOURCE_APP_UID="$ID--$APP_ID"
-	getFirstAppVersion 
-	if [[ -z "$appVersion" ]]; then
-			appVersion="0.0"
-	fi
+	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
+	
 	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
 	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[] , \"project_location\": \"$f\"}"
 	#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
@@ -423,7 +445,7 @@ setupLocalResultsFolder(){
 
 uninstallApp(){
 	cp $temp_folder/* $localDir
-	$ANADROID_SRC_PATH/others/uninstall.sh $PACKAGE $TESTPACKAGE
+	$ANADROID_SRC_PATH/others/uninstall.sh $NEW_PACKAGE $TESTPACKAGE
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log
@@ -542,9 +564,14 @@ for f in $DIR/*
 					# if BUILD FAILED, SKIPPING APP
 					continue
 				fi
+				
 				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
+				
+				if [[ "$IGNORE_RUN" == "YES" ]]; then
+					continue
+				fi
 				runMonkeyRunnerTests
 				uninstallApp
 				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
@@ -689,7 +716,6 @@ for f in $DIR/*
 					fi
 					w_echo "SEED Number : $totaUsedTests"
 					e_echo "$ANADROID_SRC_PATH/run/runMonkeyRunnerTest.sh "$j" "$number_monkey_events" "$trace" "$PACKAGE" $localDir $deviceDir"
-					exit -1
 					runMonkeyRunnerTests
 					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 					#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
@@ -715,7 +741,7 @@ for f in $DIR/*
 				APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"1\"}" #" \"app_language\": \"Java\"}"
 				Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", project_apps:[$APP_JSON]} , project_packages=[]}"
 				echo "$Proj_JSON" > $localDir/projectApplication.json
-				./uninstall.sh $PACKAGE $TESTPACKAGE
+				./uninstall.sh $NEW_PACKAGE $TESTPACKAGE
 				RET=$(echo $?)
 				if [[ "$RET" != "0" ]]; then
 					echo "$ID" >> $logDir/errorUninstall.log

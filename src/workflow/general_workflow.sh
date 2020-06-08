@@ -5,7 +5,7 @@ source $ANADROID_PATH/src/settings/settings.sh
 
 
 debug_echo(){
-	DEBUG="TRUE" 
+	DEBUG="FALSE" 
 	if [[ "$DEBUG" == "TRUE" ]]; then
 		e_echo "[DEBUG] $1"
 	fi
@@ -41,8 +41,8 @@ cleanDeviceTrash() {
 isAppInstalled(){
 	appPackage=$1
 	all_packages=$(adb shell pm list packages)
-	isInstalled=$( echo $all_packages | grep "$appPackage")
-	if [ -z "$isInstalled" ]; then
+	isInstalled=$( echo $all_packages | grep "$appPackage" | head -1 )
+	if [ "$appPackage" != "$isInstalled" ]; then
 		echo "FALSE"
 	else
 		echo "TRUE"

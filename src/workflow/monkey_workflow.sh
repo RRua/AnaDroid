@@ -399,7 +399,7 @@ runMonkeyTests(){
 	done
 
 	trap - INT
-	if [ "$coverage_exceded" -eq 0 ]; then
+	if [ "$coverage_exceded" -eq "0" ]; then
 		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
 	fi
 }
@@ -456,10 +456,13 @@ instrumentGradleApp(){
 
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
+		cp ./allMethods.json "$FOLDER/$tName/allMethods.json"
 		#Instrument all manifestFiles
 		(find "$FOLDER/$tName" -name "AndroidManifest.xml" | egrep -v "/build/" | xargs -I{} $ANADROID_SRC_PATH/build/manifestInstr.py "{}" )
 	else 
+		cp "$FOLDER/$tName/allMethods.json" "$projLocalDir/all/allMethods.json"
 		e_echo "Same instrumentation of last time. Skipping instrumentation phase"
+	
 	fi
 	#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
 	xx=$(find  "$projLocalDir/" -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )

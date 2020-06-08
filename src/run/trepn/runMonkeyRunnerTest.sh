@@ -7,11 +7,10 @@ source "$this_dir/../general.sh"
 #args
 script_index=$1
 script_name=$2
-apk=$3
-package=$4
-localDir=$5
-deviceDir=$6
-trace=$7
+package=$3
+localDir=$4
+deviceDir=$5
+trace=$6
 #Monkey_Script=$7
 
 logDir="$ANADROID_PATH/.ana/logs"
@@ -32,7 +31,7 @@ else
 fi
 
 runMonkeyRunnerTest(){
-	(monkeyrunner $script_name "$package" ) > "$logDir/monkeyrunner.log"
+	(monkeyrunner "$script_name" "$package" ) > "$localDir/monkeyrunner.log"
 }
 
 
@@ -142,7 +141,7 @@ runBothModeTest(){
 		echo "$localDir,$script_name" >> $logDir/error_monkey_runner.log
 		exit 1
 	else
-		i_echo "[Tracing] Test Successfuly Executed"
+		i_echo "[Both] Test Successfuly Executed"
 	fi
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
