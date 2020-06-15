@@ -256,10 +256,11 @@ prepareAndInstallApp(){
 
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
+	installed_apk=$(cat $localDir/installedAPK.log)
+	APK=$installed_apk
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
-		installed_apk=$(cat $localDir/installedAPK.log)
-		APK=$installed_apk
+		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
@@ -637,7 +638,7 @@ for f in $DIR/*
 						$MKDIR_COMMAND -p $projLocalDir/oldRuns
 						mv  $(ls $projLocalDir | grep -v "oldRuns") $projLocalDir/oldRuns/
 						$MKDIR_COMMAND -p $projLocalDir/all
-						cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
+						cat ./allMethods.txt > $projLocalDir/all/allMethods.txt
 						echo "$ID" >> $logDir/success.log
 					elif [[ -n "$logStatus" ]]; then
 						cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
@@ -660,7 +661,7 @@ for f in $DIR/*
 				$MKDIR_COMMAND -p $projLocalDir/oldRuns
 				$MV_COMMAND -f $(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
 				$MKDIR_COMMAND -p $projLocalDir/all
-				cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
+				cat ./allMethods.txt > $projLocalDir/all/allMethods.txt
 				
 				##copy MethodMetric to support folder
 				#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "

@@ -58,7 +58,7 @@ closeApp(){
 }
 
 pushFilesToDevice(){
-	python "${this_dir}/../RERAN_TEST.py" "push" "$package" "$replay_file"
+	python "${this_dir}/../../testingFrameworks/RERAN/RERAN_TEST.py" "push" "$package" "$replay_file"
 }
 
 runRERANTest(){
@@ -68,7 +68,7 @@ runRERANTest(){
 		adb shell monkey -p "$package" -c android.intent.category.LAUNCHER 1
 		sleep 8
 	fi
-	(python "${this_dir}/../RERAN_TEST.py" "replay" "$package" "$replay_file" ) &> "$localDir/reran.log"
+	(python "${this_dir}/../../testingFrameworks/RERAN/RERAN_TEST.py" "replay" "$package" "$replay_file" ) &> "$localDir/reran.log"
 
 }
 

@@ -197,11 +197,11 @@ runBothModeTest(){
 setImmersiveMode $package
 
 ## RUN TWICE: One in trace mode and another in measure mode
-runMeasureOnlyTest
+#runMeasureOnlyTest
 #cleanAppCache $package
-runTraceOnlyTest
+#runTraceOnlyTest
 
-
+runBothModeTest
 cleanAppCache $package
 
 

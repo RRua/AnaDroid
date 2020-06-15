@@ -16,12 +16,12 @@ initTrepnProfiler(){
 
 stopTrepnProfiler(){
 	#echo "stopping profiler..."
-	sleep 1
+	sleep 10
 	(adb shell am broadcast -a com.quicinc.trepn.stop_profiling) >/dev/null 2>&1
-	sleep 6
+	sleep 10
 	(adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_db_input_file "myfile" -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) >/dev/null 2>&1
 	#(adb shell am broadcast -a  com.quicinc.trepn.export_to_csv -e com.quicinc.trepn.export_csv_output_file "GreendroidResultTrace0" ) #>/dev/null 2>&1
-	sleep 1
+	sleep 20
 	#getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 	
 }
