@@ -239,7 +239,7 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp "$FOLDER/$tName/$GREENSOURCE_APP_UID.json" $localDir
 	cp "$FOLDER/$tName/appPermissions.json" $localDir
-
+	IGNORE_RUN=""
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
 	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
@@ -247,6 +247,8 @@ prepareAndInstallApp(){
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
+		IGNORE_RUN="YES"
+		return
 	fi
 	echo "$ID" >> $logDir/success.log
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
@@ -303,6 +305,7 @@ runMonkeyRunnerTests(){
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
 		mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
 		mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+		mv catlog.out "$localDir/catlog$i.out"
 		find . -maxdepth 1 -name "*.png" | xargs -I{} mv {} "$localDir/"
 		echo "${MonkeyRunnerScriptsList[$i]}" >> $localDir/TracedTests.txt 
 		analyzeCSV $localDir/GreendroidResultTrace$i.csv
@@ -563,6 +566,7 @@ for f in $DIR/*
 				buildAppWithGradle
 				if [[ "$RET" != "0" ]]; then
 					# if BUILD FAILED, SKIPPING APP
+					e_echo "$TAG Skipping execution due to build error"
 					continue
 				fi
 				
@@ -571,7 +575,18 @@ for f in $DIR/*
 				prepareAndInstallApp
 				
 				if [[ "$IGNORE_RUN" == "YES" ]]; then
-					continue
+					recoverable=$(checkIfErrorIsRecoverable )
+					if [[ "$recoverable" == "TRUE" ]]; then
+						buildAppWithGradle
+						prepareAndInstallApp
+						if [[ "$IGNORE_RUN" == "YES" ]]; then
+							e_echo "$TAG Skipping execution due to unrecoverable error"
+							continue
+						fi
+					else
+						e_echo "$TAG Skipping execution due to unrecoverable 2 error"
+						continue
+					fi
 				fi
 				runMonkeyRunnerTests
 				uninstallApp

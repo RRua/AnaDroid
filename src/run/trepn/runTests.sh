@@ -1,7 +1,7 @@
 #!/bin/bash
 source $ANADROID_PATH/src/settings/settings.sh
 this_dir="$(dirname "$0")"
-source "$this_dir/../general.sh"
+source "$this_dir/general.sh"
 
 logDir="$ANADROID_PATH/.ana/logs/"
 pack=$1
@@ -71,6 +71,7 @@ initProfiler(){
 runTests(){
 	state="begin"
 	adb shell "echo $GDflag > $deviceDir/GDflag"
+	clearLogCat
 	#echo "sei la comando ($Timeout_COMMAND -s 9 $TIMEOUT adb shell am instrument -w $testPack/$runner) &> runStatus.log"
 	($Timeout_COMMAND -s 9 $TIMEOUT adb shell am instrument -w "$testPack/$runner") &> runStatus.log
 	#if went wrong
@@ -102,6 +103,7 @@ runTests(){
 			exit -1
 		fi
 	fi
+	dumpLogCatToFile
 	execs=$(($execs + 1))
 	state="end"
 

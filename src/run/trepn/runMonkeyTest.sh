@@ -5,7 +5,7 @@
 source $ANADROID_PATH/src/settings/settings.sh
 
 this_dir="$(dirname "$0")"
-source "$this_dir/../general.sh"
+source "$this_dir/general.sh"
 #args
 monkey_seed=$1
 monkey_nr_events=$2
@@ -49,6 +49,7 @@ runTraceOnlyTest(){
 	adb shell "echo -1 > $deviceDir/GDflag" # inform trepnlib to only trace methods
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
+	clearLogCat
 	w_echo "[Tracing]$now Running monkey tests..."
 	runMonkeyTest	
 	w_echo "[Tracing] stopped tests. "
@@ -64,6 +65,7 @@ runTraceOnlyTest(){
 	else
 		i_echo "[Tracing] Test Successfuly Executed"
 	fi
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	#e_echo "foreground_app = $foreground_app"
@@ -93,7 +95,7 @@ runMeasureOnlyTest(){
 	#adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
 	getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Measuring]$now Running monkey tests..."
-
+clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
@@ -117,7 +119,7 @@ runMeasureOnlyTest(){
 	else
 		i_echo "[Measuring] Test Successfuly Executed"
 	fi
-
+dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 #e_echo "foreground_app = $foreground_app"
@@ -148,7 +150,7 @@ runBothModeTest(){
 	sleep 3
 	getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Both] $now Running monkey tests..."
-
+clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
@@ -172,7 +174,7 @@ runBothModeTest(){
 	else
 		i_echo "[Both] Test Successfuly Executed"
 	fi
-
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 #_echo "foreground_app = $foreground_app"

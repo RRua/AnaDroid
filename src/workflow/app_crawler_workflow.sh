@@ -272,6 +272,7 @@ pullTestResultsFromDevice(){
 	e_echo "Pulling results from device..."
 	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$test_id.csv
+	mv catlog.out "$localDir/catlog$test_id.out"
 	analyzeCSV $localDir/GreendroidResultTrace$test_id.csv
 	
 	# get results from test output
@@ -295,7 +296,6 @@ runCrawlerTests(){
 
 	for (( test_index = 0; test_index < $test_thresold; test_index++ )); do
 		#statements
-		echo "uuuu"
 		debug_echo "$ANADROID_SRC_PATH/run/$PROFILER/runAppCrawlerTest.sh\" \"$test_index\" \"$trace\" \"$NEW_PACKAGE\" \"$installed_apk\" \"$localDir\" \"$deviceDir\""		
 		"$ANADROID_SRC_PATH/run/$PROFILER/runAppCrawlerTest.sh" "$test_index" "$trace" "$NEW_PACKAGE" "$installed_apk" "$localDir" "$deviceDir"		
 		pullTestResultsFromDevice "$test_index"

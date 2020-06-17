@@ -272,6 +272,7 @@ pullTestResultsFromDevice(){
 	e_echo "Pulling results from device..."
 	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$test_id.csv
+	mv catlog.out "$localDir/catlog$test_id.out"
 	analyzeCSV $localDir/GreendroidResultTrace$test_id.csv
 		
 }

@@ -5,7 +5,7 @@
 source $ANADROID_PATH/src/settings/settings.sh
 
 this_dir="$(dirname "$0")"
-source "$this_dir/../general.sh"
+source "$this_dir/general.sh"
 #args
 replay_file=$1
 replay_test_index=$2
@@ -80,7 +80,7 @@ runTraceOnlyTest(){
 	w_echo "[Tracing]$now Running RERAN test"
 	runRERANTest	
 	i_echo "[Tracing]  Test Successfuly Executed "
-	
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	if [[ "$package" == "$foreground_app"  ]]; then
@@ -108,6 +108,8 @@ runMeasureOnlyTest(){
 	getDeviceResourcesState "$localDir/begin_state$replay_test_index.json"
 	w_echo "[Measuring]$now Running RERAN tests..."
 
+	clearLogCat
+
 	if [[ $trace != "-MethodOriented" ]]; then
 		(adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started") > /dev/null
 	fi 
@@ -122,6 +124,8 @@ runMeasureOnlyTest(){
 	getDeviceResourcesState "$localDir/end_state$replay_test_index.json"
 	i_echo "[Measuring] Test Successfuly Executed"
 	
+	dumpLogCatToFile
+
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	#e_echo "foreground_app = $foreground_app"
@@ -150,6 +154,8 @@ runBothModeTest(){
 	getDeviceResourcesState "$localDir/begin_state$replay_test_index.json"
 	w_echo "[Both] $now Running RERAN tests..."
 
+	clearLogCat
+
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
@@ -161,6 +167,9 @@ runBothModeTest(){
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 0 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "stopped"
 	fi
 	getDeviceResourcesState "$localDir/end_state$replay_test_index.json"
+	
+	dumpLogCatToFile
+
 	w_echo "[Both] stopped tests. "
 	i_echo "[Both] Test Successfuly Executed"
 	

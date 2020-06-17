@@ -276,6 +276,7 @@ pullTestResultsFromDevice(){
 	fi
 	e_echo "Pulling results from device..."
 	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
+	mv catlog.out "$localDir/catlog$test_id.out"
 	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$test_id.csv
 	analyzeCSV $localDir/GreendroidResultTrace$test_id.csv
 		
@@ -616,9 +617,12 @@ for f in $DIR/*
 		continue
 ### Gradle proj			
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
+		echo "matias"
 		MANIFESTS=($(find "$f" -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
+		echo "$MANIFESTS"
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
 			#debug_echo " o comando do manif -> python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]})"
+			
 			MP=($(python $ANADROID_SRC_PATH/build/manifestParser.py ${MANIFESTS[*]}))
 			for R in ${MP[@]}; do 
 				RESULT=($(echo "$R" | tr ':' '\n'))
@@ -631,6 +635,7 @@ for f in $DIR/*
 				fi
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"
+				echo "bavva"
 				setupLocalResultsFolder
 				if [ "$APPROACH" == "whitebox" ] ; then
 					#debug_echo "white e diferente"

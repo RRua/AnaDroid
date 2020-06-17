@@ -26,6 +26,16 @@ stopTrepnProfiler(){
 	
 }
 
+clearLogCat(){
+	adb logcat -c
+}
+
+dumpLogCatToFile(){
+	adb logcat -d > "catlog.out"
+}
+
+
+
 
 gracefullyQuitApp(){
 	## essentiall to make foreground activity call ondestroy()

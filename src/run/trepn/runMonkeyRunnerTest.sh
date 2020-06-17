@@ -2,7 +2,7 @@
 
 source $ANADROID_PATH/src/settings/settings.sh
 this_dir="$(dirname "$0")"
-source "$this_dir/../general.sh"
+source "$this_dir/general.sh"
 
 #args
 script_index=$1
@@ -40,6 +40,7 @@ runTraceOnlyTest(){
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Tracing]$now Running Monkey Runner tests..."
+	clearLogCat
 	runMonkeyRunnerTest	
 	w_echo "[Tracing] stopped tests. "
 	
@@ -52,6 +53,7 @@ runTraceOnlyTest(){
 	else
 		i_echo "[Tracing] Test Successfuly Executed"
 	fi
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	if [[ "$package" == "$foreground_app"  ]]; then
@@ -73,7 +75,7 @@ runMeasureOnlyTest(){
 	sleep 3
 	getDeviceResourcesState "$localDir/begin_state$script_index.json"
 	w_echo "[Measuring]$now Running monkey Runner tests..."
-
+	clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
@@ -96,6 +98,7 @@ runMeasureOnlyTest(){
 	else
 		i_echo "[Tracing] Test Successfuly Executed"
 	fi
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	if [[ "$package" == "$foreground_app"  ]]; then
@@ -119,8 +122,8 @@ runBothModeTest(){
 	(adb shell am broadcast -a com.quicinc.trepn.start_profiling -e com.quicinc.trepn.database_file "myfile")
 	sleep 3
 	getDeviceResourcesState "$localDir/begin_state$script_index.json"
-	w_echo "[Both] $now Running monkey tests..."
-
+	w_echo "[Both] $now Running monkey tests..."	
+	clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
@@ -133,7 +136,7 @@ runBothModeTest(){
 	fi
 	getDeviceResourcesState "$localDir/end_state$script_index.json"
 	w_echo "[Both] stopped tests. "
-
+dumpLogCatToFile
 	exceptions=$(grep "Exception" $localDir/monkeyrunner.log )
 	if [[ -n "$exceptions"  ]]; then
 		# if an exception occured during test execution

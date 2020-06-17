@@ -583,6 +583,8 @@ for f in $DIR/*
 					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
 					mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
 					mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+					mv catlog.out "$localDir/catlog$i.out"
+					
 					totaUsedTests=$(($totaUsedTests + 1))
 					adb shell am force-stop $PACKAGE
 					if [ "$totaUsedTests" -eq 30 ]; then

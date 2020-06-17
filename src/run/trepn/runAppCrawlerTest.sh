@@ -86,9 +86,10 @@ runTraceOnlyTest(){
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Tracing]$now Running CRAWLER test"
+	clearLogCat
 	runCrawlerTest	
 	i_echo "[Tracing]  Test Successfuly Executed "
-	
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	if [[ "$package" == "$foreground_app"  ]]; then
@@ -116,7 +117,7 @@ runMeasureOnlyTest(){
 	#adb shell am broadcast -a org.thisisafactory.simiasque.SET_OVERLAY --ez enable true
 	getDeviceResourcesState "$localDir/begin_state$test_index.json"
 	w_echo "[Measuring]$now Running CRAWLER tests..."
-
+	clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		(adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started") > /dev/null
 	fi 
@@ -130,7 +131,7 @@ runMeasureOnlyTest(){
 	w_echo "[Measuring] stopped tests. "
 	getDeviceResourcesState "$localDir/end_state$test_index.json"
 	i_echo "[Measuring] Test Successfuly Executed"
-	
+	dumpLogCatToFile
 	gracefullyQuitApp
 	foreground_app=$(getForegroundApp)
 	#e_echo "foreground_app = $foreground_app"
@@ -159,7 +160,7 @@ runBothModeTest(){
 	sleep 3
 	getDeviceResourcesState "$localDir/begin_state$test_index.json"
 	w_echo "[Both] $now Running CRAWLER tests..."
-
+	clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 
@@ -173,7 +174,7 @@ runBothModeTest(){
 	getDeviceResourcesState "$localDir/end_state$test_index.json"
 	w_echo "[Both] stopped tests. "
 	i_echo "[Both] Test Successfuly Executed"
-	
+	dumpLogCatToFile
 	closeApp
 	sleep 10
 	stopTrepnProfiler

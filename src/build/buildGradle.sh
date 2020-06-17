@@ -50,6 +50,29 @@ function isInteger(){
 	fi
 }
 
+function evaluateNeedToUpgradeMinSdkVersion(){
+	#check if its necessary to change minsdkversion
+	gradleFile=$1
+	gradle_file_min_sdk_version=$(grep -E "minSdkVersion.*[0-9]+" "$gradleFile" | sed 's/minSdkVersion//g' | sed 's/ //g' )
+	if [[ -n "$gradle_file_min_sdk_version" ]] && [ "$gradle_file_min_sdk_version" -ge "$DeviceMinSDKVersion"  ]; then
+		w_echo "changing min sdk version to match connected device sdk version"
+		$SED_COMMAND -ri.bak "s#minSdkVersion (.+)#minSdkVersion $DeviceMinSDKVersion#g" "$gradleFile"
+	fi
+}
+
+function getDeviceMinSDKVersion(){
+	local potencialDeviceMinSDKVersion=$(adb shell getprop ro.build.version.sdk |  sed 's/\r//g' )
+	isInteger $potencialDeviceMinSDKVersion result
+	if [[ "$result" == "true" ]]; then
+		DeviceMinSDKVersion=$potencialDeviceMinSDKVersion
+		
+	else
+		DeviceMinSDKVersion=19
+		
+		# default value TODO
+	fi
+}
+
 function inferGradlePluginVersion(){
 	local main_gradle_file=$1
 	echo "o main é $main_gradle_file"
@@ -82,6 +105,7 @@ function buildLocalPropertiesFile(){
 i_echo "$TAG Building GRADLE PROJECT -> $ID "
 GRADLE_PLUGIN_VERSION=""  #(see https://developer.android.com/studio/releases/gradle-plugin.html#updating-gradle)
 inferGradlePluginVersion "$GRADLE"
+getDeviceMinSDKVersion
 GRADLE_BUILD_VERSION=$(echo "$(python $ANADROID_PATH/src/build/aux.py getMatchGradleVersion $GRADLE_PLUGIN_VERSION)" | sed 's/+//g'  )  #"2.3.3" #TODO - Find a better way to determine this valu
 BUILD_VERSIONS=($(ls $ANDROID_HOME/build-tools/))
 TARGET_VERSIONS=($(ls $ANDROID_HOME/platforms/))
@@ -234,7 +258,10 @@ do
 	$SED_COMMAND -ri.bak "s#InstrumentTest #androidTest #g" "$x"
 	$SED_COMMAND -ri.bak "s#instrumentTestCompile #$ANDROID_TEST_TRANSITIVE #g" "$x"
 
+
 	
+
+	evaluateNeedToUpgradeMinSdkVersion "$x"
 	#check if the app uses the compatibility library and if the minSdkVersion is defined accordingly
 	appCompat=$(egrep "compile ([\"]|[\'])com.android.support:appcompat-v7:(.+)([\"]|[\'])" "$x")
 	if [ -n "$appCompat" ]; then
@@ -530,6 +557,8 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 		find "$FOLDER" -name "build.gradle" | while read dir; 
 		do
 			x=$dir
+			echo "xispas $x"
+			exit -1
 		#for x in `find "$FOLDER" -name "build.gradle" -print | egrep -v "/build/"`; do
 			#correct minSdkVersion
 			#gradleFolder=$(echo "$x/build.gradle")

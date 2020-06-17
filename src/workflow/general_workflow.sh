@@ -25,6 +25,9 @@ setup(){
 	fi
 }
 
+checkIfErrorIsRecoverable(){
+	ok=""
+}
 
 
 checkIfIdIsReservedWord(){  #historic reasons
