@@ -254,7 +254,7 @@ prepareAndInstallApp(){
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		installed_apk=$(cat $localDir/installedAPK.log)
-		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
+		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk")
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
 	##########
@@ -264,8 +264,6 @@ prepareAndInstallApp(){
 pullTestResultsFromDevice(){
 	test_id=$1
 	if [[ $trace == "-ActivityOriented" ]]; then
-		#e_echo "tirei o trace"
-		#adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.trace" |  xargs -I{} adb pull $deviceDir/{} $localDir
 		adb pull "$deviceExternal/anadroidDebugTrace.trace" "$localDir/"
 		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$test_id.txt"
 		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$test_id.txt"
@@ -617,7 +615,6 @@ for f in $DIR/*
 		continue
 ### Gradle proj			
 	elif [ "$BUILD_TYPE" == "Gradle"  ]; then
-		echo "matias"
 		MANIFESTS=($(find "$f" -name "AndroidManifest.xml" | egrep -v "/build/|$tName"))
 		echo "$MANIFESTS"
 		if [[ "${#MANIFESTS[@]}" > 0 ]]; then
@@ -635,7 +632,6 @@ for f in $DIR/*
 				fi
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"
-				echo "bavva"
 				setupLocalResultsFolder
 				if [ "$APPROACH" == "whitebox" ] ; then
 					#debug_echo "white e diferente"

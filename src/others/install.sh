@@ -38,7 +38,6 @@ tryInstallingWithGradle(){
 		if [[  "$testingFramework" == "-junit" ]]; then
 			install_result=$(./gradlew installDebugAndroidTest  --info 2>&1 )
 		else
-			echo "bacalau"
 			install_result=$(./gradlew installDebug  --info 2>&1 )
 		fi
 
@@ -50,6 +49,11 @@ tryInstallingWithGradle(){
 			#echo "$install_result"
 		else
 			i_echo "$TAG app successfully installed"
+			installed_apk_simple_name=$(echo "$errorInstall" | grep -o "Installing APK .*on " | sed 's/Installing APK //g'| cut -f1 -d\ | sed "s/\'//g" )
+			installed_apk=$(find . -name "app-debug.apk" -type f | head -1 )
+			echo "$pathProject/$installed_apk" > "$logDir/lastInstalledAPK.txt"
+			echo "$pathProject/$installed_apk" >> "$resDir/installedAPK.log"
+
 			cd $current_dir
 			exit 0
 		fi
