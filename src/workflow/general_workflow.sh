@@ -1,6 +1,6 @@
 #!/bin/bash
 source $ANADROID_PATH/src/settings/settings.sh
-
+source $ANADROID_PATH/src/others/assureTestConditions.sh
 
 
 
@@ -25,8 +25,49 @@ setup(){
 	fi
 }
 
+
+isNetworkError(){
+	has_net=$(curl -Is http://www.google.com | head -1 | grep "HTTP/1.1 200 OK")
+	if [[ -n "$has_net" ]]; then
+		echo "FALSE"
+	else
+		echo "TRUE"
+	fi
+}
+
+
+waitForNetworkReconnection(){
+	times_to_wait=10
+	sleep_interval=5
+	net_error=$(isNetworkError)
+	for (( i = 0; i < $times_to_wait &&  "$net_error" == "TRUE" ; i++ )); do
+		sleep $sleep_interval
+		net_error=$(isNetworkError)
+		machine=''
+		getSO machine
+		if [ "$machine" == "Mac" ]; then
+			echo "TODO recover from network error"
+		else
+			echo " my sudo password " | sudo -S service network-manager restart
+		fi
+		sleep $sleep_interval
+	done
+}
+
+
 checkIfErrorIsRecoverable(){
 	ok=""
+	net_error=$(isNetworkError)
+	if [[ "$net_error" == "TRUE" ]]; then
+		waitForNetworkReconnection
+		net_error=$(isNetworkError)
+		if [[ "$net_error" == "TRUE" ]]; then
+			echo "FALSE"
+		else 
+			echo "TRUE"
+		fi
+	fi
+
 }
 
 
@@ -201,6 +242,12 @@ getBattery(){
 		sleep 300 # sleep 5 min to charge battery
 	fi
 }
+
+assureConfiguredTestConditions(){
+	w_echo "Assuring defined test conditions"
+	assureTestConditions
+}
+
 
 #used_cpu free_mem nr_procceses sdk_level api_level battery_temperature battery_voltage
 #tempDir="$ANADROID_PATH/temp"

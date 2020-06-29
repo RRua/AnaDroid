@@ -258,14 +258,15 @@ prepareAndInstallApp(){
 
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
-	installed_apk=$(cat $localDir/installedAPK.log)
-	APK=$installed_apk
+	
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
+	installed_apk=$(cat $localDir/installedAPK.log)
+	APK=$installed_apk
 	##########
 }
 
@@ -275,7 +276,7 @@ runMonkeyRunnerTests(){
 	for (( i = 0; i < ${#MonkeyRunnerScriptsList[@]}; i++ )); do
 	#for i in ${MonkeyRunnerScriptsList[@]}; do
 		w_echo "APP: $ID |  Script : $i"
-
+		assureConfiguredTestConditions
 		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
 			#statements
 			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1

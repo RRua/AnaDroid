@@ -242,6 +242,8 @@ prepareAndInstallApp(){
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
+		IGNORE_RUN="YES"
+		return
 	fi
 	echo "$ID" >> $logDir/success.log
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
@@ -251,12 +253,15 @@ prepareAndInstallApp(){
 
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
+
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		installed_apk=$(cat $localDir/installedAPK.log)
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk")
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
+	installed_apk=$(cat $localDir/installedAPK.log)
+	APK=$installed_apk
 	##########
 }
 
@@ -285,6 +290,7 @@ runMonkeyTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
+		assureConfiguredTestConditions
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
 		RET1="0"
 		RET="0"
@@ -344,6 +350,7 @@ runMonkeyTests(){
 	e_echo "actual coverage -> 0$actual_coverage"
 	
 	for i in $last30; do
+		assureConfiguredTestConditions
 		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
 		RET1="0"
 		RET="0"
@@ -661,6 +668,20 @@ for f in $DIR/*
 				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
+				if [[ "$IGNORE_RUN" == "YES" ]]; then
+					recoverable=$(checkIfErrorIsRecoverable )
+					if [[ "$recoverable" == "TRUE" ]]; then
+						buildAppWithGradle
+						prepareAndInstallApp
+						if [[ "$IGNORE_RUN" == "YES" ]]; then
+							e_echo "$TAG Skipping execution due to unrecoverable error"
+							continue
+						fi
+					else
+						e_echo "$TAG Skipping execution due to unrecoverable 2 error"
+						continue
+					fi
+				fi
 				runMonkeyTests
 				uninstallApp
 				analyzeAPK	

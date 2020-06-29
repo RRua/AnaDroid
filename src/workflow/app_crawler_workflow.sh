@@ -237,6 +237,8 @@ prepareAndInstallApp(){
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
+		IGNORE_RUN="YES"
+		return
 	fi
 	echo "$ID" >> $logDir/success.log
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
@@ -246,16 +248,17 @@ prepareAndInstallApp(){
 
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
-	installed_apk=$(cat $localDir/installedAPK.log)
+	
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
+		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
-
+	installed_apk=$(cat $localDir/installedAPK.log)
+	APK=$installed_apk
 	##########
 }
-
 
 pullTestResultsFromDevice(){
 	test_id=$1
@@ -295,11 +298,13 @@ pullTestResultsFromDevice(){
 runCrawlerTests(){
 
 	for (( test_index = 0; test_index < $test_thresold; test_index++ )); do
-		#statements
+		#statements´
+		assureConfiguredTestConditions
 		debug_echo "$ANADROID_SRC_PATH/run/$PROFILER/runAppCrawlerTest.sh\" \"$test_index\" \"$trace\" \"$NEW_PACKAGE\" \"$installed_apk\" \"$localDir\" \"$deviceDir\""		
 		"$ANADROID_SRC_PATH/run/$PROFILER/runAppCrawlerTest.sh" "$test_index" "$trace" "$NEW_PACKAGE" "$installed_apk" "$localDir" "$deviceDir"		
 		pullTestResultsFromDevice "$test_index"
 		"$ANADROID_SRC_PATH/others/trepnFix.sh" "$deviceDir"
+
 
 	done
 		
@@ -562,6 +567,20 @@ for f in $DIR/*
 				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
+				if [[ "$IGNORE_RUN" == "YES" ]]; then
+					recoverable=$(checkIfErrorIsRecoverable )
+					if [[ "$recoverable" == "TRUE" ]]; then
+						buildAppWithGradle
+						prepareAndInstallApp
+						if [[ "$IGNORE_RUN" == "YES" ]]; then
+							e_echo "$TAG Skipping execution due to unrecoverable error"
+							continue
+						fi
+					else
+						e_echo "$TAG Skipping execution due to unrecoverable 2 error"
+						continue
+					fi
+				fi
 				runCrawlerTests
 				uninstallApp
 				analyzeAPK	

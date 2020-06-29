@@ -237,6 +237,8 @@ prepareAndInstallApp(){
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
+		IGNORE_RUN="YES"
+		return
 	fi
 	echo "$ID" >> $logDir/success.log
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
@@ -246,12 +248,15 @@ prepareAndInstallApp(){
 
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
+	
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
-		installed_apk=$(cat $localDir/installedAPK.log)
+		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
+	installed_apk=$(cat $localDir/installedAPK.log)
+	APK=$installed_apk
 	##########
 }
 
@@ -280,12 +285,13 @@ pullTestResultsFromDevice(){
 
 
 runRERANTests(){
+	
 	APP_TEST_DIR="$TESTS_DIR/$PACKAGE"
 	if [ -d "$APP_TEST_DIR" ]; then
 		test_index=0
 		i_echo "$TAG found RERAN tests in $APP_TEST_DIR  "
 		for test_file in $(find "$APP_TEST_DIR" -type f | grep "translated" ); do
-			
+			assureConfiguredTestConditions
 			debug_echo "$ANADROID_SRC_PATH/run/$PROFILER/reranTest.sh \"$test_file\" \"$test_index\" \"$reran_replay_delay\" \"$trace\" \"$NEW_PACKAGE\" \"$localDir\" \"$deviceDir\""			
 			"$ANADROID_SRC_PATH/run/$PROFILER/reranTest.sh" "$test_file" "$test_index" "$reran_replay_delay" "$trace" "$NEW_PACKAGE" "$localDir" "$deviceDir"		
 			
@@ -556,6 +562,20 @@ for f in $DIR/*
 				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
+				if [[ "$IGNORE_RUN" == "YES" ]]; then
+					recoverable=$(checkIfErrorIsRecoverable )
+					if [[ "$recoverable" == "TRUE" ]]; then
+						buildAppWithGradle
+						prepareAndInstallApp
+						if [[ "$IGNORE_RUN" == "YES" ]]; then
+							e_echo "$TAG Skipping execution due to unrecoverable error"
+							continue
+						fi
+					else
+						e_echo "$TAG Skipping execution due to unrecoverable 2 error"
+						continue
+					fi
+				fi
 				runRERANTests
 				uninstallApp
 				analyzeAPK	

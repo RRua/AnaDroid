@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source $ANADROID_PATH/src/others/assureTestConditions.sh
 
 function w_echo {
 	echo -e "$yellow_$1$rc_"
@@ -125,6 +126,16 @@ getDeviceResourcesState(){
 	keyboard=$(adb shell dumpsys  input_method | grep "mCurMethodId" | cut -f2 -d= )
 	battery_temperature=$(echo "$battery" | grep "temperature:" | cut -f2 -d\: | sed "s/ //g")
 	battery_voltage=$(echo "$battery" | grep "voltage:" | tail -1 | cut -f2 -d\: | sed "s/ //g")
+	
+	screen_state=$(isScreenUnlocked)
+	screen_brightness=$(getBrightness)
+	wifi=$(isWifiOn)
+	bluetooth=$(isBluetoothOn)
+	hotspot=$(isHotspotOn)
+	nfc=$(isNFCEnabled)
+	gps=$(isGPSEnabled)
+	speaker=$(isSpeakerEnabled)
+	
 	timestamp=$(date +%s )
 	echo "
 	{	\"timestamp\": \"$timestamp\",
@@ -136,7 +147,15 @@ getDeviceResourcesState(){
 		\"battery_level\": \"$battery_level\", 
 		\"battery_temperature\": \"$battery_temperature\",
 		\"keyboard\": \"$keyboard\", 
-		\"battery_voltage\": \"$battery_voltage\"
+		\"battery_voltage\": \"$battery_voltage\",
+		\"screen_state\": \"$screen_state\", 
+		\"screen_brightness\": \"$screen_brightness\", 
+		\"wifi\": \"$wifi\", 
+		\"bluetooth\": \"$bluetooth\", 
+		\"hotspot\": \"$hotspot\", 
+		\"nfc\": \"$nfc\", 
+		\"gps\": \"$gps\", 
+		\"speaker\": \"$speaker\", 
 	}" > "$resState"
 }
 

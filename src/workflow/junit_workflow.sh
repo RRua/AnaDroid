@@ -265,16 +265,31 @@ prepareAndInstallApp(){
 	e_echo "$ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
 	RET=$(echo $?)
-	if [[ "$RET" == "-1" ]]; then
+	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
-		continue
+		IGNORE_RUN="YES"
+		return
 	fi
 	echo "$ID" >> $logDir/success.log
-	total_methods=$( cat "$projLocalDir/all/allMethods.json" | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
+	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
+	total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
+
+	NEW_PACKAGE=$PACKAGE
+	isInstalled=$( isAppInstalled $PACKAGE )
+	
+	if [[ "$isInstalled" == "FALSE" ]]; then
+		#e_echo "$TAG App not installed. Skipping tests execution"
+		
+		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
+		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
+	fi
+	installed_apk=$(cat $localDir/installedAPK.log)
+	APK=$installed_apk
 	##########
 }
+
 
 runJUnitTests(){
 	#run tests
@@ -294,6 +309,7 @@ runJUnitTests(){
 			continue
 		fi
 	fi
+	assureConfiguredTestConditions #todo change this to runjunit test script
 
 }
 
@@ -507,91 +523,91 @@ for f in $DIR/*
 			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"sdk\", \"project_apps\":[$APP_JSON]} , \"project_packages\":[]}"
 			#echo "$Proj_JSON" > $localDir/projectApplication.json
 #instrumentation phase
-				if [[ "$SOURCE" != "$TESTS" ]]; then
-					echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-					java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
-				else
-					echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-					java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
-				fi
-				#copy the test runner
-				$MKDIR_COMMAND -p $SOURCE/$tName/libs
-				$MKDIR_COMMAND -p $SOURCE/$tName/tests/libs
-				cp libsAdded/$trepnJar $SOURCE/$tName/libs
-				cp libsAdded/$trepnJar $SOURCE/$tName/tests/libs
+			if [[ "$SOURCE" != "$TESTS" ]]; then
+				echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
+				java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
+			else
+				echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
+				java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
+			fi
+			#copy the test runner
+			$MKDIR_COMMAND -p $SOURCE/$tName/libs
+			$MKDIR_COMMAND -p $SOURCE/$tName/tests/libs
+			cp libsAdded/$trepnJar $SOURCE/$tName/libs
+			cp libsAdded/$trepnJar $SOURCE/$tName/tests/libs
 
-				#build
-				./buildSDK.sh $ID $PACKAGE $SOURCE/$tName $SOURCE/$tName/tests $deviceDir $localDir
-				RET=$(echo $?)
-				if [[ "$RET" != "0" ]]; then
-					echo "$ID" >> $logDir/errorBuildSDK.log
-					if [[ "$RET" == "10" ]]; then
-						#everything went well, at second try
-						#let's create the results support files
-						$MKDIR_COMMAND -p $projLocalDir
-						$MKDIR_COMMAND -p $projLocalDir/oldRuns
-						mv  $(ls $projLocalDir | grep -v "oldRuns") $projLocalDir/oldRuns/
-						$MKDIR_COMMAND -p $projLocalDir/all
-						cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
-						echo "$ID" >> $logDir/success.log
-					elif [[ -n "$logStatus" ]]; then
-						cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
-					fi
-					continue
-				fi				
-				#install on device
-				./install.sh "$SOURCE/$tName" "$SOURCE/$tName/tests" "SDK" $PACKAGE $localDir $monkey $apkBuild $logDir
-				RET=$(echo $?)
-				if [[ "$RET" != "0" ]]; then
-					echo "$ID" >> $logDir/errorInstall.log
-					continue
+			#build
+			./buildSDK.sh $ID $PACKAGE $SOURCE/$tName $SOURCE/$tName/tests $deviceDir $localDir
+			RET=$(echo $?)
+			if [[ "$RET" != "0" ]]; then
+				echo "$ID" >> $logDir/errorBuildSDK.log
+				if [[ "$RET" == "10" ]]; then
+					#everything went well, at second try
+					#let's create the results support files
+					$MKDIR_COMMAND -p $projLocalDir
+					$MKDIR_COMMAND -p $projLocalDir/oldRuns
+					mv  $(ls $projLocalDir | grep -v "oldRuns") $projLocalDir/oldRuns/
+					$MKDIR_COMMAND -p $projLocalDir/all
+					cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
+					echo "$ID" >> $logDir/success.log
+				elif [[ -n "$logStatus" ]]; then
+					cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
 				fi
-				echo "$ID" >> $logDir/success.log
+				continue
+			fi				
+			#install on device
+			./install.sh "$SOURCE/$tName" "$SOURCE/$tName/tests" "SDK" $PACKAGE $localDir $monkey $apkBuild $logDir
+			RET=$(echo $?)
+			if [[ "$RET" != "0" ]]; then
+				echo "$ID" >> $logDir/errorInstall.log
+				continue
+			fi
+			echo "$ID" >> $logDir/success.log
 
-				#create results support folder
-				#echo "$TAG Creating support folder..."
-				$MKDIR_COMMAND -p $projLocalDir
-				$MKDIR_COMMAND -p $projLocalDir/oldRuns
-				$MV_COMMAND -f $(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
-				$MKDIR_COMMAND -p $projLocalDir/all
-				cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
-				
-				##copy MethodMetric to support folder
-				#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
-				cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
-				echo "$ID" >> $logDir/success.log
-				total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u | wc -l | sed 's/ //g')
-				now=$(date +"%d_%m_%y_%H_%M_%S")
-				localDir=$localDir/$folderPrefix$now
-				#echo "$TAG Creating support folder..."
-				mkdir -p $localDir
-				mkdir -p $localDir/all
-				
+			#create results support folder
+			#echo "$TAG Creating support folder..."
+			$MKDIR_COMMAND -p $projLocalDir
+			$MKDIR_COMMAND -p $projLocalDir/oldRuns
+			$MV_COMMAND -f $(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
+			$MKDIR_COMMAND -p $projLocalDir/all
+			cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
+			
+			##copy MethodMetric to support folder
+			#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
+			cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
+			echo "$ID" >> $logDir/success.log
+			total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u | wc -l | sed 's/ //g')
+			now=$(date +"%d_%m_%y_%H_%M_%S")
+			localDir=$localDir/$folderPrefix$now
+			#echo "$TAG Creating support folder..."
+			mkdir -p $localDir
+			mkdir -p $localDir/all
+			
 ########## RUN TESTS 1 phase ############
-				trap 'quit $PACKAGE $TESTPACKAGE $f' INT
-				for i in $seeds20; do
-					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir		
-					RET=$(echo $?)
-					if [[ $RET -ne 0 ]]; then
-						errorHandler $RET $PACKAGE
-						IGNORE_RUN="YES"
-						break						
-					fi
-					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-					#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
-					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
-					mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-					mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-					mv catlog.out "$localDir/catlog$i.out"
-					
-					totaUsedTests=$(($totaUsedTests + 1))
-					adb shell am force-stop $PACKAGE
-					if [ "$totaUsedTests" -eq 30 ]; then
-						getBattery
-					fi
-					$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				done
+			trap 'quit $PACKAGE $TESTPACKAGE $f' INT
+			for i in $seeds20; do
+				w_echo "SEED Number : $totaUsedTests"
+				./runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir		
+				RET=$(echo $?)
+				if [[ $RET -ne 0 ]]; then
+					errorHandler $RET $PACKAGE
+					IGNORE_RUN="YES"
+					break						
+				fi
+				adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
+				#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
+				adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
+				mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
+				mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
+				mv catlog.out "$localDir/catlog$i.out"
+				
+				totaUsedTests=$(($totaUsedTests + 1))
+				adb shell am force-stop $PACKAGE
+				if [ "$totaUsedTests" -eq 30 ]; then
+					getBattery
+				fi
+				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
+			done
 
 ########## RUN TESTS  THRESHOLD ############
 
