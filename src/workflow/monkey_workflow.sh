@@ -251,8 +251,11 @@ prepareAndInstallApp(){
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
 
+
+
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
+
 
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
@@ -260,6 +263,7 @@ prepareAndInstallApp(){
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk")
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
+	
 	installed_apk=$(cat $localDir/installedAPK.log)
 	APK=$installed_apk
 	##########
@@ -272,7 +276,7 @@ pullTestResultsFromDevice(){
 		adb pull "$deviceExternal/anadroidDebugTrace.trace" "$localDir/"
 		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$test_id.txt"
 		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$test_id.txt"
-		debug_echo "dumpei"
+	
 	else
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
 		mv $localDir/TracedMethods.txt "$localDir/TracedMethods$test_id.txt"
@@ -290,7 +294,9 @@ runMonkeyTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
+		echo "batata"
 		assureConfiguredTestConditions
+		echo "batatada"
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
 		RET1="0"
 		RET="0"
@@ -405,6 +411,7 @@ runMonkeyTests(){
 	done
 
 	trap - INT
+	debug_echo "la coveragzita $coverage_exceded"
 	if [ "$coverage_exceded" -eq "0" ]; then
 		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
 	fi

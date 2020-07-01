@@ -45,7 +45,7 @@ tryInstallingWithGradle(){
 
 		if [[ -n "$errorInstall" ]]; then
 			e_echo " An Error occured while installing with gradle. Trying the hard way"
-			echo "$pathProject" >> "logDir/error_install_with_gradle.log"
+			echo "$pathProject" >> "$logDir/error_install_with_gradle.log"
 			#echo "$install_result"
 		else
 			i_echo "$TAG app successfully installed"

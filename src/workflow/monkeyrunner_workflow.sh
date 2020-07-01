@@ -244,6 +244,7 @@ prepareAndInstallApp(){
 	w_echo "[APP INSTALLER] Installing the apps on the device"
 	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "$monkey" "$apkBuild" "$logDir" 
+	debug_echo "zaAazz"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -255,16 +256,18 @@ prepareAndInstallApp(){
 	total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
 	IGNORE_RUN=""
-
+	debug_echo "zzAAAAz"
 	NEW_PACKAGE=$PACKAGE
 	isInstalled=$( isAppInstalled $PACKAGE )
-	
+	debug_echo ",mjcarl"
 	if [[ "$isInstalled" == "FALSE" ]]; then
 		#e_echo "$TAG App not installed. Skipping tests execution"
-		
+		installed_apk=$(cat $localDir/installedAPK.log)
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
+		debug_echo "tricolo"
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
+	debug_echo ",misssa"
 	installed_apk=$(cat $localDir/installedAPK.log)
 	APK=$installed_apk
 	##########
@@ -574,7 +577,7 @@ for f in $DIR/*
 				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
-				
+				debug_echo "zzz"
 				if [[ "$IGNORE_RUN" == "YES" ]]; then
 					recoverable=$(checkIfErrorIsRecoverable )
 					if [[ "$recoverable" == "TRUE" ]]; then
@@ -589,6 +592,7 @@ for f in $DIR/*
 						continue
 					fi
 				fi
+				debug_echo "xxx"
 				runMonkeyRunnerTests
 				uninstallApp
 				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json

@@ -11,12 +11,12 @@ if [ "$machine" == "Mac" ]; then
 	Timeout_COMMAND="gtimeout"
 else 
 	SED_COMMAND="sed" #linux
-	Timeout_COMMAND="gtimeout"	
+	Timeout_COMMAND="timeout"	
 fi
 
 
 
-TIMEOUT="420" #7 minutes (60*7)
+TIMEOUT="120" #2 minutes (60*2)
 logDir="$ANADROID_PATH/.ana/logs/"
 OLDIFS=$IFS
 IFS=$(echo -en "\n\b")
@@ -71,6 +71,23 @@ function getDeviceMinSDKVersion(){
 		
 		# default value TODO
 	fi
+}
+
+
+function upgradeBuildToolsVersion(){
+	
+	(echo "$sdkl" | grep -E -O  "build-tools/*" | cut -f2 -d\; | cut -f1 -d\ ) > "$ANADROID_PATH/temp/target_build_tools.log"
+	problematic_build_tools_version=$( echo "$buildToolsCPUError" | egrep -o "([0-9]{1,}\.)+[0-9]{1,}" | head -1 )
+	upgrade_version=$(python $ANADROID_PATH/src/others/versionUpgrader.py "$ANADROID_PATH/temp/target_build_tools.log" $problematic_build_tools_version  )
+	find "$FOLDER" -name "build.gradle" | while read dir; do
+		gradl_file=$dir
+		echo "UI UI $(grep "buildToolsVersion" $gradl_file)"
+		echo "bou substituir build tools do $gradl_file de $problematic_build_tools_version para $upgrade_version"
+		$SED_COMMAND -ri.bak "s#$problematic_build_tools_version#$upgrade_version#g" "$gradl_file"
+		echo "substituí"
+		echo "ficou assim: $(grep "buildToolsVersion" $gradl_file)"
+	done 
+
 }
 
 function inferGradlePluginVersion(){
@@ -142,10 +159,6 @@ if [ "$apkBuild" == "debug" ]; then
 else
 	apkBuild="Release"
 fi
-
-
-#GREENDROID=$FOLDER/libs/greenDroidTracker.jar
-GREENDROID=$FOLDER/libs/TrepnLib-release.aar  ##RR
 
 #Change the main build file
 #$SED_COMMAND -ri.bak "s#classpath ([\"]|[\'])com.android.tools.build:gradle:(.+)([\"]|[\'])#classpath 'com.android.tools.build:gradle:$GRADLE_PLUGIN'#g" $GRADLE
@@ -459,7 +472,6 @@ find "$FOLDER" -name "local.properties" -print | xargs -I{} cp "$local_propertie
 #gradle --no-daemon -b $GRADLE clean build assembleAndroidTest &> $logDir/buildStatus.log
 #gradle -b $GRADLE clean build assembleAndroidTest &> $logDir/buildStatus.log
 
-## The 'RR' way:
 actual_path=$(pwd)
 #cat "$FOLDER/gradlew" 
 if [[ -f "$FOLDER/gradlew" ]]; then
@@ -468,9 +480,9 @@ if [[ -f "$FOLDER/gradlew" ]]; then
 	echo "" > $logDir/buildStatus.log
 	chmod +x "$FOLDER/gradlew"
 	if [[ "$framework" == "junit" ]]; then
-	 	cd "$FOLDER"; ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
+	 	cd "$FOLDER"; $Timeout_COMMAND -s 9 --foreground  $TIMEOUT ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
 	else
-	 	cd "$FOLDER"; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
+	 	cd "$FOLDER"; $Timeout_COMMAND -s 9  --foreground $TIMEOUT ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
 	fi
 else
 	w_echo "$TAG enabling gradle wrapper"
@@ -484,9 +496,9 @@ else
 		
 	if [[ -f "$FOLDER/gradlew" ]]; then
 		if [[ "$framework" == "junit" ]]; then
-		 	cd "$FOLDER"; ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
+		 	cd "$FOLDER"; $Timeout_COMMAND -s 9 --foreground  $TIMEOUT ./gradlew assemble$apkBuild assembleAndroidTest &> $logDir/buildStatus.log  ; cd "$actual_path"
 		else
-		 	cd "$FOLDER"; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$actual_path"
+		 	cd "$FOLDER"; $Timeout_COMMAND -s 9 --foreground  $TIMEOUT ./gradlew assemble$apkBuild &> $logDir/buildStatus.log   ; cd "$actual_path"
 		fi
 	fi	
 fi
@@ -502,10 +514,12 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 	wrapperError=$(egrep "try editing the distributionUrl" $logDir/buildStatus.log | egrep "gradle-wrapper.properties" )
 	anotherWrapperError=$(egrep "Wrapper properties file" $logDir/buildStatus.log  )
 	ndkError=$(grep "NDK toolchains folder" $logDir/buildStatus.log)
+	buildToolsCPUError=$(grep "Bad CPU type in executable" "$logDir/buildStatus.log" )
 	(export PATH=$ANDROID_HOME/tools/bin:$PATH)
 	sdkl=$(sdkmanager --list 2>&1) 
 	#echo "available _> $availableSdkTools"
-	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") || (-n "$googleError") || (-n "$anotherWrapperError") ]]; do
+	
+	while [[ (-n "$minSDKerror") || (-n "$buildSDKerror") || (-n "$libsError") || (-n "$wrapperError") || (-n "$googleError") || (-n "$anotherWrapperError")  || (-n "$buildToolsCPUError") ]]; do
 		((try--))
 		w_echo "$TAG Common Error. Trying again..."
 		#debug_echo "jaimeeeee"
@@ -545,6 +559,10 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 			fi
 		fi
 
+		if [ -n "$buildToolsCPUError" ]; then
+			upgradeBuildToolsVersion
+		fi
+
 
 
 		unmatchVers=($($SED_COMMAND -nr "s/(.+)uses-sdk:minSdkVersion (.+) cannot be smaller than version (.+) declared in (.+)$/\2\n\3/p" $logDir/buildStatus.log))
@@ -557,8 +575,6 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 		find "$FOLDER" -name "build.gradle" | while read dir; 
 		do
 			x=$dir
-			echo "xispas $x"
-			exit -1
 		#for x in `find "$FOLDER" -name "build.gradle" -print | egrep -v "/build/"`; do
 			#correct minSdkVersion
 			#gradleFolder=$(echo "$x/build.gradle")
@@ -617,9 +633,9 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 		fi
 		
 		if [[ "$framework" == "junit" ]]; then
-			cd "$FOLDER"; ./gradlew assemble$apkBuild assembleAndroidTest > $logDir/buildStatus.log  2>&1 ; cd "$x"
+			cd "$FOLDER"; $Timeout_COMMAND -s 9 --foreground  $TIMEOUT ./gradlew assemble$apkBuild assembleAndroidTest &> $logDir/buildStatus.log  ; cd "$actual_path"
 		else
-			cd "$FOLDER"; ./gradlew assemble$apkBuild > $logDir/buildStatus.log  2>&1 ; cd "$x"
+			cd "$FOLDER"; $Timeout_COMMAND -s 9 --foreground   $TIMEOUT ./gradlew assemble$apkBuild &> $logDir/buildStatus.log  ; cd "$actual_path"
 		fi
 		googleError=$(grep "method google() for arguments" $logDir/buildStatus.log )
 		libsError=$(egrep "No signature of method: java.util.ArrayList.call() is applicable for argument types: (java.lang.String) values: [libs]" $logDir/buildStatus.log)
@@ -643,6 +659,7 @@ if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 
 		fi
 	done
+
 	if [ -n "$STATUS_NOK" ] || [ -z "$STATUS_OK" ]; then
 		#the build failed
 		cp $logDir/buildStatus.log "$FOLDER/"

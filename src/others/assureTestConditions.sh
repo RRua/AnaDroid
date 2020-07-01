@@ -78,6 +78,16 @@ function lockScreen(){
 }
 
 
+function keepScreenAlwaysOnWhilePlugged(){
+	adb shell settings put global stay_on_while_plugged_in 3
+
+}
+
+function undoKeepScreenAlwaysOnWhilePlugged(){
+	adb shell settings put global stay_on_while_plugged_in 0
+}
+
+
 ### BLUETOOTH 
 
 function isBluetoothOn(){
@@ -211,6 +221,11 @@ assureTestConditions(){
 	# screen brightness
 	expectable_brightness=$(loadStateFromConfigFile "screen_brightness" )
 	setBrightness $expectable_brightness
+	# screen always on
+	expectable_screen_state=$(loadStateFromConfigFile "screen_always_on" )
+	test "$expectable_screen_state" = "0"  && undoKeepScreenAlwaysOnWhilePlugged
+	test "$expectable_screen_state" = "1"  && keepScreenAlwaysOnWhilePlugged
+
 	# wifi
 	expectable_wifi_state=$(loadStateFromConfigFile "wifi_state" )
 	iswifi_on=$(isWifiOn)
