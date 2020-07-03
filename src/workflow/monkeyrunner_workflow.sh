@@ -239,6 +239,7 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp "$FOLDER/$tName/$GREENSOURCE_APP_UID.json" $localDir
 	cp "$FOLDER/$tName/appPermissions.json" $localDir
+	registInstalledPackages "start"
 	IGNORE_RUN=""
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
@@ -358,9 +359,7 @@ runMonkeyRunnerTests(){
 	#done
 
 	trap - INT
-	#if [ "$coverage_exceded" -eq 0 ]; then
-	#	echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
-	#fi
+	registInstalledPackages "end"
 }
 
 buildAppWithGradle(){
@@ -452,14 +451,15 @@ setupLocalResultsFolder(){
 }
 
 uninstallApp(){
-	cp $temp_folder/* $localDir
-	$ANADROID_SRC_PATH/others/uninstall.sh $NEW_PACKAGE $TESTPACKAGE
+	$ANADROID_SRC_PATH/others/uninstall.sh "$NEW_PACKAGE" "$TESTPACKAGE"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log
 		#continue
-	fi				
+	fi
+	uninstallInstalledPackagesDuringTest				
 }
+
 
 analyzeResults(){
 	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"

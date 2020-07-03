@@ -260,6 +260,7 @@ prepareAndInstallApp(){
 	cp "$res_folder/device.json" "$localDir"
 	cp "$FOLDER/$tName/appPermissions.json" "$localDir"
 	cp "$res_folder/config/GSlogin.json" "$localDir"
+	registInstalledPackages "start"
 	#install on device
 	#./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir  #COMMENT, EVENTUALLY...
 	e_echo "$ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
@@ -310,6 +311,7 @@ runJUnitTests(){
 		fi
 	fi
 	assureConfiguredTestConditions #todo change this to runjunit test script
+	registInstalledPackages "end"
 
 }
 
@@ -396,14 +398,16 @@ setupLocalResultsFolder(){
 }
 
 uninstallApp(){
-	cp $temp_folder/* $localDir
-	$ANADROID_SRC_PATH/others/uninstall.sh "$PACKAGE" "$TESTPACKAGE"
+	$ANADROID_SRC_PATH/others/uninstall.sh "$NEW_PACKAGE" "$TESTPACKAGE"
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log
 		#continue
-	fi				
+	fi
+	uninstallInstalledPackagesDuringTest				
 }
+
+
 inferPrefix(){
 	# needed because extracted apps from muse are in a folder name latest inside $ID folder
 	local searching_dir=$1

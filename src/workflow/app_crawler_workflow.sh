@@ -230,6 +230,7 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
+	registInstalledPackages "start"
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
 	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
@@ -305,8 +306,9 @@ runCrawlerTests(){
 		pullTestResultsFromDevice "$test_index"
 		"$ANADROID_SRC_PATH/others/trepnFix.sh" "$deviceDir"
 
-
 	done
+
+	registInstalledPackages "end"
 		
 }
 
@@ -417,7 +419,8 @@ uninstallApp(){
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log
 		#continue
-	fi				
+	fi
+	uninstallInstalledPackagesDuringTest				
 }
 
 

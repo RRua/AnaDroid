@@ -223,6 +223,8 @@ analyzeResults(){
 
 
 
+
+
 prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
 	$MKDIR_COMMAND -p $localDir
@@ -235,7 +237,9 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
+	registInstalledPackages "start"
 	#install on device
+
 	w_echo "[APP INSTALLER] Installing the apps on the device"
 	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
 	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "$monkey" "$apkBuild" "$logDir" 
@@ -246,6 +250,7 @@ prepareAndInstallApp(){
 		return
 	fi
 	echo "$ID" >> $logDir/success.log
+
 	#total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u| uniq | wc -l | $SED_COMMAND 's/ //g')
 	total_methods=$( cat "$projLocalDir/all/allMethods.json" | grep -o "\->" | wc -l  | $SED_COMMAND 's/ //g')
 	#now=$(date +"%d_%m_%y_%H_%M_%S")
@@ -294,9 +299,9 @@ runMonkeyTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
 	for i in $seeds20; do
-		echo "batata"
+		
 		assureConfiguredTestConditions
-		echo "batatada"
+
 		w_echo "APP: $ID | SEED Number : $totaUsedTests"
 		RET1="0"
 		RET="0"
@@ -415,6 +420,8 @@ runMonkeyTests(){
 	if [ "$coverage_exceded" -eq "0" ]; then
 		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
 	fi
+
+	registInstalledPackages "end"
 }
 
 buildAppWithGradle(){
@@ -522,7 +529,8 @@ uninstallApp(){
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorUninstall.log
 		#continue
-	fi				
+	fi
+	uninstallInstalledPackagesDuringTest				
 }
 
 

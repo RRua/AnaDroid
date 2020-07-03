@@ -1,4 +1,5 @@
 #!/bin/bash
+
 source $ANADROID_PATH/src/settings/settings.sh
 source $ANADROID_PATH/src/others/assureTestConditions.sh
 
@@ -10,6 +11,18 @@ debug_echo(){
 		e_echo "[DEBUG] $1"
 	fi
 }
+
+
+registInstalledPackages(){
+	stage=$1
+	#echo  "$ANADROID_PATH/temp/${stage}_packages.log" 
+	adb shell pm list packages > "$ANADROID_PATH/temp/${stage}_packages.log" 
+}
+
+uninstallInstalledPackagesDuringTest(){
+	diff "$ANADROID_PATH/temp/start_packages.log" "$ANADROID_PATH/temp/end_packages.log" | grep -E "^>" | sed 's/.*package://g' | xargs -I{} adb shell pm uninstall {}
+}
+
 
 setup(){
 	if [ "$trace" == "testoriented" ]; then
@@ -248,6 +261,12 @@ assureConfiguredTestConditions(){
 	assureTestConditions
 }
 
+registInstalledPackages "start"
+adb install -r /Users/ruirua/repos/AnaDroid/demoProjects/SecUSo-privacy-friendly-todo-list/v1.0_src/SecUSo-privacy-friendly-todo-list-da8a429/_TRANSFORMED_/app/build/outputs/apk/app-debug.apk
+sleep 10
+registInstalledPackages "end"
+sleep 1
+uninstallInstalledPackagesDuringTest
 
 #used_cpu free_mem nr_procceses sdk_level api_level battery_temperature battery_voltage
 #tempDir="$ANADROID_PATH/temp"
