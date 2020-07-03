@@ -1,6 +1,6 @@
 # !/bin/bash
 
-default_location="/home/greenlab/Anadroid//demoProjects"
+default_location="/home/greenlab/Anadroid/demoProjects"
 #default_location="./samples"
 
 target_success_apps_dir="$HOME/successAppsFolder"
@@ -14,9 +14,14 @@ for version in $(cat $ANADROID_PATH/.ana/logs/success.log); do
 	echo "$version  -   $target_app_dir --  $version_app_dir"
 	target_dir="$target_success_apps_dir/$target_app_dir/$version_app_dir"
 	echo "creating $target_dir"
-	#mkdir -p "$target_dir"
-	echo "cp -r $folder_version $target_dir"
-	exit 0 
+	
+	if [ -d "$target_dir" ]; then 
+		echo "ja existe"	
+		continue
+	fi
+	mkdir -p "$target_dir"
+	cp -r $folder_version $target_dir
+	
 	#echo "cp -r $folder_version $target_success_apps_dir"
 	#exit 0
 	#version_pack=$(find $default_location -mindepth 3 -maxdepth 4 -name $version -type f )
