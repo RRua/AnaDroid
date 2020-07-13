@@ -2,7 +2,7 @@ SRC_FOLDER="$ANADROID_PATH/src/"
 source $SRC_FOLDER/settings/settings.sh
 
 file_remote_json=$1
-temp_folder="$HOME/repos/Anadroid/demoProjects/appsSauce/" #androZooOpenCrawler/appsSauce/"
+temp_folder="$HOME/repos/Anadroid/demoProjects/" #androZooOpenCrawler/appsSauce/"
 #temp_folder="$ANADROID_PATH/fDroid_extractor/fdroidApps/"
 #mkdir -p $temp_folder
 target_file="data.json"

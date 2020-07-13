@@ -3,7 +3,7 @@
 .ana/logs/*
 *.txt
 .DS_Store
-
+*/temp/*
 # Byte-compiled / optimized / DLL files
 */__pycache__/*
 */migrations/*
