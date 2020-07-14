@@ -29,6 +29,8 @@ setup(){
 
 }
 
+
+# using this method runtime permissions need to be granted. no -g switch
 tryInstallingWithGradle(){
 	if [[ "$apkBuild" == "debug" ]]; then
 		w_echo "Building $apkBuild app. using gradle to install app apks" 
@@ -82,7 +84,7 @@ installAPK(){
 
 
 setup
-tryInstallingWithGradle
+#tryInstallingWithGradle
 
 
 

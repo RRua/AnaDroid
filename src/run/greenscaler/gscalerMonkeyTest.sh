@@ -3,7 +3,8 @@
 #TODO replace
 #ANADROID_PATH=$(pwd)
 source $ANADROID_PATH/src/settings/settings.sh
-
+prev_dir="$(dirname "$0" | xargs dirname )"
+source "$prev_dir/general.sh"
 #args
 monkey_seed=$1
 monkey_nr_events=$2
@@ -41,6 +42,10 @@ buildMonkeyTestCommand(){
 	##################
 }
 
+
+clearLogCat
 buildMonkeyTestCommand
 python "$ANADROID_PATH/src/profilers/greenScaler/GreenScaler/greenscaler.py" "$package" $mkey_command
-exit $?
+RET=$(echo $?)
+dumpLogCatToFile
+exit $RET

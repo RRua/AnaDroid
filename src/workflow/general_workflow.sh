@@ -20,7 +20,8 @@ registInstalledPackages(){
 }
 
 uninstallInstalledPackagesDuringTest(){
-	diff "$ANADROID_PATH/temp/start_packages.log" "$ANADROID_PATH/temp/end_packages.log" | grep -E "^>" | sed 's/.*package://g' | xargs -I{} adb shell pm uninstall {}
+	echo "bou desinstalar"
+	diff "$ANADROID_PATH/temp/start_packages.log" "$ANADROID_PATH/temp/end_packages.log" | grep -E "^>" | tr -d '\r' | sed 's/.*package://g' | xargs -I{} adb shell pm uninstall {}
 }
 
 
@@ -261,12 +262,6 @@ assureConfiguredTestConditions(){
 	assureTestConditions
 }
 
-registInstalledPackages "start"
-adb install -r /Users/ruirua/repos/AnaDroid/demoProjects/SecUSo-privacy-friendly-todo-list/v1.0_src/SecUSo-privacy-friendly-todo-list-da8a429/_TRANSFORMED_/app/build/outputs/apk/app-debug.apk
-sleep 10
-registInstalledPackages "end"
-sleep 1
-uninstallInstalledPackagesDuringTest
 
 #used_cpu free_mem nr_procceses sdk_level api_level battery_temperature battery_voltage
 #tempDir="$ANADROID_PATH/temp"

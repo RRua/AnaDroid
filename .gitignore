@@ -9,3 +9,4 @@
 */migrations/*
 */_TRANSFORMED_/*
 temp/*
+*.pyc

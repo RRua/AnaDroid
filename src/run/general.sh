@@ -1,5 +1,15 @@
 
 
+
+clearLogCat(){
+	adb logcat -c
+}
+
+dumpLogCatToFile(){
+	adb logcat -d > "catlog.out"
+}
+
+
 initTrepnProfiler(){
 	w_echo "starting the profiler"
 	adb shell monkey -p com.quicinc.trepn -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1

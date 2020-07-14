@@ -37,6 +37,8 @@ fi
 
 
 
+
+
 runMonkeyTest(){
 	#e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-crashes --ignore-security-exceptions --throttle 10 $monkey_nr_events) &> $localDir/monkey.log"
 	e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle 100 $monkey_nr_events) &> $localDir/monkey.log)"
@@ -150,7 +152,7 @@ runBothModeTest(){
 	sleep 3
 	getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Both] $now Running monkey tests..."
-clearLogCat
+	clearLogCat
 	if [[ $trace != "-MethodOriented" ]]; then
 		adb shell am broadcast -a com.quicinc.Trepn.UpdateAppState -e com.quicinc.Trepn.UpdateAppState.Value 1 -e com.quicinc.Trepn.UpdateAppState.Value.Desc "started"
 	fi 

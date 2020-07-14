@@ -8,10 +8,12 @@
 ####																		####
 ################################################################################
 
+DEFAULT_CONFIG_FILE=$ANADROID_PATH/testConfig.cfg
+
 function setBrightness(){
 	local level=$1
 	
-		adb shell settings put system screen_brightness_mode 1
+		adb shell settings put system screen_brightness_mode 0
 	
 		#adb shell settings put system screen_brightness_mode 0
 	
@@ -88,6 +90,42 @@ function undoKeepScreenAlwaysOnWhilePlugged(){
 }
 
 
+
+function disableAutoRotate(){
+	adb shell settings put system accelerometer_rotation 0  #disable auto-rotate
+
+}
+
+function enableAutoRotate(){
+	adb shell settings put system accelerometer_rotation 1  # auto-rotate
+
+}
+
+
+function setPortraitMode(){
+
+	adb shell settings put system user_rotation 0
+
+	#user_rotation Values:
+	#0           # Protrait 
+	#1           # Landscape
+	#2           # Protrait Reversed
+	#3   
+
+}
+
+function setLandscapeMode(){
+
+	adb shell settings put system user_rotation 1
+	#user_rotation Values:
+	#0           # Protrait 
+	#1           # Landscape
+	#2           # Protrait Reversed
+	#3   
+
+}
+
+
 ### BLUETOOTH 
 
 function isBluetoothOn(){
@@ -103,6 +141,7 @@ function changeBluetoothState(){
 	local new_state=$1
 	if [[ "$new_state" == "0" ]]; then
 		adb shell su -c "pm disable  com.android.bluetooth"
+		adb shell settings put global bluetooth_on 0
 	else
 		adb shell su -c "pm enable com.android.bluetooth"
 		adb shell su -c "service call bluetooth_manager 6"
@@ -205,7 +244,7 @@ x='''function testAllFunctions(){
 
 loadStateFromConfigFile(){
 	config_id=$1
-	config_file=$ANADROID_PATH/testConfig.cfg
+	config_file=$DEFAULT_CONFIG_FILE
 	echo $(grep "$1" testConfig.cfg | cut -f2  -d\= | cut -f1 -d# )
 
 }
@@ -225,6 +264,20 @@ assureTestConditions(){
 	expectable_screen_state=$(loadStateFromConfigFile "screen_always_on" )
 	test "$expectable_screen_state" = "0"  && undoKeepScreenAlwaysOnWhilePlugged
 	test "$expectable_screen_state" = "1"  && keepScreenAlwaysOnWhilePlugged
+	
+
+	# screen auto rotate
+	expectable_screen_auto_rotate=$(loadStateFromConfigFile "screen_auto_rotate" )
+	test "$expectable_screen_auto_rotate" = "0"  && disableAutoRotate
+	test "$expectable_screen_auto_rotate" = "1"  && enableAutoRotate
+
+
+	# screen orientation
+	expectable_screen_orientation=$(loadStateFromConfigFile "screen_orientation" )
+	test "$expectable_screen_orientation" = "0"  && setPortraitMode
+	test "$expectable_screen_orientation" = "1"  && setLandscapeMode
+
+
 
 	# wifi
 	expectable_wifi_state=$(loadStateFromConfigFile "wifi_state" )
