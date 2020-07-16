@@ -8,7 +8,7 @@
 ####																		####
 ################################################################################
 
-DEFAULT_CONFIG_FILE=$ANADROID_PATH/testConfig.cfg
+DEFAULT_CONFIG_FILE=$ANADROID_PATH/defaultTestConfig.cfg
 
 function setBrightness(){
 	local level=$1

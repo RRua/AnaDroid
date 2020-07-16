@@ -230,6 +230,9 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
+	
+	defineTestConfigurations "$FOLDER/$tName/appPermissions.json"
+
 	registInstalledPackages "start"
 	#install on device
 	w_echo "[APP INSTALLER] Installing the apps on the device"
@@ -255,6 +258,7 @@ prepareAndInstallApp(){
 		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
+		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$PACKAGE
 	fi
 	installed_apk=$(cat $localDir/installedAPK.log)
 	APK=$installed_apk

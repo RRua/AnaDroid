@@ -260,6 +260,10 @@ prepareAndInstallApp(){
 	cp "$res_folder/device.json" "$localDir"
 	cp "$FOLDER/$tName/appPermissions.json" "$localDir"
 	cp "$res_folder/config/GSlogin.json" "$localDir"
+	
+	# define test conditions according to the permissions declared in manifest file
+	defineTestConfigurations "$FOLDER/$tName/appPermissions.json"
+
 	registInstalledPackages "start"
 	#install on device
 	#./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir  #COMMENT, EVENTUALLY...
@@ -285,6 +289,7 @@ prepareAndInstallApp(){
 		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
+		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$PACKAGE
 	fi
 	installed_apk=$(cat $localDir/installedAPK.log)
 	APK=$installed_apk

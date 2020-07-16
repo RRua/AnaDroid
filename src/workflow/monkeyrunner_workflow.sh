@@ -239,6 +239,11 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp "$FOLDER/$tName/$GREENSOURCE_APP_UID.json" $localDir
 	cp "$FOLDER/$tName/appPermissions.json" $localDir
+	
+	# define test conditions according to the permissions declared in manifest file
+	defineTestConfigurations "$FOLDER/$tName/appPermissions.json"
+
+
 	registInstalledPackages "start"
 	IGNORE_RUN=""
 	#install on device
@@ -265,7 +270,7 @@ prepareAndInstallApp(){
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		installed_apk=$(cat $localDir/installedAPK.log)
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
-		
+		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$PACKAGE
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
 	

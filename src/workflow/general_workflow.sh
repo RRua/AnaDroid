@@ -20,7 +20,7 @@ registInstalledPackages(){
 }
 
 uninstallInstalledPackagesDuringTest(){
-	echo "bou desinstalar"
+
 	diff "$ANADROID_PATH/temp/start_packages.log" "$ANADROID_PATH/temp/end_packages.log" | grep -E "^>" | tr -d '\r' | sed 's/.*package://g' | xargs -I{} adb shell pm uninstall {}
 }
 
@@ -257,11 +257,22 @@ getBattery(){
 	fi
 }
 
+
+
+
 assureConfiguredTestConditions(){
 	w_echo "Assuring defined test conditions"
 	assureTestConditions
 }
 
+
+# define test conditions according to the permissions declared in manifest file
+defineTestConfigurations(){
+	w_echo "Infering test conditions"
+	app_permissions_file=$1
+	test -n "$app_permissions_file" && python  "$ANADROID_PATH/src/others/defineTestConditions.py" "$(realpath $app_permissions_file)"
+	
+}
 
 #used_cpu free_mem nr_procceses sdk_level api_level battery_temperature battery_voltage
 #tempDir="$ANADROID_PATH/temp"
