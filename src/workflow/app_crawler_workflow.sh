@@ -43,7 +43,7 @@ logStatus="off"
 SLEEPTIME=10 # 10 s 
 
 
-test_thresold=1
+test_thresold=3
 
 
 
