@@ -191,9 +191,14 @@ getFirstAppVersion(){
 
 	#version_file="${f}/version.log"
 	version_file=$( find "${DIR}" -maxdepth 2 -type f -name version.log | head -1 )
+	is_os_app=$( echo ${DIR} | xargs basename | grep ".*_src$" )
 	if [[ -f "$version_file" ]]; then
 		debug_echo "achei ficheiro versão"
 		appVersion=$(head -1 "$version_file")
+	
+	elif [[ -n "$is_os_app" ]]; then
+		#if it is an app version identified as <version-code>_src
+		appVersion=$(echo "$is_os_app" | sed 's/_src//g' )
 	else
 		gradle_files=$(find "${f}/${prefix}" -maxdepth 1 -name "build.gradle" )
 		for i in $gradle_files; do
