@@ -43,7 +43,7 @@ logStatus="off"
 SLEEPTIME=10 # 10 s 
 
 
-test_thresold=1
+test_thresold=3
 
 
 
@@ -310,7 +310,7 @@ pullTestResultsFromDevice(){
 
 runCrawlerTests(){
 
-	for (( test_index = 0; test_index < $test_thresold; test_index++ )); do
+	for (( test_index = 1; test_index <= $test_thresold; test_index++ )); do
 		#statements´
 		assureConfiguredTestConditions
 		debug_echo "$ANADROID_SRC_PATH/run/$PROFILER/runAppCrawlerTest.sh\" \"$test_index\" \"$trace\" \"$NEW_PACKAGE\" \"$installed_apk\" \"$localDir\" \"$deviceDir\""		

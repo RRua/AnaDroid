@@ -288,7 +288,7 @@ prepareAndInstallApp(){
 runMonkeyRunnerTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
-	for (( i = 0; i < ${#MonkeyRunnerScriptsList[@]}; i++ )); do
+	for (( i = 1; i <= ${#MonkeyRunnerScriptsList[@]}; i++ )); do
 	#for i in ${MonkeyRunnerScriptsList[@]}; do
 		w_echo "APP: $ID |  Script : $i"
 		assureConfiguredTestConditions

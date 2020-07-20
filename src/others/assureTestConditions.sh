@@ -118,7 +118,7 @@ function setLandscapeMode(){
 
 	adb shell settings put system user_rotation 1
 	#user_rotation Values:
-	#0           # Protrait 
+	#0           # Portrait 
 	#1           # Landscape
 	#2           # Protrait Reversed
 	#3   
