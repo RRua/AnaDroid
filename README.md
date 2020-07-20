@@ -1,14 +1,23 @@
 # AnaDroid
 
-This tool was developed to be used by Android developers, as well as gather and centralize its results in an open-access repository named [GreenSource](http://greenlab.di.uminho.pt/greensource/). 
+This tool was developed to be used by Android developers to test their apps' perfomance, using a wide set of testing frameworks with minimal effort. It can automatically test an application and its source code, collecting a vast number of metrics related to the application's performance, namely regarding energy performance. The AnaDroid offers a generic way of integrating the ability to measure the energy  and resources usage of Android applications. This tool can be used during the development process to test and monitor the execution of Android applications. It is the evolution of the [GreenDroid](https://github.com/greensoftwarelab/GreenDroid) framework. 
 
-The AnaDroid offers a generic way of integrating the ability to measure the energy  and resources usage of Android applications. This tool can be used during the development process to test and monitor the execution of Android applications. It is the evolution of the [GreenDroid](https://github.com/greensoftwarelab/GreenDroid) framework. 
+ 
+AnaDroid is the ideal tool for testing applications in bulk and establishing comparisons between them, as it is able to record and define system and device states under test, ensuring that a possible comparison between comparable applications can be made due to having been evaluated under the same test conditions.
+Optionally, the developer can share its results, using AnaDroid to send its data to  [GreenSource](http://greenlab.di.uminho.pt/greensource/) open-access repository.
 
-## What it does?
-This tool automatically instruments the source code of Android Projects in order include calls to an energy profiler. Then automatically builds the APK and installs it in an physical device. Then, using an pre-defined testing framework, is able to monitor the execution and invocation of source code blocks (methods/functions), estimating its energy and resources (hardware and sensors) usage/consumption.
+## How it works
 
-In the end of the execution,  it uninstalls the AUT (App Under Test) and presents the results to the developer. It also sends (if enabled) the results to the [GreenSource](http://greenlab.di.uminho.pt/greensource/) repository. 
+This tool can be used to perform both blackbox and whitebox testing. To estimate energy consumption, it uses Trepn Profiler or/and Greenscaler. In order to perform tests over an app, the user can select one of the following testing frameworks:
+- Monkey;
+- Monkeyrunner;
+- JUnit (or any other junit-based, like Espresso or Robotium);
+- [RERAN](https://www.androidreran.com/);
+- [APP CRAWLER](https://developer.android.com/training/testing/crawler);
 
+
+
+When using the whitebox approach, AnaDroid automatically instruments the application source code in order include calls to Energy profiler and perform method tracing. Then automatically builds the APK and installs it in an physical device. Then, using an pre-defined testing framework, is able to monitor the execution and invocation of source code blocks (methods/functions), estimating its energy and resources (hardware and sensors) usage/consumption.
 
 ## Extracted Metrics:
 The AnaDroid framework is able to extract all of the following metrics. The dynamic metrics (+) can be extracted at different levels: Application, Test, Class or Method level.
@@ -100,9 +109,10 @@ The required tools are the following (if necessary):
 - Android Sdk;
 - [SDKMAN](https://sdkman.io/);
 - [Gradle](https://gradle.org/).
+- [Trepn Profiler](https://play.google.com/store/apps/details?id=com.quicinc.trepn).
 
 This command will also setup your device (if connected to your machine) so it can be prepared to monitor the execution of Android applications. It will create a support directory in the device (virtual) external storage and install (via USB) some auxiliary applications:
-- [Trepn Profiler](https://play.google.com/store/apps/details?id=com.quicinc.trepn).
+
 
 ```
 cd AnaDroid
@@ -110,7 +120,7 @@ make install
 ```
 ### Set Environment variables
 
-In order to AnaDroid can be automatically used in further sessions, you must add at least the following instructions (if not present)in your .bashrc or .bash_profile file:
+In order to AnaDroid can be automatically used in further sessions, you must set at least the following variables (if not present) to your .bashrc or .bash_profile file:
 ```
 export ANADROID_PATH=<Absolute-path-to-AnaDroid-folder>
 export PATH=$PATH:$ANADROID_PATH
