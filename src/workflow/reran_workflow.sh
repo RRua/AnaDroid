@@ -262,6 +262,7 @@ prepareAndInstallApp(){
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
+		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$(getInstalledPackage) && PACKAGE=$NEW_PACKAGE
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$PACKAGE
 	fi
@@ -279,7 +280,6 @@ pullTestResultsFromDevice(){
 		adb pull "$deviceExternal/anadroidDebugTrace.trace" "$localDir/"
 		dmtracedump -o "$localDir/anadroidDebugTrace.trace" | grep  "$PACKAGE.*" | grep -E "^[0-9]+ ent" | grep -o "$PACKAGE.*" > "$localDir/TracedMethods$test_id.txt"
 		python "$ANADROID_SRC_PATH/others/JVMDescriptorToJSON.py" "$localDir/TracedMethods$test_id.txt"
-		debug_echo "dumpei"
 	else
 		adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' |  egrep -Eio "TracedMethods.txt" |xargs -I{} adb pull $deviceDir/{} $localDir
 		mv $localDir/TracedMethods.txt "$localDir/TracedMethods$test_id.txt"
