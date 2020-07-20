@@ -57,7 +57,7 @@ SLEEPTIME=10 # 10 s
 # TODO put in monkey config file
 min_monkey_runs=10 #20
 threshold_monkey_runs=15 #50
-number_monkey_eves=100
+number_monkey_events=100
 min_coverage=40
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 DEBUG="TRUE" #"TRUE" 
