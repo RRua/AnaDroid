@@ -264,6 +264,8 @@ prepareAndInstallApp(){
 		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
 		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$PACKAGE
+		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$(getInstalledPackage) && PACKAGE=$NEW_PACKAGE
+
 		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
 	installed_apk=$(cat $localDir/installedAPK.log)

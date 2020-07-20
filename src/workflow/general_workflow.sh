@@ -19,6 +19,13 @@ registInstalledPackages(){
 	adb shell pm list packages > "$ANADROID_PATH/temp/${stage}_packages.log" 
 }
 
+getInstalledPackage(){
+	 adb shell pm list packages > "$ANADROID_PATH/temp/temp_packages.log" 
+	 echo "$(diff temp/start_packages.log  temp/temp_packages.log  | grep -E "^>" | tr -d '\r' | sed 's/.*package://g')" 
+}
+
+
+
 uninstallInstalledPackagesDuringTest(){
 
 	diff "$ANADROID_PATH/temp/start_packages.log" "$ANADROID_PATH/temp/end_packages.log" | grep -E "^>" | tr -d '\r' | sed 's/.*package://g' | xargs -I{} adb shell pm uninstall {}
