@@ -110,7 +110,7 @@ installAndroidSDK(){
 	tool_name="ANDROID SDK"
 	URL="https://developer.android.com/studio/#downloads"
 	#URL_DOWNLOAD="https://dl.google.com/android/repository/sdk-tools-darwin-4333796.zip"
-	command_to_check=$( echo $ANDROID_HOME )
+	command_to_check=$( echo "xx" )
 	exists=$(echo $command_to_check | grep "ndroid")
 	#original_tool=$(echo $com | cut -f1 -d\ )
 	if [[ ! -z $exists ]]; then
