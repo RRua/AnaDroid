@@ -94,12 +94,12 @@ IFS='%'
 #ID=${arr[*]: -1} # ID OF of the application (name of respective folder )
 
 if [ "$projtype" == "SDK" ]; then
-	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" | while read dir; do echo $dir; done | grep -v $pathTests))
+	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" | grep -v "crawl_output" | while read dir; do echo $dir; done | grep -v $pathTests))
 	testAPK=($(find "$pathTests" -name "*-$apkBuild.apk"))
 
 elif [ "$projtype" == "GRADLE" ]; then
-	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
-	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | while read dir; do echo $dir; done | grep -v "instant-run" )
+	appAPK=($(find "$pathProject" -type f -name "*-$apkBuild.apk" -print | grep -v "crawl_output" | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
+	testAPK=$(find "$pathProject" -type f  -name "*$apkBuild-androidTest*.apk" -print | grep -v "crawl_output" |while read dir; do echo $dir; done | grep -v "instant-run" )
 	#testAPK=($(find "$pathProject" -name "*$apkBuild-androidTest*.apk"))
 fi
 IFS=$(echo -en "\n\b")
@@ -107,15 +107,15 @@ IFS=$(echo -en "\n\b")
 OK="0"
 
 if [[  "${#appAPK[@]}" == "0" ]]; then
-	appAPK=($(find "$pathProject" -type f -name "*.apk" -print | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
-	testAPK=$(find "$pathProject" -type f  -name "*-androidTest*.apk" -print | while read dir; do echo $dir; done | grep -v "instant-run" )
+	appAPK=($(find "$pathProject" -type f -name "*.apk" -print |grep -v "crawl_output" | while read dir; do echo $dir; done | grep -v $pathTests | grep -v "instant-run"))
+	testAPK=$(find "$pathProject" -type f  -name "*-androidTest*.apk" -print | grep -v "crawl_output" |while read dir; do echo $dir; done | grep -v "instant-run" )
 	
 fi
 if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 
 	if [ "${#appAPK[@]}" -ge 1 ] && [ "${#testAPK[@]}" == "1" ]; then
 		pAux=$(echo "${testAPK[0]}" | $SED_COMMAND -r "s#\/[a-zA-Z0-9-]+-$apkBuild.+.apk#/#g")
-		appAPK=($(find "$pAux" -name "*-$apkBuild*.apk"))
+		appAPK=($(find "$pAux" -name "*-$apkBuild*.apk" | grep -v "crawl_output" ))
 		if [ "${#appAPK[@]}" == 1 ]; then
 			OK="1"
 		fi
@@ -124,7 +124,7 @@ if [ "${#appAPK[@]}" != "1" ] || [ "${#testAPK[@]}" != "1" ]; then
 		pAux=$(echo "${appAPK[0]}" | $SED_COMMAND -r "s#\/[a-zA-Z0-9-]+-$apkBuild.+.apk#/#g")
 		ppAux=$(dirname "$pAux")
 		echo "folder is -> $ppAux"
-		bqq=($(find "$ppAux" -name "*$apkBuild-androidTest*.apk"))
+		bqq=($(find "$ppAux" -name "*$apkBuild-androidTest*.apk" | grep -v "crawl_output" ))
 		echo "testApk -> $bqq"
 		if [ "${#bqq[@]}" -ge "1" ]; then
 			OK="1"
