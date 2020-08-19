@@ -55,8 +55,8 @@ logStatus="off"
 SLEEPTIME=10 # 10 s 
 
 # TODO put in monkey config file
-min_monkey_runs=1 #20
-threshold_monkey_runs=0 #50
+min_monkey_runs=5 #20
+threshold_monkey_runs=3 #50
 number_monkey_events=100
 min_coverage=50
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
@@ -218,9 +218,20 @@ getFirstAppVersion(){
 }
 
 analyzeResults(){
+	rejection_0_power_samples_threshold=20 # 20 % 
 	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"
 	w_echo "Analyzing results .."
-	java -jar $GD_ANALYZER $trace "$projLocalDir/" $monkey $GREENSOURCE_URL
+	java -jar $GD_ANALYZER $trace "$projLocalDir/" $monkey $GREENSOURCE_URL 2>&1 | tee "$temp_folder/analyzerResult.out"
+	power0_samples_percentage=$( grep "power samples" "$temp_folder/analyzerResult.out" | cut -f2 -d\: |  grep -Eo '[0-9]+([.][0-9]+)?' )			
+	is_bigger_than_thresold=$( echo "$power0_samples_percentage > $rejection_0_power_samples_threshold" | bc -l )
+	if [[ "$is_bigger_than_thresold" == "1" ]]; then
+		#if  % of power samples with 0 value  > threshold
+		# reboot phone and then unlock
+		rebootAndUnlockPhone
+	else 
+		i_echo "Low percentage of 0 power samples. continuing..."
+	fi
+
 				
 }
 
@@ -302,8 +313,8 @@ pullTestResultsFromDevice(){
 	e_echo "Pulling results from device..."
 	adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
 	mv catlog.out "$localDir/catlog$test_id.out"
-	mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$test_id.csv
-	analyzeCSV $localDir/GreendroidResultTrace$test_id.csv
+	mv "$localDir/GreendroidResultTrace0.csv" "$localDir/GreendroidResultTrace$test_id.csv"
+	analyzeCSV "$localDir/GreendroidResultTrace$test_id.csv"
 		
 }
 
@@ -311,7 +322,7 @@ pullTestResultsFromDevice(){
 runMonkeyTests(){
 	########## RUN TESTS 1 phase ############
 	trap 'quit $NEW_PACKAGE $TESTPACKAGE $f' INT
-	for i in $seeds20; do
+	for i  in $seeds20; do
 		
 		assureConfiguredTestConditions
 
@@ -350,6 +361,7 @@ runMonkeyTests(){
 			
 			fi			
 		else
+			i_echo "pulling results of  test $i"
 			pullTestResultsFromDevice "$i"
 			totaUsedTests=$(($totaUsedTests + 1))						
 			if [ "$totaUsedTests" -eq 10 ]; then

@@ -214,11 +214,18 @@ getFirstAppVersion(){
 }
 
 analyzeResults(){
+	rejection_0_power_samples_threshold=20 # 20 % 
 	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"
 	#w_echo "Analyzing results .."
 	debug_echo "java -jar $GD_ANALYZER \"$trace\" \"$projLocalDir/\" \"-${TESTING_FRAMEWORK}\" \"$GREENSOURCE_URL\""
-	java -jar "$GD_ANALYZER" "$trace" "$projLocalDir/" "-${TESTING_FRAMEWORK}" "$GREENSOURCE_URL"
-				
+	java -jar "$GD_ANALYZER" "$trace" "$projLocalDir/" "-${TESTING_FRAMEWORK}" "$GREENSOURCE_URL" 2>&1 | tee "$temp_folder/analyzerResult.out"
+	power0_samples_percentage=$( grep "power samples" "$temp_folder/analyzerResult.out" | cut -f2 -d\: |  grep -Eo '[0-9]+([.][0-9]+)?' )			
+	is_bigger_than_thresold=$( echo "$power0_samples_percentage > $rejection_0_power_samples_threshold" | bc -l )
+	if [[ "$is_bigger_than_thresold" == "1" ]]; then
+		#if  % of power samples with 0 value  > threshold
+		# reboot phone and then unlock
+		rebootAndUnlockPhone
+	fi
 }
 
 

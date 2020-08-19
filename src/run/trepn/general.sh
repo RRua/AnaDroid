@@ -35,7 +35,11 @@ dumpLogCatToFile(){
 }
 
 
-
+grantPermissions(){
+	package=$1
+	adb shell pm grant $package android.permission.WRITE_EXTERNAL_STORAGE
+	adb shell pm grant $package android.permission.READ_EXTERNAL_STORAGE
+}
 
 gracefullyQuitApp(){
 	## essentiall to make foreground activity call ondestroy()

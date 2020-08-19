@@ -20,6 +20,8 @@ totaUsedTests=0
 machine=""
 getSO machine
 
+# 
+delay_bt_events=100
 
 
 if [ "$machine" == "Mac" ]; then
@@ -41,8 +43,8 @@ fi
 
 runMonkeyTest(){
 	#e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-crashes --ignore-security-exceptions --throttle 10 $monkey_nr_events) &> $localDir/monkey.log"
-	e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle 100 $monkey_nr_events) &> $localDir/monkey.log)"
-	($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle 100 $monkey_nr_events) &> $localDir/monkey.log 
+	e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle $delay_bt_events $monkey_nr_events) &> $localDir/monkey$monkey_seed.log)"
+	($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-security-exceptions --throttle $delay_bt_events $monkey_nr_events) &> $localDir/monkey$monkey_seed.log 
 	##################
 }
 
@@ -52,11 +54,12 @@ runTraceOnlyTest(){
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	clearLogCat
+	grantPermissions "$package"
 	w_echo "[Tracing]$now Running monkey tests..."
 	runMonkeyTest	
 	w_echo "[Tracing] stopped tests. "
 	
-	exceptions=$(grep "Exception" $localDir/monkey.log )
+	exceptions=$(grep "Exception" $localDir/monkey$monkey_seed.log )
 	if [[ -n "$exceptions"  ]]; then
 		# if an exception occured during test execution
 		e_echo "error while running -> error code : $RET"
@@ -111,7 +114,7 @@ clearLogCat
 	w_echo "[Measuring] stopped tests. "
 	getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 
-	exceptions=$(grep "Exception" $localDir/monkey.log )
+	exceptions=$(grep "Exception" $localDir/monkey$monkey_seed.log )
 	if [[ -n "$exceptions"  ]]; then
 		e_echo "error while running -> error code : $RET"
 		echo "$localDir,$monkey_seed" >> $logDir/timeoutSeed.log
@@ -142,6 +145,8 @@ dumpLogCatToFile
 runBothModeTest(){
 	adb shell "echo 0 > $deviceDir/GDflag"
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	grantPermissions "$package"
+
 	i_echo "actual seed -> $monkey_seed"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
@@ -166,7 +171,7 @@ runBothModeTest(){
 	getDeviceResourcesState "$localDir/end_state$monkey_seed.json"
 	w_echo "[Both] stopped tests. "
 
-	exceptions=$(grep "Exception" $localDir/monkey.log )
+	exceptions=$(grep "Exception" $localDir/monkey$monkey_seed.log )
 	if [[ -n "$exceptions"  ]]; then
 		e_echo "error while running -> error code : $RET"
 		echo "$localDir,$monkey_seed" >> $logDir/timeoutSeed.log
