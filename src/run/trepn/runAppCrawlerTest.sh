@@ -17,7 +17,7 @@ deviceDir=$6
 TAG="[APP CRAWLER TEST]"
 test_log_file="crawlerTestOutput.log"
 trepnFlag=0
-
+TIMEOUT=300
 logDir="$ANADROID_PATH/.ana/logs"
 LAUNCH_APP="TRUE"
 machine=""
@@ -77,7 +77,8 @@ function detectCrawlFinish(){
 runCrawlerTest(){
 	#e_echo "($TIMEOUT_COMMAND -s 9 $TIMEOUT adb shell monkey  -s $monkey_seed -p $package -v --pct-syskeys 0 --ignore-crashes --ignore-security-exceptions --throttle 10 $monkey_nr_events) &> $localDir/monkey.log"
 	detectCrawlFinish &
-	(java -jar "$ANADROID_PATH/src/testingFrameworks/app-crawler/crawl_launcher.jar" --apk-file "$installedAPK" --app-package-name "$package"  --android-sdk "$ANDROID_HOME") > "$test_log_file"
+	($TIMEOUT_COMMAND -s 9 $TIMEOUT java -jar "$ANADROID_PATH/src/testingFrameworks/app-crawler/crawl_launcher.jar" --apk-file "$installedAPK" --app-package-name "$package"  --android-sdk "$ANDROID_HOME") > "$test_log_file"
+	echo "Crawl finished. timeout" >> "$test_log_file"
 }
 
 runTraceOnlyTest(){
