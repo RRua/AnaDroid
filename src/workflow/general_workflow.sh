@@ -25,6 +25,12 @@ getInstalledPackage(){
 }
 
 
+rebootAndUnlockPhone(){
+	adb reboot
+	sleep 60
+	"$ANADROID_PATH/src/others/unlockPhone.sh" # exec command to unlock phone
+}
+
 
 uninstallInstalledPackagesDuringTest(){
 

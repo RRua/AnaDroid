@@ -85,6 +85,7 @@ runTraceOnlyTest(){
 	adb shell "echo -1 > $deviceDir/GDflag" # inform trepnlib to only trace methods
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
+	grantPermissions "$package"
 	w_echo "[Tracing]$now Running CRAWLER test"
 	clearLogCat
 	runCrawlerTest	
@@ -150,6 +151,7 @@ runBothModeTest(){
 	trepnFlag=0
 	adb shell "echo 0 > $deviceDir/GDflag"
 	i_echo "actual test -> $test_index"
+	grantPermissions "$package"
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler

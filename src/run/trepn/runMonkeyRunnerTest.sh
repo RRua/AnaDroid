@@ -40,6 +40,7 @@ runTraceOnlyTest(){
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
 	#getDeviceResourcesState "$localDir/begin_state$monkey_seed.json"
 	w_echo "[Tracing]$now Running Monkey Runner tests..."
+	grantPermissions "$package"
 	clearLogCat
 	runMonkeyRunnerTest	
 	w_echo "[Tracing] stopped tests. "
@@ -67,6 +68,7 @@ runTraceOnlyTest(){
 runMeasureOnlyTest(){
 	adb shell "echo 1 > $deviceDir/GDflag"
 	i_echo "actual seed -> $script_index"
+	grantPermissions "$package"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
 	sleep 1
@@ -113,6 +115,7 @@ runMeasureOnlyTest(){
 runBothModeTest(){
 	adb shell "echo 0 > $deviceDir/GDflag"
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	grantPermissions "$package"
 	i_echo "actual test index -> $script_index"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler

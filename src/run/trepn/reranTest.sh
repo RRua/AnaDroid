@@ -95,6 +95,7 @@ runTraceOnlyTest(){
 runMeasureOnlyTest(){
 	adb shell "echo 1 > $deviceDir/GDflag"
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	grantPermissions "$package"
 	i_echo "$TAG Replay test -> $replay_file"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
@@ -143,6 +144,7 @@ runMeasureOnlyTest(){
 runBothModeTest(){
 	adb shell "echo 0 > $deviceDir/GDflag"
 	(adb shell "> $deviceDir/TracedMethods.txt") >/dev/null 2>&1
+	grantPermissions "$package"
 	i_echo "actual test -> $replay_file"
 	now=$(date +"%d/%m/%y-%H:%M:%S")
 	initTrepnProfiler
