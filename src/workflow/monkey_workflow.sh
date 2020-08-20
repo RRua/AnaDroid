@@ -244,6 +244,7 @@ analyzeResults(){
 
 
 prepareAndInstallApp(){
+
 	localDir=$projLocalDir/$folderPrefix$now
 	$MKDIR_COMMAND -p $localDir
 	cp $temp_folder/* $localDir
@@ -297,6 +298,17 @@ prepareAndInstallApp(){
 	
 	installed_apk=$(cat $localDir/installedAPK.log)
 	APK=$installed_apk
+
+	logInstalledAPKVersionInfo "$NEW_PACKAGE" "$projLocalDir/version.log"
+	if [[ "$appVersion" == "0.0" ]]; then
+		# if it is still indetermined
+		appVersion=$(cat "$projLocalDir/version.log" )
+		test -z "$app_version" && app_version="0.0"
+		projLocalDir="$firstProjLocalDir/$appVersion"
+		current_local_dir=$localDir
+		localDir=$projLocalDir/$folderPrefix$now
+		mv "$current_local_dir" "$localDir"
+	fi
 	##########
 }
 
@@ -537,6 +549,7 @@ setupLocalResultsFolder(){
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
 
 	getFirstAppVersion $appVersion
+	firstProjLocalDir=$projLocalDir
 	projLocalDir="$projLocalDir/$appVersion"
 	$MKDIR_COMMAND -p $projLocalDir
 	$MKDIR_COMMAND -p $projLocalDir/oldRuns
