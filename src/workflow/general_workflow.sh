@@ -38,6 +38,14 @@ uninstallInstalledPackagesDuringTest(){
 }
 
 
+logInstalledAPKVersionInfo(){
+	installed_package=$1
+	target_file=$2
+	result_version=$(adb shell dumpsys package "$installed_package" | grep -E "versionName=" | sed 's/versionName=//g' | tr -d '[:space:]' )
+	echo "$result_version" > "$target_file"
+
+}
+
 setup(){
 	if [ "$trace" == "testoriented" ]; then
 		echo "-TestOriented"
