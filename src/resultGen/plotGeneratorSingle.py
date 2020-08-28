@@ -10,19 +10,15 @@ from termcolor import colored
 from collections import OrderedDict 
 
 
-sep_criteria="tudo" #"major" #"major"
+sep_criteria="major"
 
 min_csv_row_len=1
 
-test_type="all"
-sep_by_type=False #False
 
 class DefaultSemanticVersion(object):
     """docstring for DefaultSemanticVersion"""
     def __init__(self, full_version_id):
         super(DefaultSemanticVersion, self).__init__()
-        full_version_id=full_version_id.replace("`","").replace("_","")
-        print(full_version_id)
         if "-" in full_version_id:
             full_version_id=full_version_id.split("-")[0]
         if re.match(r'^v',full_version_id) or re.match(r'^V',full_version_id):
@@ -75,21 +71,6 @@ class DefaultSemanticVersion(object):
         return not eq(self,other) and ge(self,other)
 
 
-def getTestType(filename):
-    if "MonkeyTest" in filename:
-        return "monkey"
-    elif "CrawlerTest" in filename:
-        return "crawler"
-    elif "unner" in filename:
-        return "monkeyrunner"
-    elif "unit" in filename:
-        return "junit"
-    elif "eranTest" in filename:
-        return "reran"
-    else:
-        return "unknown"
-
-
 
 def bar_plot(x_data,y_data, x_label, y_label, plot_title):
     fig, ax = plt.subplots()
@@ -99,8 +80,6 @@ def bar_plot(x_data,y_data, x_label, y_label, plot_title):
     plt.xticks(y_pos, x_data)
     ax.set(xlabel=x_label, ylabel=y_label, title=plot_title)
     #x.set_xticklabels(x_label)
-    xtickNames = plt.setp(ax, xticklabels=x_data)
-    setp(xtickNames, rotation=90, fontsize=8)
     fig.savefig(str(plot_title).replace(" ","")+".png")
     
     plt.show()
@@ -114,7 +93,6 @@ def box_plot(x_data,y_data, x_label, y_label, plot_title):
     ax.boxplot( y_data)
     plt.xticks(y_pos, x_data)
     ax.set(xlabel=x_label, ylabel=y_label, title=plot_title)
-   
     #x.set_xticklabels(x_label)
     #fig.savefig(str(plot_title).replace(" ","")+".png")
     
@@ -126,8 +104,8 @@ def line_plot(x_data,y_data, x_label, y_label, plot_title):
     fig, ax = plt.subplots()
     ax.plot(x_data, y_data)
 
-    ax.set(xlabel=x_label, ylabel=y_label,title=plot_title)
-    
+    ax.set(xlabel=x_label, ylabel=y_label,
+           title=plot_title)
     ax.grid()
 
     fig.savefig(str(plot_title)+".png")
@@ -138,8 +116,7 @@ def fetch_all_data_csvs(folder):
     ret_list = []
     output = subprocess.check_output("find %s -type f -name \"all_data.csv\"" % folder, shell=True)
     for x in output.decode("utf-8").strip().split("\n"):
-        if test_type =="all" or test_type == getTestType(x):
-            ret_list.append(x)
+        ret_list.append(x)
     return ret_list
 
 
@@ -205,10 +182,10 @@ def generate_box_plot_from_metric(csvs_dict, m_type , title, xlabel, ylabel, x, 
         i=0
         for av,zz in v.items():
             i = i+1
-            criteria=(str(getCriteria(av, agg_criteria)) + "_" + zz[4]) if sep_by_type else str(getCriteria(av, agg_criteria)) 
+            criteria=getCriteria(av, agg_criteria)
             if criteria in consumption_vers_dict:
                 consumption = zz[x][y][z] if z != None else zz[x][y]
-                if consumption>=0: 
+                if consumption>0: 
                     consumption_vers_dict[criteria]['total'] = consumption_vers_dict[criteria]['total'] + float(consumption)
                     consumption_vers_dict[criteria]['count'] =   consumption_vers_dict[criteria]['count'] +1
                     consumption_vers_dict[criteria]['diff_apps'].add(app_id)
@@ -216,11 +193,11 @@ def generate_box_plot_from_metric(csvs_dict, m_type , title, xlabel, ylabel, x, 
                     consumption_vers_dict[criteria]['avg'] =  (consumption_vers_dict[criteria]['total'] +1)  / (consumption_vers_dict[criteria]['count'] +1)
             else:
                 consumption = zz[x][y] if z == None else zz[x][y][z]
-                if consumption>=0: 
+                if consumption>0: 
                     consumption_vers_dict[criteria] = {}
                     consumption_vers_dict[criteria]['count'] = 1
-                    consumption_vers_dict[criteria]['diff_apps']= set(app_id)
-                    #consumption_vers_dict[criteria]['diff_apps'].add(app_id)
+                    consumption_vers_dict[criteria]['diff_apps']= set()
+                    consumption_vers_dict[criteria]['diff_apps'].add(app_id)
                     consumption_vers_dict[criteria]['values']= [float(consumption)]
                     consumption_vers_dict[criteria]['total'] =  float(consumption)
                     consumption_vers_dict[criteria]['avg'] =  float(consumption)
@@ -229,20 +206,15 @@ def generate_box_plot_from_metric(csvs_dict, m_type , title, xlabel, ylabel, x, 
     consumption_vers_dict = dict(filter(lambda elem: elem[1]['count'] >= min_samples and  len(elem[1]['diff_apps']) >= min_apps , consumption_vers_dict.items()))
     consumption_vers_dict=OrderedDict(sorted(consumption_vers_dict.items()))
    
-    for v,vals in consumption_vers_dict.items():
-        print(v)
-        for value in consumption_vers_dict[v]['values']:
-            print(value)
-        print("--")
     
    #en_box.set_ylabel('Energy (J)')
-    #en_box.set_xlabel(xlabel)
-    bp_dict = en_box.boxplot(map(  lambda elem: elem[1]['values'] , consumption_vers_dict.items() ),   patch_artist=True)
+    en_box.set_xlabel(xlabel)
+    bp_dict = en_box.boxplot(map(  lambda elem: elem[1]['values'] , consumption_vers_dict.items() ))
     i = 0
     for line in bp_dict['medians']:
         x, y = line.get_xydata()[1] # top of median line
         xx, yy =line.get_xydata()[0] 
-        text(x, y, '%.2f' % y, fontsize=6) # draw above, centered
+        text(x, y, '%.2f' % y) # draw above, centered
         #text(xx, en_box.get_ylim()[1] * 0.98, '%.2f' % np.average(list_all_samples[i]), color='darkkhaki') 
         i = i +1
     #for line in bp_dict['boxes']:
@@ -250,18 +222,10 @@ def generate_box_plot_from_metric(csvs_dict, m_type , title, xlabel, ylabel, x, 
     #    text(x,y, '%.2f' % y, horizontalalignment='center', verticalalignment='top')      # below
         #x, y = line.get_xydata()[3] # bottom of right line
        #text(x,y, '%.2f' % y, horizontalalignment='center', verticalalignment='top')      # below
-    
-    # set colors
-    colors = ['lightblue', 'darkkhaki']
-    i=0
-    for bplot in bp_dict['boxes']:
-        i=i+1
-        bplot.set_facecolor(colors[i%2])
-
     xtickNames = plt.setp(en_box, xticklabels=consumption_vers_dict.keys())
-    plt.setp(xtickNames, rotation=90, fontsize=5)
+    plt.setp(xtickNames, rotation=0, fontsize=8)
     plt.savefig(str(title).replace(" ","")+".png")
-    plt.show()
+    fig1.show()
 
 
 
@@ -383,16 +347,15 @@ def generate_app_versions_dict(all_csvs_of_folder):
     print(all_csvs_of_folder)
     for csv_file in all_csvs_of_folder:
         app_id, app_version = split_app_and_version(csv_file)
-        test_type=getTestType(csv_file)
-        print(test_type)
+        print(app_version)
         header, sortedlist, avg_row, other_metrics = sort_csv_test_id(csv_file)
         if len( sortedlist) >= min_csv_row_len :
             #csvs_dict[csv_file] = (header, sortedlist, avg_row)
             if app_id in csvs_dict:
-                csvs_dict[app_id][DefaultSemanticVersion(app_version)] = (header, sortedlist, avg_row, other_metrics,test_type)
+                csvs_dict[app_id][DefaultSemanticVersion(app_version)] = (header, sortedlist, avg_row, other_metrics)
             else:
                 vv={}
-                vv[DefaultSemanticVersion(app_version)]= (header, sortedlist, avg_row, other_metrics,test_type)
+                vv[DefaultSemanticVersion(app_version)]= (header, sortedlist, avg_row, other_metrics)
                 csvs_dict[app_id] = vv
             #generate_box_plot(header,sortedlist)
         else:
@@ -413,7 +376,7 @@ def getCriteria(app_version, agg_criteria=None ):
     elif agg_criteria is "minor":
         return str(app_version.major) +"." + str(app_version.minor)
     else:
-        return "unknown"
+        return "batata"
 
 
 
@@ -427,7 +390,7 @@ def plotMetric(csvs_dict, m_type , title, xlabel, ylabel, x, y, z=None, agg_crit
         i=0
         for av,zz in v.items():
             i = i+1
-            criteria=(str(getCriteria(av, agg_criteria)) + "_" + zz[4]) if sep_by_type else str(getCriteria(av, agg_criteria)) 
+            criteria=getCriteria(av, agg_criteria)
             if criteria in consumption_vers_dict:
                 consumption = zz[x][y][z] if z != None else zz[x][y]
                 if consumption>0: 
@@ -441,11 +404,11 @@ def plotMetric(csvs_dict, m_type , title, xlabel, ylabel, x, y, z=None, agg_crit
                     consumption_vers_dict[criteria] = {}
                     consumption_vers_dict[criteria]['count'] = 1
                     consumption_vers_dict[criteria]['diff_apps']= set(app_id)
-                    #consumption_vers_dict[criteria]['diff_apps'].add(app_id)
-                    consumption_vers_dict[criteria]['total'] =  float(consumption)
+                    consumption_vers_dict[criteria]['diff_apps'].add(app_id)
+                    #consumption_vers_dict[criteria]['total'] =  float(consumption)
                     consumption_vers_dict[criteria]['avg'] =  float(consumption)
     
-
+  
     consumption_vers_dict = dict(filter(lambda elem: elem[1]['count'] >= min_samples and  len(elem[1]['diff_apps']) >= min_apps , consumption_vers_dict.items()))
     consumption_vers_dict=OrderedDict(sorted(consumption_vers_dict.items()))
     
@@ -457,23 +420,21 @@ def buildPlots(csvs_dict,criteria=None, filter_zeros=False, min_samples=1, min_a
     plotMetric(csvs_dict, 'avg', "LOC across versions" , "versions" , "#LOC",3,5,1, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
     plotMetric(csvs_dict, 'avg', "Method Coverage across versions" , "versions" , "%",3,4,1, agg_criteria=criteria, filter_zeros=filter_zeros , min_samples=min_samples  , min_apps=min_apps )
     plotMetric(csvs_dict, 'avg', "avg Memory across versions" , "versions" , "Mem(kB)",2,4 ,z=None, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
-    plotMetric(csvs_dict, 'avg', "Elapsed time" , "versions" , "time (s)",2,2 ,z=None, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
 
 def buildBoxPlots(csvs_dict,criteria=None, filter_zeros=False, min_samples=1, min_apps=5):
-    generate_box_plot_from_metric(csvs_dict, 'avg', "Energy across versions(%s)" %criteria , "versions" , "Energy(J)",2,1 ,z=None, agg_criteria=criteria, filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
-    generate_box_plot_from_metric(csvs_dict, 'avg', "LOC across versions(%s)" %criteria , "versions" , "#LOC",3,5,1, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
-    generate_box_plot_from_metric(csvs_dict, 'avg', "Method Coverage across versions(%s)" %criteria , "versions" , "%",3,4,1, agg_criteria=criteria, filter_zeros=filter_zeros , min_samples=min_samples  , min_apps=min_apps )
-    generate_box_plot_from_metric(csvs_dict, 'avg', " Memory across versions(%s)" %criteria , "versions" , "Mem(kB)",2,4 ,z=None, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
-    generate_box_plot_from_metric(csvs_dict, 'wtver', "elapsed time(%s)" %criteria , "versions" , "time (s)",2,2 ,z=None, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
+    generate_box_plot_from_metric(csvs_dict, 'avg', "avg Energy across major versions" , "versions" , "Energy(J)",2,1 ,z=None, agg_criteria=criteria, filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
+    generate_box_plot_from_metric(csvs_dict, 'avg', "LOC across versions" , "versions" , "#LOC",3,5,1, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
+    generate_box_plot_from_metric(csvs_dict, 'avg', "Method Coverage across versions" , "versions" , "%",3,4,1, agg_criteria=criteria, filter_zeros=filter_zeros , min_samples=min_samples  , min_apps=min_apps )
+    generate_box_plot_from_metric(csvs_dict, 'avg', "avg Memory across versions" , "versions" , "Mem(kB)",2,4 ,z=None, agg_criteria=criteria , filter_zeros=filter_zeros , min_samples=min_samples , min_apps=min_apps )
 
 if __name__== "__main__":
     if len(sys.argv) > 1:
         device_folder = sys.argv[1]
         all_csvs_of_folder = fetch_all_data_csvs(device_folder)
         csvs_dict = generate_app_versions_dict(all_csvs_of_folder)
-        #buildPlots(csvs_dict, criteria="minor", filter_zeros=True, min_samples=5, min_apps=5)
+        #buildPlots(csvs_dict, criteria="major", filter_zeros=True, min_samples=5, min_apps=5)
         #generate_test_behaviour_graphs(csvs_dict)
-        buildBoxPlots(csvs_dict, criteria=sep_criteria, filter_zeros=True, min_samples=3, min_apps=3)
+        buildBoxPlots(csvs_dict, criteria="major", filter_zeros=True, min_samples=5, min_apps=5)
         #plt.show()
     else:
         print ("bad arg len")

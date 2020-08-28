@@ -35,6 +35,9 @@ dumpLogCatToFile(){
 }
 
 
+
+
+
 grantPermissions(){
 	package=$1
 	adb shell pm grant $package android.permission.WRITE_EXTERNAL_STORAGE

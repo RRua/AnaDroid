@@ -1,10 +1,14 @@
 
-import sys
+import sys,re
 
 class DefaultSemanticVersion(object):
 	"""docstring for DefaultSemanticVersion"""
 	def __init__(self, full_version_id):
 		super(DefaultSemanticVersion, self).__init__()
+		if full_version_id.contains("-"):
+			full_version_id=full_version_id.split("-")[0]
+		if re.match(r'^v[0-9]',full_version_id):
+            full_version_id = re.sub(r'^v',"", full_version_id)
 		ll=full_version_id.split(".")
 		if len(ll)>1:
 			self.major=int(ll[0])
@@ -22,7 +26,32 @@ class DefaultSemanticVersion(object):
 
 	def __repr__(self):
 		return str(self)
-		
+	
+	def __eq__(self, other):
+		return self.major == other.major and self.major == other.minor and self.major == other.patch
+
+	def __ne__(self, other):
+		return not eq(self,other)
+
+	def __le__(self, other):
+		return eq(self,other) or lt(self,other)
+	
+	def __lt__(self, other):
+		if self.major < other.major:
+			return True
+		else if self.major == other.major:
+			if self.minor < other.minor:
+				return True
+			else if self.minor == other.minor:
+				if self.patch < self.patch:
+					return True
+		return False
+
+	def __ge__(self, other):
+		return not lt(self,other) 
+
+	def __gt__(self, other):
+		return not eq(self,other) and ge(self,other)
 
 
 class VersionInfo(object):
@@ -33,6 +62,7 @@ class VersionInfo(object):
 		self.artifact_name=artifact_name
 		self.type=ttype
 		self.build=build
+
 
 
 

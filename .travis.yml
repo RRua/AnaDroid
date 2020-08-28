@@ -1,0 +1,10 @@
+matrix:
+  include:
+    - language: python
+      python: 3.6
+
+    - language: bash
+
+notifications:
+  email:
+    - rui.a.rua@inesctec.pt

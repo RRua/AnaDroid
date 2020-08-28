@@ -25,7 +25,8 @@ done
 '''
 # remover as que têm menos de 3 v
 
-xx='''for f in $(find modified_results/ -maxdepth 1  ! -path modified_results/ ); do 
+#xx='''
+for f in $(find modified_results/ -maxdepth 1  ! -path modified_results/ ); do 
 	#echo "efe - $f"
 	version_count=$(find $f -maxdepth 1 ! -path $f -type d  | wc -l)
 	#echo "$f tem $version_count versoes"
@@ -33,10 +34,11 @@ xx='''for f in $(find modified_results/ -maxdepth 1  ! -path modified_results/ )
 		echo "tem poucas"
 		rm -rf "$f"
 	fi
-done'''
+done
+#'''
 
 #remover as que têm menos de x testes
-x='''for app_folder in $(find modified_results/ -maxdepth 1  ! -path modified_results/ ); do 
+for app_folder in $(find modified_results/ -maxdepth 1  ! -path modified_results/ ); do 
 	#for version_folder in $(find $app_folder -maxdepth 1  ! -path $app_folder ); do
 	for version_folder in $(find "$app_folder" -maxdepth 1 ! -path "$app_folder" -type d ); do
 		#statements
@@ -52,7 +54,7 @@ x='''for app_folder in $(find modified_results/ -maxdepth 1  ! -path modified_re
 		fi
 	done
 done
-'''
+
 
 # to generate resuls again with analyzer
 for app_folder in $(find modified_results/ -maxdepth 1  ! -path modified_results/ ); do 

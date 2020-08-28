@@ -7,11 +7,13 @@ import io
 import json
 from termcolor import colored
 import subprocess
-output_folder = '/Users/ruirua/repos/Anadroid/modified_results/'
-list_of_fildes = ['cpuloadnormalized','memoryusage','energyconsumed','elapsedtime']
-all_fildes = ['begin_used_cpu','batteryremaining','cpu1load','cpu4load','begin_main_cpu_freq','cpu3frequency','begin_nr_procceses','begin_nr_files_keyboard_folder','end_ischarging','memoryusage','end_used_mem_kernel','cpu1frequency','cpu2load','cpuloadnormalized','end_main_cpu_freq','end_battery_temperature','end_used_cpu','begin_keyboard','batterystatus','begin_battery_temperature','begin_used_mem_kernel','cpuload','batterypower','end_nr_files_keyboard_folder','applicationstate','begin_ischarging','begin_used_mem_pss','gpuload','cpu4frequency','gpufrequency','begin_battery_level','cpu3load','elapsedtime','screenbrightness','end_used_mem_pss','end_battery_level','begin_battery_voltage','end_keyboard','cpu2frequency','description','end_battery_voltage','end_nr_procceses','energyconsumed']
-fildes_w_3_values = ['batteryremaining','cpu1load','cpu4load','cpu3frequency','memoryusage','cpu1frequency','cpu2load','cpuloadnormalized','batterystatus','cpuload','batterypower','applicationstate','gpuload','cpu4frequency','gpufrequency','cpu3load','screenbrightness','cpu2frequency','description']
-special_fildes = ['begin_used_cpu','end_used_cpu']
+
+output_folder = '/Users/ruirua/repos/Anadroid/aux_test_results_dir/'
+
+list_of_fields = ['cpuloadnormalized','memoryusage','energyconsumed','elapsedtime']
+all_fields = ['begin_used_cpu','batteryremaining','cpu1load','cpu4load','begin_main_cpu_freq','cpu3frequency','begin_nr_procceses','begin_nr_files_keyboard_folder','end_ischarging','memoryusage','end_used_mem_kernel','cpu1frequency','cpu2load','cpuloadnormalized','end_main_cpu_freq','end_battery_temperature','end_used_cpu','begin_keyboard','batterystatus','begin_battery_temperature','begin_used_mem_kernel','cpuload','batterypower','end_nr_files_keyboard_folder','applicationstate','begin_ischarging','begin_used_mem_pss','gpuload','cpu4frequency','gpufrequency','begin_battery_level','cpu3load','elapsedtime','screenbrightness','end_used_mem_pss','end_battery_level','begin_battery_voltage','end_keyboard','cpu2frequency','description','end_battery_voltage','end_nr_procceses','energyconsumed']
+fields_w_3_values = ['batteryremaining','cpu1load','cpu4load','cpu3frequency','memoryusage','cpu1frequency','cpu2load','cpuloadnormalized','batterystatus','cpuload','batterypower','applicationstate','gpuload','cpu4frequency','gpufrequency','cpu3load','screenbrightness','cpu2frequency','description']
+special_fields = ['begin_used_cpu','end_used_cpu']
 
 
 
@@ -21,9 +23,17 @@ special_fildes = ['begin_used_cpu','end_used_cpu']
 def getSourceCodeMetrics(metrics_dict,string_folder):
     #print(string_folder)
 
-    loc_info=string_folder+"/cloc.out"
-    metrics_dict['total_loc']=int(subprocess.check_output(" grep \"Total\" %s | xargs | cut -f6 -d\ " % loc_info, shell=True).decode("utf-8").strip().split("\n")[0])
-    metrics_dict['total_complexity']=int(subprocess.check_output(" grep \"Total\" %s | xargs | cut -f7 -d\ " % loc_info, shell=True).decode("utf-8").strip().split("\n")[0])
+    loc_info=string_folder+"/cloc.out"    
+    try:
+        metrics_dict['total_loc']=int(subprocess.check_output(" grep \"Total\" %s | xargs | cut -f6 -d\ " % loc_info, shell=True).decode("utf-8").strip().split("\n")[0])
+    except Exception as e:
+        metrics_dict['total_loc']=-1
+
+    try:
+        metrics_dict['total_complexity']=int(subprocess.check_output(" grep \"Total\" %s | xargs | cut -f7 -d\ " % loc_info, shell=True).decode("utf-8").strip().split("\n")[0])
+    except Exception as e:
+        metrics_dict['total_complexity']=-1
+
     
     try:
         metrics_dict['total_loc_java']=int(subprocess.check_output(" grep \"Java\" %s | xargs | cut -f6 -d\ " % loc_info, shell=True).decode("utf-8").strip().split("\n")[0])
@@ -116,7 +126,7 @@ def sort_and_filter_data(data):
             value = stat['value_text'].split(',')[1]
             new[stat['metric']] = value
         else:
-            if stat['metric'] in list_of_fildes:
+            if stat['metric'] in list_of_fields:
                 new[stat['metric']] = stat['value_text']
     return new
 
@@ -128,8 +138,12 @@ def getStats(all_folders):
         for filename in os.listdir(folder):
             if filename.endswith(".json") and "resume" in filename and filename.startswith('test'):
                 with open(string_folder + filename) as json_file:
+                    #print(string_folder + filename)
                     new = []
-                    data = json.load(json_file)
+                    try:
+                        data = json.load(json_file)
+                    except Exception as e:
+                        continue
                     stats.append(sort_and_filter_data(data))
             #if filename.endswith("coverage.log") and filename.startswith('test'):
             #    jo={}
