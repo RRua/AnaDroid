@@ -57,8 +57,8 @@ SLEEPTIME=10 # 10 s
 # TODO put in monkey config file
 
 
-min_monkey_runs=10 #20
-threshold_monkey_runs=15 #50
+min_monkey_runs=1 #20
+threshold_monkey_runs=0 #50
 number_monkey_events=100
 min_coverage=40
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
@@ -256,7 +256,6 @@ prepareAndInstallApp(){
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
 	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
 	cp $FOLDER/$tName/appPermissions.json $localDir
-	
 	# define test conditions according to the permissions declared in manifest file
 	defineTestConfigurations "$FOLDER/$tName/appPermissions.json"
 
@@ -302,12 +301,19 @@ prepareAndInstallApp(){
 	logInstalledAPKVersionInfo "$NEW_PACKAGE" "$projLocalDir/version.log"
 	if [[ "$appVersion" == "0.0" ]]; then
 		# if it is still indetermined
+			# if it is still indetermined
 		appVersion=$(cat "$projLocalDir/version.log" )
 		test -z "$app_version" && app_version="0.0"
 		projLocalDir="$firstProjLocalDir/$appVersion"
 		current_local_dir=$localDir
+		current_vers_dir=$( echo "$localDir" | xargs dirname ) 
 		localDir=$projLocalDir/$folderPrefix$now
-		mv "$current_local_dir" "$localDir"
+		
+		if [ -d "$projLocalDir" ]; then
+			mv  "$current_local_dir" "$localDir"
+		else
+			mv "$current_vers_dir" "$projLocalDir"
+		fi
 	fi
 	##########
 }
@@ -545,6 +551,7 @@ setupLocalResultsFolder(){
 	APP_ID="unknown"
 	getAppUID "${GRADLE[0]}" "$MANIF_S" APP_ID
 	projLocalDir="$localDir/$APP_ID"
+	projLocalDir="$projLocalDir/$appVersion"
 	$MKDIR_COMMAND -p $projLocalDir
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
 

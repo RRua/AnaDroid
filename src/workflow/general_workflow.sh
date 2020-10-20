@@ -291,7 +291,7 @@ assureConfiguredTestConditions(){
 defineTestConfigurations(){
 	w_echo "Infering test conditions"
 	app_permissions_file=$1
-	test -n "$app_permissions_file" && python  "$ANADROID_PATH/src/others/defineTestConditions.py" "$(realpath $app_permissions_file)"
+	test -f "$app_permissions_file" && python  "$ANADROID_PATH/src/others/defineTestConditions.py" "$(realpath $app_permissions_file)"
 	
 }
 

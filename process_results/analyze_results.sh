@@ -2,14 +2,17 @@
 
 #target_dir="$HOME/GDResults"
 target_dir=$1
-test -z "$target_dir" &&  target_dir="$ANADROID_PATH/pc1GDResults/28_jul_res/"
+test -z "$target_dir" && target_dir="$ANADROID_PATH/18_set_res/" && test ! -d "$target_dir" && echo "bad input dir" && exit 2 
 echo "la $target_dir"
 
 
 GD_ANALYZER="$ANADROID_PATH/resources/jars/AnaDroidAnalyzer.jar"
-test_framework="app_crawler" #"monkey" #"app_crawler" # monkey
+test_framework="monkey" #"monkey" #"app_crawler" # monkey
 orientation="-TestOriented"
-prefix="CrawlerTest*" # "MonkeyTest*" # 
+prefix="" #"CrawlerTest*" # "MonkeyTest*" # 
+
+test "$test_framework" == "monkey" &&  prefix="MonkeyTest*"
+test "$test_framework" == "app_crawler" &&  prefix="CrawlerTest*"
 test "$test_framework" == "app_crawler" &&  flag="crawler"
 test "$test_framework" == "monkey" &&  flag="monkey"
 GREENSOURCE_URL="NONE"
@@ -72,24 +75,25 @@ function moveRelevantFiles(){
 
 for f in $( find $target_dir -type d -name "$prefix" ); do
 	is_old=$(echo $f | grep "oldRuns")
-	echo "$f"
+	#echo "$f"
 	if [ -n "$is_old" ]; then
-		echo "velha"
+		#echo "velha"
 		tf_and_date=$(basename $f )
 		app_name=$(dirname $f| xargs dirname| xargs dirname | xargs basename )
-		
+		echo "$app_name"
 		version_results_dir=$(dirname $f| xargs dirname)
 		app_version=$(echo $version_results_dir | xargs basename)
-		echo "la versione $app_version"
+		#echo "la versione $app_version"
 		
 	else
 		
 		echo " nao é velha"
 		tf_and_date=$(basename $f )
 		app_name=$(dirname $f | xargs dirname |xargs basename )
+		test -z "$app_name" && echo "erro"
 		version_results_dir=$(dirname $f  )
 		app_version=$(echo $version_results_dir | xargs basename)
-		echo "versao $app_version"
+		#echo "versao $app_version"
 		
 	fi
 	
@@ -108,12 +112,20 @@ for f in $( find $target_dir -type d -name "$prefix" ); do
 		ln -s  "$f" "$target"
 	fi 
 	app_res_dir="$result_dir/$app_name/$app_version/$tf_and_date"
-	echo "$app_res_dir"
+	#echo "$app_res_dir"
 	
-	echo "targeto -> $target"
-	echo "fff $f"
+	#echo "targeto -> $target"
+	#echo "fff $f"
+
+	echo "creating $app_res_dir"
+
 	mkdir -p "$app_res_dir"
 	mkdir -p "$result_dir/$app_name/$app_version/all"
+
+	# delete old results 
+	find "$version_results_dir/" -maxdepth 1 -type f -name "*.json" | xargs rm 
+	find "$version_results_dir/" -maxdepth 1 -type f -name "*.log"  | xargs rm 
+ 
 	echo "la flag $flag"
 	echo " java -jar $GD_ANALYZER $orientation $version_results_dir -$flag $GREENSOURCE_URL  "
 	
@@ -122,5 +134,6 @@ for f in $( find $target_dir -type d -name "$prefix" ); do
 	if [ -n "$is_old" ]; then
 		rm -rf "$target"
 	fi 
+
 	
 done 

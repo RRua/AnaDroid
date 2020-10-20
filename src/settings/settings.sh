@@ -30,7 +30,7 @@ printf_new() {
 function getAndroidState(){
 	used_cpu=$(adb shell dumpsys cpuinfo | grep  "Load" | cut -f2 -d\ )
 	free_mem=$(adb shell dumpsys meminfo | grep "Free RAM.*" | cut -f2 -d: | cut -f1 -d\( | tr -d ' '| sed "s/K//g" | sed "s/,//g")
-	nprocesses=$(adb shell top -n 1 | grep -v "root" | grep -v "system" | wc -l) #take the K/M and -4
+	nprocesses=$(adb shell top -n 1 | grep -v "root" | grep -v "shell") #take the K/M and -4
 	nr_procceses=$(($nprocesses -5))
 	sdk_level=$(adb shell getprop ro.build.version.release)
 	api_level=$(adb shell getprop ro.build.version.sdk )

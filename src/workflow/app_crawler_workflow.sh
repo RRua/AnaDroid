@@ -60,7 +60,6 @@ else
 fi
 
 
-
 analyzeCSV(){
 	local tags=$(cat $1 |  grep "stopped" | wc -l)
 	if [ $tags -lt "2" ] && [ "$folderPrefix" == "MonkeyTest" ] ; then
@@ -286,8 +285,14 @@ prepareAndInstallApp(){
 		test -z "$app_version" && app_version="0.0"
 		projLocalDir="$firstProjLocalDir/$appVersion"
 		current_local_dir=$localDir
+		current_vers_dir=$( echo "$localDir" | xargs dirname ) 
 		localDir=$projLocalDir/$folderPrefix$now
-		mv "$current_local_dir" "$localDir"
+		
+		if [ -d "$projLocalDir" ]; then
+			mv  "$current_local_dir" "$localDir"
+		else
+			mv "$current_vers_dir" "$projLocalDir"
+		fi
 	fi
 	##########
 }
@@ -426,6 +431,7 @@ setupLocalResultsFolder(){
 	APP_ID="unknown"
 	getAppUID "${GRADLE[0]}" "$MANIF_S" APP_ID
 	projLocalDir="$localDir/$APP_ID"
+	firstProjLocalDir="$projLocalDir"
 	$MKDIR_COMMAND -p $projLocalDir
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
 

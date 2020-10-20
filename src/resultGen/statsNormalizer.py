@@ -6,7 +6,10 @@ import os
 import io
 import json
 from termcolor import colored
+from jsoncomment import JsonComment
 import subprocess
+import os.path
+from os import path
 
 output_folder = '/Users/ruirua/repos/Anadroid/aux_test_results_dir/'
 
@@ -17,7 +20,11 @@ special_fields = ['begin_used_cpu','end_used_cpu']
 
 
 
-
+def getCategoryPlayStore(string_folder):
+    filename=string_folder+"app_play_category.log"
+    f = open (filename, "r") 
+    s= f.read().replace("\n","")
+    return "unknown" if s=="" else s
 
 # vai buscar os dados ao file de outrput da ferramenta scc
 def getSourceCodeMetrics(metrics_dict,string_folder):
@@ -62,6 +69,55 @@ def getCoverageMetrics(metrics_dict,string_folder):
     return metrics_dict
 
 
+def getPermissionsAsString(string_folder):
+        filename= string_folder + "appPermissions.json"
+        if (not path.exists(filename)):
+            return ''
+        with open(filename) as json_file:
+            data = json.load(json_file)
+        #print(data)
+        return " ".join( list( map ( lambda x : x['permission'], data ) ))
+    
+def getInvokedAPISAsString(string_folder,test_id):
+        filename= string_folder + "redAPIs.json"
+        if not path.exists(filename):
+            return ''
+        with open(filename,encoding='utf-8') as json_file:
+            data = json.load(json_file)
+        if test_id not in data:
+            return ''      
+        return " ".join(   [j for i in data[test_id].values() for j in i] )
+
+def getPerformanceLintIssues(string_folder):
+    filename= string_folder + "lintIssues.json"
+    if not path.exists(filename):
+        return ''
+    with open(filename,encoding='utf-8') as json_file:
+        data = json.load(json_file)
+
+    return data["Performance"] if "Performance" in data else []
+
+
+
+def getBandAStats(string_folder, test_id, end=True):
+    filename = string_folder + "end_state" + test_id +".json" if end else string_folder + "begin_state" + test_id +".json"
+    if (not path.exists(filename)):
+            return {}
+    #print(filename)
+    f = open (filename, "r") 
+    s= f.read()
+    string=s.replace("\n\"","\"")
+    string = re.sub(",[ \t\r\n]+}", "}", string)
+    string = re.sub(",[ \t\r\n]+\]", "]", string)
+    data = json.loads(string, strict=False) 
+    for key, value in data.items():
+        if value == "FALSE":
+            data[key] = 0
+        elif value == "TRUE":
+            data[key] = 1
+    #print(data)
+    return data
+
 # vai buscar outras metricas relativas à globalidade dos testes executados
 # e linhas de codigo obtidas com o scc
 def getOtherMetricsFromFolder(string_folder):
@@ -72,40 +128,62 @@ def getOtherMetricsFromFolder(string_folder):
     return metrics_dict
 
 def data_to_csv(data,string_folder):
-
+    app_category=getCategoryPlayStore(string_folder)
+    perms_col = getPermissionsAsString(string_folder)
+    begin_metrics = getBandAStats(string_folder, "1", end=False)
+    end_metrics = getBandAStats(string_folder, "1", end=True)
     total_gpuload = 0
     total_cpuloadnormalized = 0
     total_memoryusage = 0
     total_enegyconsumed = 0
     total_elapsedtime = 0
+    total_coverage = 0
+    otherMetrics = getOtherMetricsFromFolder(string_folder)
     f = open(string_folder + "all_data.csv", "w")
-    f.write("test_id; energy cons (J); time elapsed (ms); cpuloadnormalized (%); memoryusage (KB); gpuload (%), coverage (%)")
+    f.write("test_id; energy cons (J); time elapsed (ms); cpuloadnormalized (%); memoryusage (KB); gpuload (%); coverage (%)")
+    for x in otherMetrics.keys():
+        f.write(";"+str(x))
+    for x in begin_metrics.keys():
+        f.write(";"+str(x)+"_begin")
+    for x in end_metrics.keys():
+        f.write(";"+str(x)+"end")
+    f.write(";"+"perf_issues")
+    f.write(";"+"red_apis")
+    f.write(";"+"app_category")
     f.write('\n')
-    for line in data:
-        
+    for line in data: 
         #total_gpuload = total_gpuload + float(line['gpuload'])
         total_cpuloadnormalized = total_cpuloadnormalized + float(line['cpuloadnormalized'])
         total_memoryusage = total_memoryusage + float(line['memoryusage'])
         total_enegyconsumed = total_enegyconsumed + float(line['energyconsumed'])
         total_elapsedtime = total_elapsedtime + float(line['elapsedtime'])
+        total_elapsedtime = total_elapsedtime + float(line['elapsedtime'])
+        total_coverage = total_coverage + float(line['coverage'])
         f.write(str(line['test_id']) + ';' + str(line['energyconsumed'])+ ';' + str(line['elapsedtime']) + ';' + str(line['cpuloadnormalized']) + ';' + str(line['memoryusage']) + ';' + str(line['gpuload']) + ';' + str(line['coverage']))
+        for y in otherMetrics.values():
+            f.write(";"+str(y))
+        for y in begin_metrics.values():
+            f.write(";"+str(y))
+        for y in end_metrics.values():
+            f.write(";"+str(y))
+        #f.write(";"+getInvokedAPISAsString(string_folder,line['test_id'] ))
+        f.write(";" + str(len(getPerformanceLintIssues(string_folder))))
+        f.write(";" + str(len(getInvokedAPISAsString(string_folder,line['test_id'] ))))
+        f.write(";" + app_category)
         f.write("\n")
         
-
     size = len(data)
     average_gpuload =  total_gpuload / size
     average_cpuloadnormalized = total_cpuloadnormalized / size
     average_memoryusage = total_memoryusage / size
     average_enegyconsumed = total_enegyconsumed / size
     average_elapsedtime = total_elapsedtime / size
-    f.write('average' + ';' + str(average_enegyconsumed)+ ';' + str(average_elapsedtime) + ';' + str(average_cpuloadnormalized) + ';' + str(average_memoryusage) + ';' + str(average_gpuload))
+    average_coverage = total_coverage / size
+    f.write('average' + ';' + str(average_enegyconsumed)+ ';' + str(average_elapsedtime) + ';' + str(average_cpuloadnormalized) + ';' + str(average_memoryusage) + ';' + str(average_gpuload) + ';' + str(average_coverage))
     f.write('\n')
-    otherMetrics = getOtherMetricsFromFolder(string_folder)
-
+   
     for x,y in otherMetrics.items():
         f.write("%s; %s\n" %(str(x),str(y)))
-
-    
     f.close()
 
 

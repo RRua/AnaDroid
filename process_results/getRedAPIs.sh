@@ -14,3 +14,5 @@ for app_folder in $(find $result_dir -maxdepth 1 -mindepth 1 -type d); do
 		done
 	done
 done
+
+
