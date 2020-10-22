@@ -229,7 +229,8 @@ analyzeResults(){
 	if [[ "$is_bigger_than_thresold" == "1" ]]; then
 		#if  % of power samples with 0 value  > threshold
 		# reboot phone and then unlock
-		rebootAndUnlockPhone
+		#rebootAndUnlockPhone
+		echo "uncomment reboot"
 	else 
 		i_echo "Low percentage of 0 power samples. continuing..."
 	fi
@@ -309,6 +310,8 @@ prepareAndInstallApp(){
 		current_vers_dir=$( echo "$localDir" | xargs dirname ) 
 		localDir=$projLocalDir/$folderPrefix$now	
 		if [ -d "$projLocalDir" ]; then
+			
+			saveOldRuns "$projLocalDir"
 			mv  "$current_local_dir" "$localDir"
 		else
 			mv "$current_vers_dir" "$projLocalDir"
@@ -406,7 +409,7 @@ runMonkeyTests(){
 	
 	for i in $last30; do
 		assureConfiguredTestConditions
-		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
+		coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l )
 		RET1="0"
 		RET="0"
 		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
@@ -460,8 +463,7 @@ runMonkeyTests(){
 	done
 
 	trap - INT
-	debug_echo "la coveragzita $coverage_exceded"
-	if [ "$coverage_exceded" -eq "0" ]; then
+	if [ "$coverage_exceded" == "0" ]; then
 		echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
 	fi
 
@@ -531,7 +533,7 @@ instrumentGradleApp(){
 	#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
 	xx=$(find  "$projLocalDir/" -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )
 	##echo "xx -> $xx"
-	$MV_COMMAND -f $xx $projLocalDir/oldRuns/ >/dev/null 2>&1
+	
 	echo "$FOLDER/$tName" > $logDir/lastTranformedApp.txt
 	for D in `find "$FOLDER/$tName/" -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
 	    if [ -d "${D}" ]; then  ##RR
@@ -559,7 +561,7 @@ setupLocalResultsFolder(){
 	projLocalDir="$projLocalDir/$appVersion"
 	$MKDIR_COMMAND -p $projLocalDir
 	$MKDIR_COMMAND -p $projLocalDir/oldRuns
-	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
+	saveOldRuns "$projLocalDir"
 	$MKDIR_COMMAND -p $projLocalDir/all
 	FOLDER=${f}${prefix} #$f
 	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation

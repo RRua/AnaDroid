@@ -288,6 +288,7 @@ prepareAndInstallApp(){
 		localDir=$projLocalDir/$folderPrefix$now
 		
 		if [ -d "$projLocalDir" ]; then
+			saveOldRuns "$projLocalDir"
 			mv  "$current_local_dir" "$localDir"
 		else
 			mv "$current_vers_dir" "$projLocalDir"
@@ -411,7 +412,7 @@ instrumentGradleApp(){
 	#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
 	xx=$(find  "$projLocalDir/" -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )
 	##echo "xx -> $xx"
-	$MV_COMMAND -f $xx $projLocalDir/oldRuns/ >/dev/null 2>&1
+	saveOldRuns "$projLocalDir"
 	echo "$FOLDER/$tName" > $logDir/lastTranformedApp.txt
 	for D in `find "$FOLDER/$tName/" -type d | egrep -v "\/res|\/gen|\/build|\/.git|\/src|\/.gradle"`; do  ##RR
 	    if [ -d "${D}" ]; then  ##RR
@@ -438,7 +439,7 @@ setupLocalResultsFolder(){
 	projLocalDir="$projLocalDir/$appVersion"
 	$MKDIR_COMMAND -p $projLocalDir
 	$MKDIR_COMMAND -p $projLocalDir/oldRuns
-	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
+	saveOldRuns "$projLocalDir"
 	$MKDIR_COMMAND -p $projLocalDir/all
 	FOLDER=${f}${prefix} #$f
 	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation

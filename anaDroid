@@ -285,6 +285,7 @@ writeConfigJSON
 
 if [ "$TEST_FRAMEWORK" == "monkey"  ]; then
 	#statements
+    
     $SRC_FOLDER/workflow/monkey_workflow.sh $ANADROID_PATH $PROFILER $TEST_ORIENTATION $URL $APP_BUILD_TYPE $TARGET_DIR $DEFAULT_APPROACH
 elif [ "$TEST_FRAMEWORK" == "junit" ]; then
     #e_echo "Currently Not available. We are working on that. Sorry"

@@ -5,8 +5,13 @@ source $ANADROID_PATH/src/others/assureTestConditions.sh
 
 
 
+saveOldRuns(){
+	that_dir=$1
+	($MV_COMMAND -f $(find "$that_dir" ! -path "$that_dir" ! -path "$that_dir/all" -maxdepth 1 | grep -v "oldRuns"  ) "$that_dir/oldRuns/" ) >/dev/null 2>&1
+}
+
 debug_echo(){
-	DEBUG="TRUE" 
+	DEBUG="FALSE" 
 	if [[ "$DEBUG" == "TRUE" ]]; then
 		e_echo "[DEBUG] $1"
 	fi
