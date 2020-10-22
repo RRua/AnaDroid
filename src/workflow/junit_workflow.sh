@@ -41,7 +41,7 @@ logDir="$hideDir/logs"
 localDir="$HOME/GDResults"
 localDirOriginal="$HOME/GDResults"
 checkLogs="Off"
-monkey="-junit"
+TESTING_FRAMEWORK="-junit"
 folderPrefix=""
 GD_ANALYZER="$res_folder/jars/AnaDroidAnalyzer.jar"  # "analyzer/greenDroidAnalyzer.jar"
 GD_INSTRUMENT="$res_folder/jars/jInst.jar"
@@ -51,11 +51,6 @@ profileHardware="YES" # YES or something else
 logStatus="off"
 SLEEPTIME=60 # 1 minutes
 temp_folder="$ANADROID_PATH/temp"
-# TODO put in monkey config file
-min_monkey_runs=1 #20
-threshold_monkey_runs=3 #50
-number_monkey_events=500
-min_coverage=10
 #DIR=/Users/ruirua/repos/GreenDroid/50apps/*
 
 # trap - INT
@@ -129,6 +124,22 @@ getBattery(){
 	fi
 }
 
+analyzeResults(){
+	rejection_0_power_samples_threshold=20 # 20 % 
+	cp "$FOLDER/$tName/cloc.out" "$projLocalDir/"
+	#w_echo "Analyzing results .."
+	debug_echo "java -jar $GD_ANALYZER \"$trace\" \"$projLocalDir/\" \"${TESTING_FRAMEWORK}\" \"$GREENSOURCE_URL\""
+	java -jar "$GD_ANALYZER" "$trace" "$projLocalDir/" "${TESTING_FRAMEWORK}" "$GREENSOURCE_URL" 2>&1 | tee "$temp_folder/analyzerResult.out"
+	power0_samples_percentage=$( grep "power samples" "$temp_folder/analyzerResult.out" | cut -f2 -d\: |  grep -Eo '[0-9]+([.][0-9]+)?' )			
+	is_bigger_than_thresold=$( echo "$power0_samples_percentage > $rejection_0_power_samples_threshold" | bc -l )
+	if [[ "$is_bigger_than_thresold" == "1" ]]; then
+		#if  % of power samples with 0 value  > threshold
+		# reboot phone and then unlock
+		echo "rebootAndUnlockPhone"
+	fi	
+				
+}
+
 
 checkBuildingTool(){
 	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
@@ -188,9 +199,10 @@ cleanDeviceTrash() {
 analyzeAPK(){
 	#PACKAGE=${RESULT[2]}
 	# apk file
-	apkFile=$(cat $logDir/lastInstalledAPK.txt)
+	apkFile=$installed_apk
 	w_echo "\nANALYZING APK!!!!\n!!!!!"
-	$ANADROID_SRC_PATH/others/analyzeAPIs.py "$apkFile" "$PACKAGE"
+	python3 $ANADROID_SRC_PATH/others/analyzeAPIs.py "$apkFile" "$PACKAGE"
+	debug_echo "vou mover ./$PACKAGE.json "$projLocalDir/all/" "
 	$MV_COMMAND ./$PACKAGE.json "$projLocalDir/all/"
 }
 
@@ -242,6 +254,7 @@ checkIfIdIsReservedWord(){
 }
 
 getFirstAppVersion(){
+
 	#version_file="${f}/version.log"
 	version_file=$( find "${DIR}" -maxdepth 2 -type f -name version.log | head -1 )
 	is_os_app=$( echo ${DIR} | xargs basename | grep ".*_src$" )
@@ -270,24 +283,25 @@ getFirstAppVersion(){
 
 prepareAndInstallApp(){
 	localDir=$projLocalDir/$folderPrefix$now
+	$MKDIR_COMMAND -p $localDir
+	cp $temp_folder/* $localDir
+	cp $res_folder/config/GSlogin.json $localDir
 	#echo "$TAG Creating support folder..."
 	#mkdir -p $localDir
-	$MKDIR_COMMAND -p $localDir/all
+	#$MKDIR_COMMAND -p $localDir/all
 	##copy MethodMetric to support folder
 	#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
-	cp "$FOLDER/$tName/$GREENSOURCE_APP_UID.json" "$localDir"
-	cp "$res_folder/device.json" "$localDir"
-	cp "$FOLDER/$tName/appPermissions.json" "$localDir"
-	cp "$res_folder/config/GSlogin.json" "$localDir"
-	
+	cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
+	cp $FOLDER/$tName/appPermissions.json $localDir
+
 	# define test conditions according to the permissions declared in manifest file
 	defineTestConfigurations "$FOLDER/$tName/appPermissions.json"
 
 	registInstalledPackages "start"
 	#install on device
-	#./install.sh $FOLDER/$tName "X" "GRADLE" $PACKAGE $projLocalDir  #COMMENT, EVENTUALLY...
-	e_echo "$ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
-	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$projLocalDir" "$monkey" "$apkBuild" "$logDir"
+	w_echo "[APP INSTALLER] Installing the apps on the device"
+	debug_echo "install command -> $ANADROID_SRC_PATH/others/install.sh \"$FOLDER/$tName\" \"X\" \"GRADLE\" \"$PACKAGE\" \"$projLocalDir\" \"$monkey\" \"$apkBuild\" \"$logDir\""
+	$ANADROID_SRC_PATH/others/install.sh "$FOLDER/$tName" "X" "GRADLE" "$PACKAGE" "$localDir" "$TESTING_FRAMEWORK" "$apkBuild" "$logDir" 
 	RET=$(echo $?)
 	if [[ "$RET" != "0" ]]; then
 		echo "$ID" >> $logDir/errorInstall.log
@@ -307,11 +321,12 @@ prepareAndInstallApp(){
 		#e_echo "$TAG App not installed. Skipping tests execution"
 		
 		NEW_PACKAGE=$(apkanalyzer manifest application-id "$installed_apk") 
-		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$PACKAGE
 		test -z "$NEW_PACKAGE" && NEW_PACKAGE=$(getInstalledPackage) && PACKAGE=$NEW_PACKAGE
+
+		#debug_echo "New pack $INSTALLED_PACKAGE vs $PACKAGE"
 	fi
-	installed_apk=$(cat $localDir/installedAPK.log)
+	installed_apk=$(head -1 $localDir/installedAPK.log)
 	APK=$installed_apk
 
 	logInstalledAPKVersionInfo "$NEW_PACKAGE" "$projLocalDir/version.log"
@@ -323,7 +338,6 @@ prepareAndInstallApp(){
 		current_local_dir=$localDir
 		current_vers_dir=$( echo "$localDir" | xargs dirname ) 
 		localDir=$projLocalDir/$folderPrefix$now
-		
 		if [ -d "$projLocalDir" ]; then
 			mv  "$current_local_dir" "$localDir"
 		else
@@ -337,21 +351,38 @@ prepareAndInstallApp(){
 runJUnitTests(){
 	#run tests
 	#e_echo "$ANADROID_SRC_PATH/run/runTests.sh $PACKAGE $TESTPACKAGE $deviceDir $projLocalDir $folderPrefix $FOLDER/$tName"
-	$ANADROID_SRC_PATH/run/runTests.sh "$PACKAGE" "$TESTPACKAGE" "$deviceDir" "$localDir" "$folderPrefix" "$FOLDER/$tName"
-	RET=$(echo $?)
-	if [[ "$RET" != "0" ]]; then
-		echo "$ID" >> $logDir/errorRun.log
-		e_echo "[GD ERROR] There was an Error while running tests. Retrying... "
-		#RETRY 
-		sleep 2
-		$ANADROID_SRC_PATH/run/runTests.sh "$PACKAGE" "$TESTPACKAGE" "$deviceDir" "$localDir" "$folderPrefix" "$FOLDER/$tName" # "-gradle" $FOLDER/$tName
-		RET=$(echo $?)
-		if [[ "$RET" != "0" ]]; then
-			echo "$ID" >> $logDir/errorRun.log
-			e_echo "[GD ERROR] FATAL ERROR RUNNING TESTS. IGNORING APP "
-			continue
-		fi
+	assureConfiguredTestConditions
+
+	w_echo "APP: $ID | SEED Number : $totaUsedTests"
+		RET1="0"
+		RET="0"
+		if [[ "$(isProfilingWithTrepn $PROFILER)" == "TRUE" ]]; then
+			#statements
+			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+			debug_echo "$ANADROID_SRC_PATH/run/trepn/runTests.sh $PACKAGE $TESTPACKAGE $deviceDir $localDir $folderPrefix $FOLDER/$tName"
+			$ANADROID_SRC_PATH/run/trepn/runJUnitTests.sh "$PACKAGE" "$TESTPACKAGE" "$deviceDir" "$localDir" "$folderPrefix" "$FOLDER/$tName"
+			RET=$(echo $?)
+			if [[ "$RET" != "0" ]]; then
+				echo "$ID" >> $logDir/errorRun.log
+				e_echo "[GD ERROR] There was an Error while running tests. Retrying... "
+				#RETRY 
+				sleep 2
+				$ANADROID_SRC_PATH/run/trepn/runJUnitTests.sh "$PACKAGE" "$TESTPACKAGE" "$deviceDir" "$localDir" "$folderPrefix" "$FOLDER/$tName" # "-gradle" $FOLDER/$tName
+				RET=$(echo $?)
+				if [[ "$RET" != "0" ]]; then
+					echo "$ID" >> $logDir/errorRun.log
+					e_echo "[GD ERROR] FATAL ERROR RUNNING TESTS. IGNORING APP "
+					continue
+				fi
 	fi
+		fi
+		if [[ "$(isProfilingWithGreenscaler $PROFILER)" == "TRUE" ]]; then
+			#statements
+			#(adb shell am stopservice com.quicinc.trepn/.TrepnService) >/dev/null 2>&1
+			e_echo "$TAG greenscaler not suported with JUNIT framework"
+		fi
+
+
 	assureConfiguredTestConditions #todo change this to runjunit test script
 	registInstalledPackages "end"
 
@@ -384,24 +415,36 @@ buildAppWithGradle(){
 }
 
 instrumentGradleApp(){
+	RET="TRUE"
 	oldInstrumentation=$(cat "$FOLDER/$tName/instrumentationType.txt" 2>/dev/null | grep  ".*Oriented" )
 	#allmethods=$(find "$projLocalDir/all" -maxdepth 1 -name "allMethods.json")
 	last_build_result=$(grep "BUILD SUCCESSFUL" "$FOLDER/$tName/buildStatus.log" 2>/dev/null  )
-	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ] ; then
+	if [ "$oldInstrumentation" != "$trace" ] || [ -z "$last_build_result" ]  ; then
 		# same instrumentation and build successfull 
 		w_echo "Different type of instrumentation. instrumenting again..."
 		rm -rf $FOLDER/$tName
 		$MKDIR_COMMAND -p "$FOLDER/$tName"
 		echo "$Proj_JSON" > "$FOLDER/$tName/$GREENSOURCE_APP_UID.json"
 		echo "$TAG Instrumenting project"
-		e_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" \"$tName\" \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$monkey\" \"$GREENSOURCE_APP_UID\" ##RR"
-		java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$monkey" "$GREENSOURCE_APP_UID"  "$APPROACH" ##RR
+		debug_echo "java -jar \"$GD_INSTRUMENT\" \"-gradle\" $tName \"X\" \"$FOLDER\" \"$MANIF_S\" \"$MANIF_T\" \"$trace\" \"$TESTING_FRAMEWORK\" \"$GREENSOURCE_APP_UID\" \"$APPROACH\" ##RR"
+		instr_output=$(java -jar "$GD_INSTRUMENT" "-gradle" $tName "X" "$FOLDER" "$MANIF_S" "$MANIF_T" "$trace" "$TESTING_FRAMEWORK" "$GREENSOURCE_APP_UID" "$APPROACH" ) ##RR
+		if [ -n "$(echo $instr_output | grep 'Exception' )" ]; then
+			echo "-$(echo $instr_output | grep 'Exception' )-"
+			echo "$FOLDER" >> "$logDir/errorInstrument.log"
+			RET="FALSE"
+		else
+			w_echo "$TAG Project instrumented successfuly"
+		fi
+
 		#$MV_COMMAND ./allMethods.txt $projLocalDir/all/allMethods.txt
 		cp ./allMethods.json "$projLocalDir/all/allMethods.json"
+		cp ./allMethods.json "$FOLDER/$tName/allMethods.json"
 		#Instrument all manifestFiles
 		(find "$FOLDER/$tName" -name "AndroidManifest.xml" | egrep -v "/build/" | xargs -I{} $ANADROID_SRC_PATH/build/manifestInstr.py "{}" )
 	else 
+		cp "$FOLDER/$tName/allMethods.json" "$projLocalDir/all/allMethods.json"
 		e_echo "Same instrumentation of last time. Skipping instrumentation phase"
+	
 	fi
 	#(echo "{\"app_id\": \"$ID\", \"app_location\": \"$f\",\"app_build_tool\": \"gradle\", \"app_version\": \"1\", \"app_language\": \"Java\"}") > $FOLDER/$tName/application.json
 	xx=$(find  "$projLocalDir/" -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns" | grep -v "all" )
@@ -416,28 +459,65 @@ instrumentGradleApp(){
 	done  ##RR
 }
 
+pullTestResultsFromDevice(){
+	i_echo "$TAG Pulling result files"
+	#check if trepn worked correctly
+	Nmeasures=$(adb shell ls "$deviceDir/Measures/" | wc -l)
+	Ntraces=$(adb shell ls "$deviceDir/Traces/" | wc -l)
+	echo "Nº measures: $Nmeasures"
+	echo "Nº traces:   $Ntraces"
+	if [[ $folderPrefix == "JUnitMethod" ]]; then
+		#statements
+		adb shell mv "$deviceDir/*.csv" "$deviceDir/Measures/"
+	else 
+	    if [ $Nmeasures -le "0" ] || [ $Ntraces -le "0" ] || [ $Nmeasures -ne $Ntraces ] ; then 
+			e_echo "[GD ERROR] Something went wrong. try run trepnFix.sh and try again"
+			exit 2
+		fi
+	fi
+	cp "$FOLDER/$tName/application.json" "$localDir"
+	cp "$FOLDER/$tName/appPermissions.json" "$localDir"
+	adb shell ls "$deviceDir/Measures/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/Measures/{} "$localDir"
+	#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
+	adb shell ls "$deviceDir/Traces/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/Traces/{} "$localDir"
+	adb shell ls "$deviceDir/TracedTests/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/TracedTests/{} "$localDir"
+	csvs=$(find "$localDir" -name "*.csv")
+	for i in $csvs; do
+		tags=$(cat "$i" |  grep "stopped" | wc -l)
+		if [ $tags -lt "2" ] && [ "$folderPrefix" == "Test" ] ; then
+			e_echo " $i might contain an error "
+			echo "$i" >> logs/csvErrors.log
+		fi
+	done
+}
+
+
 setupLocalResultsFolder(){
-	echo "$TAG setting up local results folder"
+	#echo "$TAG setting up local results folder"
 	#create results support folder
 	#echo "$TAG Creating support folder..."
 	GRADLE=($(find "${f}/${prefix}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs -I{} grep "buildscript" {} /dev/null | cut -f1 -d:))
-	$MKDIR_COMMAND -p "$projLocalDir"
-	$MKDIR_COMMAND -p "$projLocalDir/oldRuns"
-	($MV_COMMAND -f $(find $projLocalDir ! -path $projLocalDir -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
-	$MKDIR_COMMAND -p "$projLocalDir/all"
-	FOLDER=${f}${prefix} #$f
-	ORIGINAL_GRADLE=($(find "$FOLDER/" -name "*.gradle" -type f -print0 | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
 	APP_ID="unknown"
 	getAppUID "${GRADLE[0]}" "$MANIF_S" APP_ID
+	projLocalDir="$localDir/$APP_ID"
+	firstProjLocalDir="$projLocalDir"
+	$MKDIR_COMMAND -p $projLocalDir
 	GREENSOURCE_APP_UID="$ID--$APP_ID"
-	getFirstAppVersion 
-	if [[ -z "$appVersion" ]]; then
-			appVersion="0.0"
-	fi
+
+	getFirstAppVersion $appVersion
+	projLocalDir="$projLocalDir/$appVersion"
+	$MKDIR_COMMAND -p $projLocalDir
+	$MKDIR_COMMAND -p $projLocalDir/oldRuns
+	($MV_COMMAND -f $(find "$projLocalDir" ! -path "$projLocalDir" -maxdepth 1 | grep -v "oldRuns") $projLocalDir/oldRuns/ ) >/dev/null 2>&1
+	$MKDIR_COMMAND -p $projLocalDir/all
+	FOLDER=${f}${prefix} #$f
+	ORIGINAL_GRADLE=($(find "${FOLDER}" -name "*.gradle" -type f -print | grep -v "settings.gradle" | xargs grep -L "com.android.library" | xargs grep -l "buildscript" | cut -f1 -d:)) # must be done before instrumentation
+	
 	APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_version\": \"$appVersion\", \"app_project\": \"$ID\"}" #" \"app_language\": \"Java\"}"
 	Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", \"project_apps\":[$APP_JSON] , \"project_packages\":[] , \"project_location\": \"$f\"}"
 	#echo " ids -> $APP_ID , $GREENSOURCE_APP_UID"
 }
+
 
 uninstallApp(){
 	$ANADROID_SRC_PATH/others/uninstall.sh "$NEW_PACKAGE" "$TESTPACKAGE"
@@ -448,6 +528,7 @@ uninstallApp(){
 	fi
 	uninstallInstalledPackagesDuringTest				
 }
+
 
 
 inferPrefix(){
@@ -480,9 +561,8 @@ fi
 w_echo "removing old instrumentations "
 $ANADROID_SRC_PATH/others/forceUninstall.sh $ANADROID_SRC_PATH
 w_echo "$TAG searching for Android Projects in -> $DIR"
-# getting all seeds from file
-seeds20=$(head -$min_monkey_runs $res_folder/monkey_seeds.txt)
-last30=$(tail  -$threshold_monkey_runs $res_folder/monkey_seeds.txt)
+
+
 #for each Android Proj in the specified DIR
 for f in $DIR/*
 	do
@@ -526,18 +606,28 @@ for f in $DIR/*
 				MANIF_S="${RESULT[0]}/AndroidManifest.xml"
 				MANIF_T="-"
 				setupLocalResultsFolder
-				instrumentGradleApp
+				if [ "$APPROACH" == "whitebox" ] ; then
+					#debug_echo "white e diferente"
+					instrumentGradleApp
+					if [ "$RET" == "FALSE" ]; then
+						e_echo "error in instrumentation phase. skipping app"
+						continue
+					fi
+
+				else
+					e_echo "No support for blackbox approach using junit framework"
+					exit 4
+				fi
 				buildAppWithGradle
+				countSourceCodeLines "$FOLDER/$tName/"
 				totaUsedTests=0	
 				prepareAndInstallApp
 				#runMonkeyTests
 				runJUnitTests
+				pullTestResultsFromDevice
 				uninstallApp
 				analyzeAPK
-				#cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir/projectApplication.json
-				(echo "{\"device_serial_number\": \"$device_serial\", \"device_model\": \"$device_model\",\"device_brand\": \"$device_brand\"}") > $res_folder/device.json
-				w_echo "Analyzing results .."
-				java -jar $GD_ANALYZER "$trace" "$projLocalDir/" "$monkey" "$GREENSOURCE_URL"
+				analyzeResults
 				w_echo "$TAG sleeping between profiling apps"
 				sleep $SLEEPTIME
 				w_echo "$TAG resuming AnaDroid after nap"
@@ -549,173 +639,6 @@ for f in $DIR/*
 	else 
 		e_echo "Dropped support for Eclipse SDK projects"
 		exit -1
-#SDK PROJ
-		MANIFESTS=($(find $f -name "AndroidManifest.xml" | egrep -v "/bin/|$tName"))
-		MP=($(python manifestParser.py ${MANIFESTS[*]}))
-		for R in ${MP[@]}; do
-			RESULT=($(echo "$R" | tr ':' '\n'))
-			echo "result -> $RESULT"
-			SOURCE=${RESULT[0]}
-			TESTS=${RESULT[1]}
-			PACKAGE=${RESULT[2]}
-			TESTPACKAGE=${RESULT[3]}
-			if [ "$SOURCE" != "" ] && [ "$TESTS" != "" ] && [ "$f" != "" ]; then
-				#delete previously instrumented project, if any
-				rm -rf $SOURCE/$tName
-			APP_ID="unknown"
-			getAppUID  $R $APP_ID
-			GREENSOURCE_APP_UID="$ID--$APP_ID"
-			APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_location\": \"$f\", \"app_version\": \"1\" , \"app_build_type\": \"$apkBuild\"}" #" \"app_language\": \"Java\"}"
-			Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"sdk\", \"project_apps\":[$APP_JSON]} , \"project_packages\":[]}"
-			#echo "$Proj_JSON" > $localDir/projectApplication.json
-#instrumentation phase
-			if [[ "$SOURCE" != "$TESTS" ]]; then
-				echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-				java -jar $GD_INSTRUMENT "-sdk" $tName "X" $SOURCE $TESTS $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
-			else
-				echo "$Proj_JSON" > $FOLDER/$tName/$GREENSOURCE_APP_UID.json
-				java -jar $GD_INSTRUMENT "-gradle" $tName "X" $FOLDER $MANIF_S $MANIF_T $trace $monkey $GREENSOURCE_APP_UID "$APPROACH"
-			fi
-			#copy the test runner
-			$MKDIR_COMMAND -p $SOURCE/$tName/libs
-			$MKDIR_COMMAND -p $SOURCE/$tName/tests/libs
-			cp libsAdded/$trepnJar $SOURCE/$tName/libs
-			cp libsAdded/$trepnJar $SOURCE/$tName/tests/libs
-
-			#build
-			./buildSDK.sh $ID $PACKAGE $SOURCE/$tName $SOURCE/$tName/tests $deviceDir $localDir
-			RET=$(echo $?)
-			if [[ "$RET" != "0" ]]; then
-				echo "$ID" >> $logDir/errorBuildSDK.log
-				if [[ "$RET" == "10" ]]; then
-					#everything went well, at second try
-					#let's create the results support files
-					$MKDIR_COMMAND -p $projLocalDir
-					$MKDIR_COMMAND -p $projLocalDir/oldRuns
-					mv  $(ls $projLocalDir | grep -v "oldRuns") $projLocalDir/oldRuns/
-					$MKDIR_COMMAND -p $projLocalDir/all
-					cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
-					echo "$ID" >> $logDir/success.log
-				elif [[ -n "$logStatus" ]]; then
-					cp $logDir/buildStatus.log $logDir/debugBuild/$ID.log
-				fi
-				continue
-			fi				
-			#install on device
-			./install.sh "$SOURCE/$tName" "$SOURCE/$tName/tests" "SDK" $PACKAGE $localDir $monkey $apkBuild $logDir
-			RET=$(echo $?)
-			if [[ "$RET" != "0" ]]; then
-				echo "$ID" >> $logDir/errorInstall.log
-				continue
-			fi
-			echo "$ID" >> $logDir/success.log
-
-			#create results support folder
-			#echo "$TAG Creating support folder..."
-			$MKDIR_COMMAND -p $projLocalDir
-			$MKDIR_COMMAND -p $projLocalDir/oldRuns
-			$MV_COMMAND -f $(find  $projLocalDir/ -maxdepth 1 | $SED_COMMAND -n '1!p' |grep -v "oldRuns") $projLocalDir/oldRuns/
-			$MKDIR_COMMAND -p $projLocalDir/all
-			cat ./allMethods.txt >> $projLocalDir/all/allMethods.txt
-			
-			##copy MethodMetric to support folder
-			#echo "copiar $FOLDER/$tName/classInfo.ser para $projLocalDir "
-			cp $FOLDER/$tName/$GREENSOURCE_APP_UID.json $localDir
-			echo "$ID" >> $logDir/success.log
-			total_methods=$( cat $projLocalDir/all/allMethods.txt | sort -u | wc -l | sed 's/ //g')
-			now=$(date +"%d_%m_%y_%H_%M_%S")
-			localDir=$localDir/$folderPrefix$now
-			#echo "$TAG Creating support folder..."
-			mkdir -p $localDir
-			mkdir -p $localDir/all
-			
-########## RUN TESTS 1 phase ############
-			trap 'quit $PACKAGE $TESTPACKAGE $f' INT
-			for i in $seeds20; do
-				w_echo "SEED Number : $totaUsedTests"
-				./runMonkeyTest.sh $i $number_monkey_events $trace $PACKAGE	$localDir $deviceDir		
-				RET=$(echo $?)
-				if [[ $RET -ne 0 ]]; then
-					errorHandler $RET $PACKAGE
-					IGNORE_RUN="YES"
-					break						
-				fi
-				adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-				#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
-				adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
-				mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-				mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-				mv catlog.out "$localDir/catlog$i.out"
-				
-				totaUsedTests=$(($totaUsedTests + 1))
-				adb shell am force-stop $PACKAGE
-				if [ "$totaUsedTests" -eq 30 ]; then
-					getBattery
-				fi
-				$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-			done
-
-########## RUN TESTS  THRESHOLD ############
-
-				##check if have enough coverage
-				nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-				actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-				e_echo "actual coverage -> $actual_coverage"
-				
-				for j in $last30; do
-					coverage_exceded=$( echo " ${actual_coverage}>= .${min_coverage}" | bc -l)
-					if [ "$coverage_exceded" -gt 0 ]; then
-						w_echo "above average. Run completed"
-						echo "$ID|$totaUsedTests" >> $logDir/above$min_coverage.log
-						break
-					fi
-					w_echo "SEED Number : $totaUsedTests"
-					./runMonkeyTest.sh $j $number_monkey_events $trace $PACKAGE	$localDir $deviceDir
-					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/{} $localDir
-					#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
-					adb shell ls "$deviceDir" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio "TracedMethods.txt" | xargs -I{} adb pull $deviceDir/{} $localDir
-					mv $localDir/TracedMethods.txt $localDir/TracedMethods$i.txt
-					mv $localDir/GreendroidResultTrace0.csv $localDir/GreendroidResultTrace$i.csv
-					nr_methods=$( cat $localDir/Traced*.txt | sort -u | uniq | wc -l | $SED_COMMAND 's/ //g')
-					actual_coverage=$(echo "${nr_methods}/${total_methods}" | bc -l)
-					w_echo "actual coverage -> $actual_coverage"
-					totaUsedTests=$(($totaUsedTests + 1))
-					adb shell am force-stop $PACKAGE
-					if [ "$totaUsedTests" -eq 30 ]; then
-						getBattery
-					fi
-					$ANADROID_SRC_PATH/others/trepnFix.sh $deviceDir
-				done
-				trap - INT
-				if [ "$coverage_exceded" -eq 0 ]; then
-					echo "$ID|$actual_coverage" >> $logDir/below$min_coverage.log
-				fi
-
-
-				APP_JSON="{\"app_id\": \"$GREENSOURCE_APP_UID\", \"app_package\": \"$PACKAGE\", \"app_location\": \"$f\", \"app_version\": \"1\"}" #" \"app_language\": \"Java\"}"
-				Proj_JSON="{\"project_id\": \"$ID\", \"proj_desc\": \"\", \"proj_build_tool\": \"gradle\", project_apps:[$APP_JSON]} , project_packages=[]}"
-				echo "$Proj_JSON" > $localDir/projectApplication.json
-				./uninstall.sh $PACKAGE $TESTPACKAGE
-				RET=$(echo $?)
-				if [[ "$RET" != "0" ]]; then
-					echo "$ID" >> $logDir/errorUninstall.log
-					#continue
-				fi
-				w_echo "Analyzing results .."
-				java -jar $GD_ANALYZER $trace $projLocalDir/ $monkey $GREENSOURCE_URL
-				#cat $logDir/analyzer.log
-				errorAnalyzer=$(cat $logDir/analyzer.log)
-				#TODO se der erro imprimir a vermelho e aconselhar usar o trepFix.sh
-				#break
-				w_echo "$TAG sleeping between profiling apps"
-				sleep $SLEEPTIME
-				w_echo "$TAG resuming Greendroid after nap"
-				totaUsedTests=0
-				getBattery
-			else
-				e_echo "$TAG ERROR!"
-			fi
-		done
 	fi
 done
 IFS=$OLDIFS

@@ -224,8 +224,7 @@ analyzeResults(){
 		#if  % of power samples with 0 value  > threshold
 		# reboot phone and then unlock
 		rebootAndUnlockPhone
-	fi
-				
+	fi				
 }
 
 

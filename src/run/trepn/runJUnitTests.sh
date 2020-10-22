@@ -46,7 +46,6 @@ fi
 #adb shell settings put system screen_brightness 0 #  0 <= b <=255
 
 grantPermissions(){
-	w_echo "Granting permissions on $1"
 	(adb shell pm grant $pack android.permission.READ_EXTERNAL_STORAGE) >/dev/null 2>&1
 	(adb shell pm grant $pack android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
 	(adb shell pm grant "$pack.test" android.permission.WRITE_EXTERNAL_STORAGE) >/dev/null 2>&1
@@ -119,39 +118,6 @@ stopAndcleanTrash(){
 }
 
 
-pullResults(){
-	i_echo "$TAG Pulling result files"
-	#check if trepn worked correctly
-	Nmeasures=$(adb shell ls "$deviceDir/Measures/" | wc -l)
-	Ntraces=$(adb shell ls "$deviceDir/Traces/" | wc -l)
-	echo "Nº measures: $Nmeasures"
-	echo "Nº traces:   $Ntraces"
-	if [[ $folderPrefix == "JUnitMethod" ]]; then
-		#statements
-		adb shell mv "$deviceDir/*.csv" "$deviceDir/Measures/"
-	else 
-	    if [ $Nmeasures -le "0" ] || [ $Ntraces -le "0" ] || [ $Nmeasures -ne $Ntraces ] ; then 
-			e_echo "[GD ERROR] Something went wrong. try run trepnFix.sh and try again"
-			exit 2
-		fi
-	fi
-	cp "$appFolder/application.json" "$localDir"
-	cp device.json "$localDir"
-	cp "$appFolder/appPermissions.json" "$localDir"
-	adb shell ls "$deviceDir/Measures/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.csv" |  xargs -I{} adb pull $deviceDir/Measures/{} "$localDir"
-	#adb shell ls "$deviceDir/TracedMethods.txt" | tr '\r' ' ' | xargs -n1 adb pull 
-	adb shell ls "$deviceDir/Traces/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/Traces/{} "$localDir"
-	adb shell ls "$deviceDir/TracedTests/" | $SED_COMMAND -r 's/[\r]+//g' | egrep -Eio ".*.txt" | xargs -I{} adb pull $deviceDir/TracedTests/{} "$localDir"
-	csvs=$(find "$localDir" -name "*.csv")
-	for i in $csvs; do
-		tags=$(cat "$i" |  grep "stopped" | wc -l)
-		if [ $tags -lt "2" ] && [ "$folderPrefix" == "Test" ] ; then
-			e_echo " $i might contain an error "
-			echo "$i" >> logs/csvErrors.log
-		fi
-	done
-}
-
 stateToJSON(){
 	State=$1
 	#e_echo "$localDir/${State}_state.json"
@@ -180,7 +146,7 @@ if [ $nRuns -eq 2 ]; then
 	stateToJSON "end"
 	stopAndcleanTrash
 	#stopSimiasque
-	pullResults
+	#pullResults
 else
 	# run only once, in normal mode
 	GDflag="0"

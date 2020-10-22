@@ -5,6 +5,7 @@ source $ANADROID_PATH/src/settings/settings.sh
 iTAG="[GD CLEANER]"
 deviceDir=$1
 
+test -z "$deviceDir" && deviceDir="/sdcard/trepn"
 
 #deviceDir=$(cat deviceDir.txt) # TODO improve later (receive as parameter from other script??)
 

@@ -307,8 +307,7 @@ prepareAndInstallApp(){
 		projLocalDir="$firstProjLocalDir/$appVersion"
 		current_local_dir=$localDir
 		current_vers_dir=$( echo "$localDir" | xargs dirname ) 
-		localDir=$projLocalDir/$folderPrefix$now
-		
+		localDir=$projLocalDir/$folderPrefix$now	
 		if [ -d "$projLocalDir" ]; then
 			mv  "$current_local_dir" "$localDir"
 		else

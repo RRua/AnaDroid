@@ -13,7 +13,7 @@ DEFAULT_CONFIG_FILE=$ANADROID_PATH/defaultTestConfig.cfg
 function setBrightness(){
 	local level=$1
 	
-		adb shell settings put system screen_brightness_mode 0
+	#adb shell settings put system screen_brightness_mode 0
 	
 		#adb shell settings put system screen_brightness_mode 0
 	
