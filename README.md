@@ -1,6 +1,6 @@
 # AnaDroid
 
-This tool was developed to be used by Android developers to test their apps' perfomance, using a wide set of testing frameworks with minimal effort. It can automatically test an application and its source code, collecting a vast number of metrics related to the application's performance, namely regarding energy performance. The AnaDroid offers a generic way of integrating the ability to measure the energy  and resources usage of Android applications. This tool can be used during the development process to test and monitor the execution of Android applications. It is the evolution of the [GreenDroid](https://github.com/greensoftwarelab/GreenDroid) framework. 
+This tool was developed to be used by Android developers to test their apps' perfomance, using a wide set of testing frameworks with minimal effort. It can automatically test an application and its source code, collecting a vast number of metrics related to app performance, namely regarding energy performance.  AnaDroid offers a generic way of integrating the ability to measure the energy  and resource usage of Android applications. This tool can be used during the development process to test and monitor the execution of Android applications. AnaDroid was inpired by the [GreenDroid](https://github.com/greensoftwarelab/GreenDroid) framework, resulting in an extension of such tool in terms of features and supported testing frameworks and profilers.
 
  
 AnaDroid is the ideal tool for testing applications in bulk and establishing comparisons between them, as it is able to record and define system and device states under test, ensuring that a possible comparison between comparable applications can be made due to having been evaluated under the same test conditions.
@@ -100,6 +100,14 @@ We are extending this framework in order to be able to use more Android testing 
 ```
 git clone https://github.com/RRua/AnaDroid.git
 ```
+### Set Environment variables
+
+In order to AnaDroid can be automatically used in further sessions, you must set at least the following variables (if not present) to your .bashrc or .bash_profile file:
+```
+export ANADROID_PATH=<Absolute-path-to-AnaDroid-folder>
+export PATH=$PATH:$ANADROID_PATH
+```
+
 ### Install
 The ```make install``` command will setup the environment, installing the required tools to compile, build and run Android Projects.
 The required tools are the following (if necessary):
@@ -113,31 +121,28 @@ The required tools are the following (if necessary):
 
 This command will also setup your device (if connected to your machine) so it can be prepared to monitor the execution of Android applications. It will create a support directory in the device (virtual) external storage and install (via USB) some auxiliary applications:
 
+## Set more Environment variables
+
+In order to AnaDroid can be automatically used in further sessions, you must set the following variables so the AnaDroid framework can find the executables related included with the android sdk. Again, you can set these variables in your .bashrc or .bash_profile file:
+```
+export ANDROID_HOME=$HOME/android-sdk/ 
+export PATH=$ANDROID_HOME/platform-tools:$PATH
+export PATH=$ANDROID_HOME/tools:$PATH
+export PATH=$ANDROID_HOME/tools/bin:$PATH
 
 ```
 cd AnaDroid
 make install
 ```
-### Set Environment variables
-
-In order to AnaDroid can be automatically used in further sessions, you must set at least the following variables (if not present) to your .bashrc or .bash_profile file:
-```
-export ANADROID_PATH=<Absolute-path-to-AnaDroid-folder>
-export PATH=$PATH:$ANADROID_PATH
-export ANDROID_HOME=$HOME/android-sdk/ 
-export PATH=$ANDROID_HOME/platform-tools:$PATH
-export PATH=$ANDROID_HOME/tools:$PATH
-export PATH=$ANDROID_HOME/tools/bin:$PATH
-```
 
 ## USAGE:
 
 ```
-$ anaDroid  [-o|--orientation orientation] 
-            [-p|--profiler prof] 
-            [-f|--framework frame] 
-            [-b|--build bd] 
-            [-u|--url url ] 
-            [-s|--silent sil] 
-            [-d|--dir project_dir ]
+$ anaDroid  [-o|--orientation <orientation>] 
+            [-p|--profiler <prof>] 
+            [-f|--framework <frame>] 
+            [-b|--build <bd>] 
+            [-u|--url <url> ] 
+            [-s|--silent <sil>] 
+            [-d|--dir project_<dir> ]
 ```
