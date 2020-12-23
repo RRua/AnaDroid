@@ -88,14 +88,22 @@ def getInvokedAPISAsString(string_folder,test_id):
             return ''      
         return " ".join(   [j for i in data[test_id].values() for j in i] )
 
-def getPerformanceLintIssues(string_folder):
+def getPerformanceLintIssues(string_folder, filter_severity=False , filter_threshold=6 ):
     filename= string_folder + "lintIssues.json"
     if not path.exists(filename):
         return ''
     with open(filename,encoding='utf-8') as json_file:
         data = json.load(json_file)
 
-    return data["Performance"] if "Performance" in data else []
+    if filter_severity and "Performance" in data:
+        z = list( filter ( lambda x : int(x[1]) >=filter_threshold , data["Performance"]   ) )
+        #print("%s has %d perf issues" % ( string_folder, len(z) ))
+        if len(z)>0:
+            print("olha este " + string_folder)
+        return z
+    
+    else:
+        return data["Performance"] if "Performance" in data else []
 
 
 
@@ -166,8 +174,9 @@ def data_to_csv(data,string_folder):
             f.write(";"+str(y))
         for y in end_metrics.values():
             f.write(";"+str(y))
-        #f.write(";"+getInvokedAPISAsString(string_folder,line['test_id'] ))
-        f.write(";" + str(len(getPerformanceLintIssues(string_folder))))
+        f.write(";"+getInvokedAPISAsString(string_folder,line['test_id'] ))
+        f.write(";" + str(len(getPerformanceLintIssues(string_folder, filter_severity=True,filter_threshold=6))))
+        #print( string_folder + "tem n issues " + str(len(getPerformanceLintIssues(string_folder))))
         f.write(";" + str(len(getInvokedAPISAsString(string_folder,line['test_id'] ))))
         f.write(";" + app_category)
         f.write("\n")
@@ -179,7 +188,7 @@ def data_to_csv(data,string_folder):
     average_enegyconsumed = total_enegyconsumed / size
     average_elapsedtime = total_elapsedtime / size
     average_coverage = total_coverage / size
-    f.write('average' + ';' + str(average_enegyconsumed)+ ';' + str(average_elapsedtime) + ';' + str(average_cpuloadnormalized) + ';' + str(average_memoryusage) + ';' + str(average_gpuload) + ';' + str(average_coverage))
+    f.write('average' + ';' + str(average_enegyconsumed)+ ';' + str(average_elapsedtime) + ';' + str(average_cpuloadnormalized) + ';' + str(average_memoryusage) + ';' + str(average_gpuload) + ';' + str(average_coverage) + ";" +  str(len(getPerformanceLintIssues(string_folder,filter_severity=True,filter_threshold=6))) )
     f.write('\n')
    
     for x,y in otherMetrics.items():
@@ -235,11 +244,10 @@ def getStats(all_folders):
 
 def getFolders():
     all_folders = []
-    keyboard_folders = []
     for (dirpath, dirnames, filenames) in os.walk(output_folder):
         if "oldRuns" not in str(dirpath):
             all_folders.append(dirpath)
-    return all_folders,keyboard_folders
+    return all_folders
 
 def cleanFolders(keyboard_folders):
     for folder in keyboard_folders:
@@ -250,9 +258,9 @@ def cleanFolders(keyboard_folders):
 
 
 if __name__== "__main__":
-    all_folders,keyboard_folders = getFolders()
+    all_folders = getFolders()
     #print(all_folders)
-    #cleanFolders(keyboard_folders)
+    #cleanFolders(statsfolders)
     x=getStats(all_folders)
     #getKeyboardsStats(all_folders)
     print(colored("[Success] Created " + str(x) + " resume files!","green"))

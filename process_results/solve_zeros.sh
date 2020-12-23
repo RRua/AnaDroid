@@ -1,5 +1,7 @@
 # !/bin/bash
 
+#resolver 0.0 no version name
+
 res_folder="/home/greenlab/GDResults/"
 
 for vers_folder in $( find "$res_folder" -maxdepth 2 -type d -name "0\.0" ); do

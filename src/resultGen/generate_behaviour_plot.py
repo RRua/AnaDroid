@@ -221,21 +221,21 @@ def generate_allapps_behaviour(apps_dict):
 def sortPair(xy):
 	return DefaultSemanticVersion(xy[0])
 
-def generate_app_behaviour_plot(appname,app_dict):
-	print(appname)
+def generate_app_behaviour_plot(appname,app_dict,min_metric=10,min_coverage=10):
+	
 	#print(app_dict)
-	avg_coverage = max(list( map( lambda zz : float(zz[1][-3][6]) , app_dict.items())))
+	avg_coverage = max(list( map( lambda zz : float(zz[1][2][6]) , app_dict.items())))
 	#print(avg_coverage)
 	#exit(0)
-	app_list_pairs_version_energy = list( map( lambda zz : (zz[0],zz[1][-3][1]) , app_dict.items()))
+	app_list_pairs_version_energy = list( map( lambda zz : (zz[0],zz[1][2][1]) , app_dict.items()))
 	x_data = list( map( lambda x : str(x[0]) , app_list_pairs_version_energy ) )
 	y_data = list( map( lambda x : float(x[1]) , app_list_pairs_version_energy ) )
 	max_y = max(y_data)
 	y_data = list(map( lambda x : safe_division(x, max_y) , y_data ))
 	
-	if(max_y>10 and avg_coverage > 10.0):
-		print("filtering > 10 julios and coverage > 10")
-		print("coverage =" + str(avg_coverage))
+	if(max_y>min_metric and avg_coverage > min_coverage):
+		#print("filtering > 10 julios and coverage > 10")
+		#print("coverage =" + str(avg_coverage))
 		line_plot(x_data,y_data, "versions", "energy", "%s max: %f" % (appname , max_y) )
 
 
