@@ -33,6 +33,7 @@ DEBUG="TRUE"
 gradle_wrapper_jar_location="$ANADROID_PATH/resources/jars/gradle-wrapper.jar"
 gradle_wrapper_location="$ANADROID_PATH/resources/gradlew"
 gradle_wrapper_properties_location="$ANADROID_PATH/resources/gradle-wrapper.properties"
+main_gradle_file=$(find "$FOLDER" -name "build.gradle" | awk '{ print length, $0 }' | sort -n -s | cut -d" " -f2- | head -1 )
 
 
 debug_echo(){
@@ -89,6 +90,9 @@ function upgradeBuildToolsVersion(){
 	done 
 
 }
+
+
+
 
 function inferGradlePluginVersion(){
 	local main_gradle_file=$1
@@ -163,6 +167,7 @@ fi
 #Change the main build file
 #$SED_COMMAND -ri.bak "s#classpath ([\"]|[\'])com.android.tools.build:gradle:(.+)([\"]|[\'])#classpath 'com.android.tools.build:gradle:$GRADLE_PLUGIN'#g" $GRADLE
 #change the other build files
+
 find "$FOLDER" -name "build.gradle" | while read dir;
 do 
 #for x in `find "$FOLDER" -name "build.gradle" -print | egrep -v "/build/"`; do
@@ -236,8 +241,8 @@ do
 		#$SED_COMMAND  -i -e "\$a android\ { lintOptions\ {\ $LINT_ISSUES \n }}" $x
 	#fi
 
-	### dummy way to add mavenCentral and jcenter
-	$SED_COMMAND  -i -e "\$a\ buildscript\ {repositories\ {jcenter()\ \n\ mavenCentral()}}" "$x"
+	### dummy way to add mavenCentral and jcenter to main gradle file"
+	test "$x" == "$main_gradle_file" && $SED_COMMAND  -i -e "\$a\ buildscript\ {repositories\ {jcenter()\ \n\ mavenCentral()}}" "$x"
 	###
 
 	#debug_echo "éé aproach $APPROACH"
