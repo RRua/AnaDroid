@@ -1,4 +1,17 @@
+[![deprecated](http://badges.github.io/stability-badges/dist/deprecated.svg)](http://github.com/badges/stability-badges)
 # AnaDroid
+
+## Repository No Longer Maintained
+
+**This repository is no longer  maintained.**
+
+This project was rewritten in Python and we stopped development and maintenance of this project.
+
+**Alternatives**
+- [PyAnaDroid](https://github.com/greensoftwarelab/PyAnaDroid)
+
+## Description
+
 
 This tool was developed to be used by Android developers to test their apps' perfomance, using a wide set of testing frameworks with minimal effort. It can automatically test an application and its source code, collecting a vast number of metrics related to app performance, namely regarding energy performance.  AnaDroid offers a generic way of integrating the ability to measure the energy  and resource usage of Android applications. This tool can be used during the development process to test and monitor the execution of Android applications. AnaDroid was inpired by the [GreenDroid](https://github.com/greensoftwarelab/GreenDroid) framework, resulting in an extension of such tool in terms of features and supported testing frameworks and profilers.
 
